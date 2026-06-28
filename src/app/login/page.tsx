@@ -312,12 +312,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Status Messages */}
-          {error && (
-            <div className="badge badge-warning" style={{ textAlign: 'center', padding: '10px', marginBottom: '1rem', display: 'block' }}>
-              {error}
-            </div>
-          )}
+    
           {success && (
             <div className="badge badge-success" style={{ textAlign: 'center', padding: '10px', marginBottom: '1rem', display: 'block' }}>
               {success}
