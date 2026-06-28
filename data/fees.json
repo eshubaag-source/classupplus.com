@@ -1,0 +1,46 @@
+[
+  {
+    "studentId": "6a22aaf462dfb37457ea449e",
+    "amount": 20000,
+    "month": "june 2026",
+    "description": "",
+    "status": "Pending",
+    "category": "vehicle",
+    "_id": "abb6d54e-893b-4951-966d-d13047e12bd4",
+    "createdAt": "2026-06-08T09:31:29.364Z"
+  },
+  {
+    "amount": 20000,
+    "status": "Paid",
+    "category": "school",
+    "studentId": "test-student",
+    "_id": "65dded74-101c-40be-8c4a-a70bbafa89ad",
+    "createdAt": "2026-06-09T10:30:57.920Z"
+  },
+  {
+    "amount": 5000,
+    "status": "Paid",
+    "category": "vehicle",
+    "studentId": "test-student",
+    "_id": "f3305b8c-b4e7-4022-8f4b-d4e39b20c919",
+    "createdAt": "2026-06-09T10:34:06.456Z"
+  },
+  {
+    "studentId": "6a22f4ec8d5eb356b9504bd8",
+    "amount": "2000",
+    "month": "June 2026",
+    "status": "Paid",
+    "_id": "1ebd6ee7-c6d3-407a-a180-fa6601c27336",
+    "createdAt": "2026-06-09T10:56:54.730Z"
+  },
+  {
+    "studentId": "6a25636be530952001a19e83",
+    "amount": 50000,
+    "month": "june 2026",
+    "description": "",
+    "status": "Pending",
+    "category": "vehicle",
+    "_id": "e28765de-0cf2-44e2-a949-54ff84628b53",
+    "createdAt": "2026-06-09T10:57:50.862Z"
+  }
+]
