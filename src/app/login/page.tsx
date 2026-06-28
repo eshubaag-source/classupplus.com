@@ -256,7 +256,7 @@ export default function LoginPage() {
     if (isOtpRequired) return otpSent ? 'Enter the verification code sent to your device' : 'Select how you want to receive your verification code';
     if (view === 'login') return 'Login as Admin or Teacher';
     if (view === 'register-admin') return 'Set up your school\'s admin account';
-    return 'Join the E\'School platform';
+    return 'Join the  ClassUpPlus platform';
   };
 
   const tabStyle = (active: boolean): React.CSSProperties => ({
