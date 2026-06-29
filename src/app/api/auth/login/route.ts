@@ -35,42 +35,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
-    const tempToken = jwt.sign({
+    const tokenPayload = {
       id: user._id,
+      username: role === 'admin' ? user.username : user.email,
       role,
-      temp: true
-    }, JWT_SECRET, { expiresIn: '5m' });
+      adminId: role === 'admin' ? user._id : user.adminId,
+    };
 
-    const userEmail = user.email || '';
-    const userPhone = role === 'admin' ? (user.mobileNumber || '') : (user.phone || '');
+    const token = jwt.sign(tokenPayload, JWT_SECRET, {
+      expiresIn: '1d',
+    });
 
-    function maskEmail(emailStr: string): string {
-      if (!emailStr) return 'Not configured';
-      const [local, domain] = emailStr.split('@');
-      if (!domain) return emailStr;
-      if (local.length <= 3) {
-        return `${local[0]}***@${domain}`;
-      }
-      return `${local.substring(0, 3)}***@${domain}`;
-    }
-
-    function maskPhone(phoneStr: string): string {
-      if (!phoneStr) return 'Not configured';
-      const clean = phoneStr.replace(/\s+/g, '');
-      if (clean.length <= 4) return clean;
-      return `${'*'.repeat(clean.length - 4)}${clean.substring(clean.length - 4)}`;
-    }
-
-    return NextResponse.json({
-      message: 'Credentials verified. OTP verification required.',
-      otpRequired: true,
-      tempToken,
-      email: userEmail,
-      phone: userPhone,
-      maskedEmail: maskEmail(userEmail),
-      maskedPhone: maskPhone(userPhone),
+    const response = NextResponse.json({
+      message: 'Logged in successfully',
+      otpRequired: false,
       role
     }, { status: 200 });
+
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24, // 1 day
+      path: '/',
+    });
+
+    return response;
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
