@@ -182,7 +182,7 @@ export default function ClassFeesPage() {
                 }}
               >
                 <option value="">— Select Class —</option>
-                {['1','2','3','4','5','6','7','8','9','10','11','12'].map(g => (
+                {['Nursary', 'L.K.G', 'U.K.G','1','2','3','4','5','6','7','8','9','10','11','12'].map(g => (
                   <option key={g} value={`Class ${g}`}>Class {g}</option>
                 ))}
                 <option value="Other">Other / Custom</option>
