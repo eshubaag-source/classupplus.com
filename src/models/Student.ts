@@ -17,12 +17,5 @@ StudentSchema.index({ adminId: 1, grade: 1, section: 1, rollNumber: 1 }, { uniqu
 
 const Student = mongoose.models.Student || mongoose.model('Student', StudentSchema);
 
-// One-time migration: drop the old school-wide unique index if it still exists.
-// This runs once after the model is registered and is safe to call on every startup.
-Student.collection
-  .dropIndex('adminId_1_rollNumber_1')
-  .catch(() => {
-    // Index doesn't exist (already dropped or never created) — ignore silently.
-  });
 
 export default Student;
