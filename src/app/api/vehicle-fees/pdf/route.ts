@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     if (!idsParam) {
       // GENERATE TABULAR LIST
       const pdfDoc = await PDFDocument.create();
-      let page = pdfDoc.addPage([850, 800]);
+      let page = pdfDoc.addPage([1050, 800]);
       const { height } = page.getSize();
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -69,8 +69,8 @@ export async function GET(request: Request) {
       let y = height - 80;
       const lineHeight = 16;
       
-      const header = ['Student', 'Class/Sec', 'Bus No', 'City', 'Utr', 'Month', 'Paid Amt', 'Status'];
-      const colWidths = [120, 70, 80, 90, 120, 100, 80, 70];
+      const header = ['Student', 'Father Name', 'Class/Sec', 'Bus No', 'City', 'Utr', 'Month', 'Paid Amt', 'Last Year', 'Status'];
+      const colWidths = [110, 110, 70, 70, 80, 110, 90, 80, 80, 70];
       let x = 30;
       header.forEach((text, i) => {
         page.drawText(text, { x, y, size: 12, font: fontBold, color: rgb(0, 0, 0) });
@@ -83,12 +83,14 @@ export async function GET(request: Request) {
         const student = fee.studentId || {};
         const row = [
           (student.name || '-').substring(0, 18),
+          (student.fatherName || fee.fatherName || '-').substring(0, 18),
           `${student.grade || '-'} ${student.section || ''}`.substring(0, 10),
           (fee.busNumber || '-').substring(0, 10),
           (fee.city || '-').substring(0, 12),
           (fee.utr || '-').substring(0, 18),
           (fee.month || '-').substring(0, 15),
           `Rs. ${fee.amount || 0}`,
+          `Rs. ${fee.lastyear || 0}`,
           (fee.status || 'Pending')
         ];
         
@@ -99,7 +101,7 @@ export async function GET(request: Request) {
         
         y -= lineHeight;
         if (y < 40) {
-          page = pdfDoc.addPage([850, 800]);
+          page = pdfDoc.addPage([1050, 800]);
           y = height - 40;
         }
       });
