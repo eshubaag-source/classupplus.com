@@ -6,6 +6,7 @@ import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
 import { sendNotification } from '@/lib/notifications';
 
 export async function PUT(
+  
   req: Request, 
   { params }: { params: Promise<{ id: string }> }
 ) {
