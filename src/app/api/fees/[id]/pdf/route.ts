@@ -71,6 +71,10 @@ export async function GET(
         classAmount = match.amount;
       }
     }
+    // Fallback: use the classFee stored on the fee record itself
+    if (classAmount === 0 && (fee as any).classFee) {
+      classAmount = Number((fee as any).classFee) || 0;
+    }
     const balance = Math.max(0, classAmount - fee.amount);
 
     // Create a compact PDF receipt
@@ -216,33 +220,48 @@ export async function GET(
       color: rgb(156 / 255, 163 / 255, 175 / 255),
     });
 
-    // Table rows
-    const rowY = 245;
-    page.drawText('Tuition Fees', { x: 40, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-    page.drawText(fee.month, { x: 170, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-    page.drawText(classAmount > 0 ? `Rs. ${classAmount}` : '—', { x: 250, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-    page.drawText(`Rs. ${fee.amount}`, { x: 315, y: rowY, size: 9.5, font: fontBold, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-    page.drawText(`Rs. ${balance}`, { x: 380, y: rowY, size: 9.5, font: fontBold, color: rgb(220 / 255, 38 / 255, 38 / 255) });
+    const lastYearVal = fee.lastyear || (fee as any).lastyeae;
+    const hasLastYear = lastYearVal && lastYearVal !== '—' && lastYearVal.trim() !== '';
+    const totalPaid = fee.amount ;
 
+    // Table rows
+    let currentY = 245;
+    page.drawText('Tuition Fees', { x: 40, y: currentY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+    page.drawText(fee.month, { x: 170, y: currentY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+    page.drawText(classAmount > 0 ? `Rs. ${classAmount}` : '—', { x: 250, y: currentY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+    page.drawText(`Rs. ${fee.amount}`, { x: 315, y: currentY, size: 9.5, font: fontBold, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+    page.drawText(`Rs. ${balance}`, { x: 380, y: currentY, size: 9.5, font: fontBold, color: rgb(220 / 255, 38 / 255, 38 / 255) });
+
+    if (hasLastYear) {
+      currentY -= 20;
+      page.drawText('Last Year Fees', { x: 40, y: currentY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+      page.drawText('—', { x: 170, y: currentY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+      page.drawText('Pending', { x: 250, y: currentY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+      page.drawText('—', { x: 315, y: currentY, size: 9.5, font: fontBold, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+      page.drawText(`Rs. ${lastYearVal}`, { x: 380, y: currentY, size: 9.5, font: fontBold, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+    }
+
+    const tableBottomY = currentY - 15;
     // Table bottom border
     page.drawLine({
-      start: { x: 30, y: 230 },
-      end: { x: width - 30, y: 230 },
+      start: { x: 30, y: tableBottomY },
+      end: { x: width - 30, y: tableBottomY },
       thickness: 1,
       color: rgb(229 / 255, 231 / 255, 235 / 255),
     });
 
+    const totalRowY = tableBottomY - 25;
     // Draw total row
     page.drawText('Total Paid Amount:', {
       x: width - 200,
-      y: 205,
+      y: totalRowY,
       size: 10.5,
       font: fontBold,
       color: rgb(75 / 255, 85 / 255, 99 / 255),
     });
-    page.drawText(`Rs. ${fee.amount}`, {
+    page.drawText(`Rs. ${totalPaid}`, {
       x: width - 75,
-      y: 205,
+      y: totalRowY,
       size: 11,
       font: fontBold,
       color: rgb(99 / 255, 102 / 255, 241 / 255),
