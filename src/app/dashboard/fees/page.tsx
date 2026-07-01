@@ -357,7 +357,7 @@ export default function FeesPage() {
                 <option value="">Choose a student...</option>
                 {students.map(s => (
                   <option key={s._id} value={s._id}>
-                    {s.name} ({s.rollNumber}) — {s.grade}{s.section ? `-${s.section}` : ''}
+                    {s.name} ( {s.fathername} {s.rollNumber}) — {s.grade}{s.section ? `-${s.section}` : ''}
                   </option>
                 ))}
               </select>
