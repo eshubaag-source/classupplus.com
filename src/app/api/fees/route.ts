@@ -14,7 +14,6 @@ export async function GET() {
     await dbConnect();
     const adminId = payload.adminId;
     let query: any = { adminId };
-
     if (payload.role === 'teacher') {
       const classFilter = await getTeacherClassFilter(payload);
       if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
