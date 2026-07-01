@@ -1,5 +1,6 @@
 'use client';
 
+import { last } from 'pdf-lib';
 import { useState, useEffect } from 'react';
 
 export default function FeesPage() {
@@ -10,11 +11,13 @@ export default function FeesPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingFeeId, setEditingFeeId] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState('');
+
   const [newFee, setNewFee] = useState({
     studentId: '',
     amount: '',
     utr: '',
     month: '',
+    lastyear: '',
     status: 'Pending',
     description: '',
     paidDate: new Date().toISOString().split('T')[0]
@@ -97,6 +100,12 @@ export default function FeesPage() {
           (cf.subject || '') === ''
       );
     }
+    // fallback 2: first matching grade fee (e.g. if student subject is empty/unspecified, but a subject-specific fee exists)
+    if (!match) {
+      match = classFees.find(
+        cf => normalizeGrade(cf.grade) === grade
+      );
+    }
     return match || null;
   };
 
@@ -126,8 +135,9 @@ export default function FeesPage() {
       studentId: '',
       amount: '',
       utr: '',
+      lastyear: '',
       month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
-      status: 'Pending"',
+      status: 'Paid',
       description: '',
       paidDate: new Date().toISOString().split('T')[0]
     });
@@ -141,6 +151,7 @@ export default function FeesPage() {
       amount: fee.amount.toString(),
       month: fee.month,
       utr: fee.utr,
+      lastyear: fee.lastyear,
       status: fee.status,
       description: fee.description || '',
       paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
@@ -167,13 +178,14 @@ export default function FeesPage() {
           studentId: '',
           amount: '',
           month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
-          status: 'Paid',
+          status: 'Pending',
           utr: '',
+          lastyear: '',
           description: '',
           paidDate: new Date().toISOString().split('T')[0]
         });
         setEditingFeeId(null);
-        setShowAddForm(false);
+        setShowAddForm(true);
         fetchData();
       } else {
         const errData = await res.json();
@@ -185,8 +197,8 @@ export default function FeesPage() {
   };
 
   if (!isMounted) return null;
-  
-    {
+
+  {
     notifyFee && (
       <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={e => { if (e.target === e.currentTarget) setNotifyFee(null); }}>
         <div style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', border: '1px solid var(--glass-border)', borderRadius: '20px', padding: '32px', maxWidth: '520px', width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.2)' }}>
@@ -234,7 +246,7 @@ export default function FeesPage() {
           </div>
         </div>
       </div>
-    )  
+    )
   }
 
 
@@ -350,20 +362,19 @@ export default function FeesPage() {
                   const sId = e.target.value;
                   const student = students.find(s => s._id === sId);
                   const cFee = student ? findClassFee(student) : null;
-                  setNewFee({ ...newFee, studentId: sId, amount: cFee ? cFee.amount.toString() : '' });
+                  setNewFee({ ...newFee, studentId: sId, amount: cFee });
                 }}
                 required
               >
                 <option value="">Choose a student...</option>
                 {students.map(s => (
                   <option key={s._id} value={s._id}>
-                    {s.name} ({s.rollNumber}) — {s.grade}{s.section ? `-${s.section}` : ''}
+                    {s.name} {s.fatherName && `(${s.fatherName})`} - ({s.rollNumber}) — {s.grade}{s.section ? `-${s.section}` : ''}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Class Fee selector: shows all fees for the student's grade */}
             {newFee.studentId && (() => {
               const student = students.find(s => s._id === newFee.studentId);
               if (!student?.grade) return null;
@@ -419,19 +430,52 @@ export default function FeesPage() {
                 onChange={e => setNewFee({ ...newFee, amount: e.target.value })}
                 required />
             </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label>Month</label>
               <input type="text" value={newFee.month} onChange={e => setNewFee({ ...newFee, month: e.target.value })} required />
             </div>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label>UTR</label>
               <input type="text" placeholder="Enter UTR" value={newFee.utr} onChange={e => setNewFee({ ...newFee, utr: e.target.value })} required />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                Last year fees
+                {!!editingFeeId && (
+                  <span style={{
+                    fontSize: '0.7rem',
+                    background: 'rgba(99, 102, 241, 0.1)',
+                    color: 'var(--primary)',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontWeight: 600,
+                  }}>
+                    🔒 Locked
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                placeholder="lastyear amount"
+                value={newFee.lastyear}
+                onChange={e => setNewFee({ ...newFee, lastyear: e.target.value })}
+                required
+                readOnly={!!editingFeeId}
+                style={{
+                  ...(editingFeeId ? {
+                    opacity: 0.6,
+                    cursor: 'not-allowed',
+                    background: 'rgba(0,0,0,0.03)',
+                  } : {})
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label>Status</label>
               <select value={newFee.status} onChange={e => setNewFee({ ...newFee, status: e.target.value })}>
-                <option value="Paid">Paid</option>
                 <option value="Pending">Pending</option>
+                <option value="Paid">Paid</option>
               </select>
             </div>
             {newFee.status === 'Paid' && (
@@ -470,154 +514,200 @@ export default function FeesPage() {
       </div>
 
       <div className="glass table-wrapper">
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-        <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
-          <tr>
-            <th style={{ padding: '16px', width: '60px', textAlign: 'center' }}>Select</th>
-            <th style={{ padding: '16px' }}>Student</th>
-            <th style={{ padding: '16px' }}>Type</th>
-            <th style={{ padding: '16px' }}>For Month</th>
-            <th style={{ padding: '16px' }}>Class Fee</th>
-            <th style={{ padding: '16px' }}>Paid Amount</th>
-            <th style={{ padding: '16px' }}>Balance</th>
-            <th style={{ padding: '16px' }}>Status</th>
-            <th style={{ padding: '16px' }}>Utr</th>
-            <th style={{ padding: '16px' }}>Date</th>
-            <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredFees.length === 0 ? (
-            <tr><td colSpan={11} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No fee records found.</td></tr>
-          ) : (
-            filteredFees.map((fee) => (
-              <tr key={fee._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                <td style={{ padding: '16px', textAlign: 'center' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(fee._id)}
-                    disabled={!selectedIds.includes(fee._id) && selectedIds.length >= 4}
-                    onChange={(e) => handleCheckboxChange(fee._id, e.target.checked)}
-                    style={{ cursor: 'pointer', width: '18px', height: '18px' }}
-                  />
-                </td>
-                <td style={{ padding: '16px' }}>
-                  <div style={{ fontWeight: 600 }}>{
-                    typeof fee.studentId === 'string'
-                      ? (students.find((s) => s._id === fee.studentId)?.name ?? 'Unknown')
-                      : fee.studentId?.name ?? 'Unknown'
-                  }</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{
-                    typeof fee.studentId === 'string'
-                      ? (students.find((s) => s._id === fee.studentId)?.rollNumber ?? '')
-                      : fee.studentId?.rollNumber ?? ''
-                  }</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', opacity: 0.7 }}>{(() => {
-                    const st = typeof fee.studentId === 'string'
-                      ? students.find(s => s._id === fee.studentId)
-                      : fee.studentId;
-                    if (!st?.grade) return '';
-                    return `${st.grade}${st.section ? `-${st.section}` : ''}`;
-                  })()}</div>
-                </td>
-                <td style={{ padding: '16px' }}>
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '3px 10px',
-                    borderRadius: '999px',
-                    fontSize: '0.78rem',
-                    fontWeight: 700,
-                    background: fee.feeType === 'Vehicle Fee' ? 'rgba(245,158,11,0.12)' : 'rgba(99,102,241,0.1)',
-                    color: fee.feeType === 'Vehicle Fee' ? '#b45309' : 'var(--primary)',
-                  }}>
-                    {fee.feeType === 'Vehicle Fee' ? '🚍' : '🏫'} {fee.feeType}
-                  </span>
-                </td>
-                <td style={{ padding: '16px' }}>{fee.month}</td>
-                <td style={{ padding: '16px', color: 'var(--text-muted)' }}>
-                  {(() => {
-                    const student = typeof fee.studentId === 'string'
-                      ? students.find(s => s._id === fee.studentId)
-                      : fee.studentId;
-                    const cFee = student ? findClassFee(student) : null;
-                    return cFee
-                      ? <span>₹{cFee.amount}{cFee.subject ? <span style={{ fontSize: '0.75rem', display: 'block', opacity: 0.7 }}>{cFee.subject}</span> : null}</span>
-                      : '—';
-                  })()}
-                </td>
-                <td style={{ padding: '16px', fontWeight: 700 }}>₹{fee.amount}</td>
-                <td style={{ padding: '16px', fontWeight: 600, color: '#ef4444' }}>
-                  {(() => {
-                    const student = typeof fee.studentId === 'string'
-                      ? students.find(s => s._id === fee.studentId)
-                      : fee.studentId;
-                    const cFee = student ? findClassFee(student) : null;
-                    if (!cFee) return '—';
-                    const balance = cFee.amount - fee.amount;
-                    return balance > 0 ? `₹${balance}` : <span style={{ color: '#10b981' }}>₹0</span>;
-                  })()}
-                </td>
-                <td style={{ padding: '16px' }}>
-                  <span className={`badge ${fee.status === 'Paid' ? 'badge-success' : 'badge-warning'}`}>{fee.status}</span>
-                </td>
-                <td style={{ padding: '16px', fontWeight: 600 }}>{fee.utr || '—'}</td>
-                <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                  {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : fee.createdAt ? new Date(fee.createdAt).toLocaleDateString() : '—'}
-                </td>
-                <td style={{ padding: '16px', textAlign: 'right' }}>
-                  <a
-                    href={`/api/fees/${fee._id}/pdf`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ textDecoration: 'none' }}
-                  >
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
+            <tr>
+              <th style={{ padding: '16px', width: '60px', textAlign: 'center' }}>Select</th>
+              <th style={{ padding: '16px' }}>Student</th>
+              <th style={{ padding: '16px' }}>fatherName</th>
+              <th style={{ padding: '16px' }}>Type</th>
+              <th style={{ padding: '16px' }}>For Month</th>
+              <th style={{ padding: '16px' }}>Class Fee</th>
+              <th style={{ padding: '16px' }}>Paid Amount</th>
+              <th style={{ padding: '16px' }}>Balance</th>
+              <th style={{ padding: '16px' }}>Status</th>
+              <th style={{ padding: '16px' }}>Utr</th>
+              <th style={{ padding: '16px' }}>Last Year Fees</th>
+              <th style={{ padding: '16px' }}>Date</th>
+              <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredFees.length === 0 ? (
+              <tr><td colSpan={11} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No fee records found.</td></tr>
+            ) : (
+              filteredFees.map((fee) => (
+                <tr key={fee._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                  <td style={{ padding: '16px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(fee._id)}
+                      disabled={!selectedIds.includes(fee._id) && selectedIds.length >= 4}
+                      onChange={(e) => handleCheckboxChange(fee._id, e.target.checked)}
+                      style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                    />
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                    <div style={{ fontWeight: 600 }}>{
+                      typeof fee.studentId === 'string'
+                        ? (students.find((s) => s._id === fee.studentId)?.name ?? 'Unknown')
+                        : fee.studentId?.name ?? 'Unknown'}
+                        </div>
+                    <div style={{ fontWeight: 600 }}>{
+                      typeof fee.studentId === 'string'
+                        ? (students.find((s) => s._id === fee.studentId)?.fatherName ?? '')
+                        : fee.studentId?.fatherName ?? ''}
+                        </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{
+                      typeof fee.studentId === 'string'
+                        ? (students.find((s) => s._id === fee.studentId)?.rollNumber ?? '')
+                        : fee.studentId?.rollNumber ?? ''
+                    }</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', opacity: 0.7 }}>{(() => {
+                      const st = typeof fee.studentId === 'string'
+                        ? students.find(s => s._id === fee.studentId)
+                        : fee.studentId;
+                      if (!st?.grade) return '';
+                      return `${st.grade}${st.section ? `-${st.section}` : ''}`;
+                    })()}</div>
+                  </td><td style={{ padding: '16px', color: 'var(--text-muted)' }}>
+                      {(() => {
+                        const studentIdStr = typeof fee.studentId === 'string'
+                          ? fee.studentId
+                          : fee.studentId?._id;
+                        const student = students.find(s => s._id === studentIdStr);
+                        return student?.fatherName || fee.fatherName || "—";
+                      })()}
+                      </td>
+                  <td style={{ padding: '16px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '3px 10px',
+                      borderRadius: '999px',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      background: fee.feeType === 'Vehicle Fee' ? 'rgba(245,158,11,0.12)' : 'rgba(99,102,241,0.1)',
+                      color: fee.feeType === 'Vehicle Fee' ? '#b45309' : 'var(--primary)',
+                    }}>
+                      {fee.feeType === 'Vehicle Fee' ? '🚍' : '🏫'} {fee.feeType}
+                    </span>
+                  </td>
+                  <td style={{ padding: '16px' }}>{fee.month}</td>
+                  <td style={{ padding: '16px', color: 'var(--text-muted)' }}>
+                    {(() => {
+                      if (fee.feeType === 'Vehicle Fee') {
+                        return fee.totalFees != null ? <span>₹{fee.totalFees}<span style={{ fontSize: '0.75rem', display: 'block', opacity: 0.7 }}>Vehicle</span></span> : '—';
+                      }
+                      const studentIdStr = typeof fee.studentId === 'string'
+                        ? fee.studentId
+                        : fee.studentId?._id;
+                      const student = students.find(s => s._id === studentIdStr);
+                      const cFee = student ? findClassFee(student) : null;
+                      const displayAmt = cFee?.amount ?? (fee.classFee != null && fee.classFee !== '' ? Number(fee.classFee) : null);
+
+                      if (displayAmt == null) return '—';
+
+                      return (
+                        <span>
+                          ₹{displayAmt}
+                          {cFee?.subject && <span style={{ fontSize: '0.75rem', display: 'block', opacity: 0.7 }}>{cFee.subject}</span>}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td style={{ padding: '16px', fontWeight: 700 }}>₹{fee.amount}</td>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>
+                    {(() => {
+                      let totalFee: number | null = null;
+                      if (fee.feeType === 'Vehicle Fee') {
+                        totalFee = fee.totalFees != null ? Number(fee.totalFees) : null;
+                      } else {
+                        if (fee.balance != null && fee.balance !== '' && fee.balance !== 0) {
+                          const bal = Number(fee.balance);
+                          return bal > 0
+                            ? <span style={{ color: '#ef4444' }}>₹{bal}</span>
+                            : <span style={{ color: '#10b981' }}>₹0</span>;
+                        }
+
+                        const studentIdStr = typeof fee.studentId === 'string'
+                          ? fee.studentId
+                          : fee.studentId?._id;
+                        const student = students.find(s => s._id === studentIdStr);
+                        const cFee = student ? findClassFee(student) : null;
+                        totalFee = cFee?.amount ?? (fee.classFee != null && fee.classFee !== '' ? Number(fee.classFee) : null);
+                      }
+
+                      if (totalFee === null) return '—';
+                      const balance = totalFee - Number(fee.amount);
+                      return balance > 0
+                        ? <span style={{ color: '#ef4444' }}>₹{balance}</span>
+                        : <span style={{ color: '#10b981' }}>₹0</span>;
+                    })()}
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                    <span className={`badge ${fee.status === 'Paid' ? 'badge-success' : 'badge-warning'}`}>{fee.status}</span>
+                  </td>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>{fee.utr || '—'}</td>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>{fee.lastyear || fee.lastyeae || '—'}</td>
+                  <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                    {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : fee.createdAt ? new Date(fee.createdAt).toLocaleDateString() : '—'}
+                  </td>
+                  <td style={{ padding: '16px', textAlign: 'right' }}>
+                    <a
+                      href={`/api/fees/${fee._id}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      <button
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.1)',
+                          color: '#10b981',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '0.875rem',
+                          cursor: 'pointer',
+                          marginRight: '8px',
+                        }}
+                      >
+                        🖨️ Receipt
+                      </button>
+                    </a>
                     <button
+                      onClick={() => {
+                        setEditingFeeId(fee._id);
+                        setNewFee({
+                          studentId: typeof fee.studentId === 'string' ? fee.studentId : fee.studentId?._id || '',
+                          amount: fee.amount.toString(),
+                          month: fee.month,
+                          utr: fee.utr,
+                          lastyear: fee.lastyear || fee.lastyeae || '',
+                          status: fee.status,
+                          description: fee.description || '',
+                          paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                        });
+                        setShowAddForm(true);
+                      }}
                       style={{
-                        background: 'rgba(16, 185, 129, 0.1)',
-                        color: '#10b981',
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        color: '#3b82f6',
                         border: 'none',
                         padding: '6px 12px',
                         borderRadius: '6px',
                         fontSize: '0.875rem',
                         cursor: 'pointer',
-                        marginRight: '8px',
                       }}
                     >
-                      🖨️ Receipt
+                      ✏️ Edit
                     </button>
-                  </a>
-                  <button
-                    onClick={() => {
-                      setEditingFeeId(fee._id);
-                      setNewFee({
-                        studentId: typeof fee.studentId === 'string' ? fee.studentId : fee.studentId?._id || '',
-                        amount: fee.amount.toString(),
-                        month: fee.month,
-                        utr:   fee.utr,
-                        status: fee.status,
-                        description: fee.description || '',
-                        paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-                      });
-                      setShowAddForm(true);
-                    }}
-                    style={{
-                      background: 'rgba(59, 130, 246, 0.1)',
-                      color: '#3b82f6',
-                      border: 'none',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      fontSize: '0.875rem',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    ✏️ Edit
-                  </button>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
-)}
+  )
+}
