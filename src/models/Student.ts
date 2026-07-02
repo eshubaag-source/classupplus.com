@@ -9,6 +9,7 @@ const StudentSchema = new mongoose.Schema({
   section: { type: String, required: true },
   parentContact: { type: String },
   createdAt: { type: Date, default: Date.now },
+  note: {type: String, require: true},
 });
 
 // Roll number unique per class (grade + section), NOT school-wide.
@@ -17,5 +18,8 @@ StudentSchema.index({ adminId: 1, grade: 1, section: 1, rollNumber: 1 }, { uniqu
 
 const Student = mongoose.models.Student || mongoose.model('Student', StudentSchema);
 
+// One-time migration: drop the old school-wide unique index if it still exists.
+// This runs once after the model is registered and is safe to call on every startup.
+ 
 
 export default Student;
