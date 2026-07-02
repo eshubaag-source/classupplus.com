@@ -33,7 +33,7 @@ export default function ClassFeesPage() {
     fetch('/api/profile')
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.schoolName) setSchoolName(data.schoolName); })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const fetchClassFees = async () => {
@@ -182,7 +182,7 @@ export default function ClassFeesPage() {
                 }}
               >
                 <option value="">— Select Class —</option>
-                {['Nursary', 'L.K.G', 'U.K.G','1','2','3','4','5','6','7','8','9','10','11','12'].map(g => (
+                {['Nursary', 'L.K.G', 'U.K.G', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map(g => (
                   <option key={g} value={`Class ${g}`}>Class {g}</option>
                 ))}
                 <option value="Other">Other / Custom</option>
@@ -218,13 +218,13 @@ export default function ClassFeesPage() {
                     <option>Biology</option>
                     <option>Mathematics</option>
                     <option>Computer Science</option>
+                    <option>Agriculture</option>
                     <option>Informatics Practices</option>
                   </optgroup>
                   <optgroup label="── Commerce Stream ──">
                     <option>Accountancy</option>
                     <option>Business Studies</option>
                     <option>Economics</option>
-                    <option>Agriculture</option>
                     <option>Entrepreneurship</option>
                   </optgroup>
                   <optgroup label="── Arts / Humanities ──">
@@ -314,63 +314,63 @@ export default function ClassFeesPage() {
 
       {/* Table */}
       <div className="glass table-wrapper">
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-        <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
-          <tr>
-            <th style={{ padding: '16px' }}>Class / Grade</th>
-            <th style={{ padding: '16px' }}>Subject</th>
-            <th style={{ padding: '16px' }}>Fees Amount</th>
-            <th style={{ padding: '16px' }}>Notes</th>
-            <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.length === 0 ? (
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
             <tr>
-              <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                {classFees.length === 0 ? 'No class fees configured yet. Click "+ Add Class Fee" to get started.' : 'No results found.'}
-              </td>
+              <th style={{ padding: '16px' }}>Class / Grade</th>
+              <th style={{ padding: '16px' }}>Subject</th>
+              <th style={{ padding: '16px' }}>Fees Amount</th>
+              <th style={{ padding: '16px' }}>Notes</th>
+              <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>
             </tr>
-          ) : (
-            filtered.map(cf => (
-              <tr key={cf._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                <td style={{ padding: '16px', fontWeight: 600 }}>🏫 {cf.grade}</td>
-                <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                  {cf.subject || <span style={{ opacity: 0.4 }}>—</span>}
-                </td>
-                <td style={{ padding: '16px', fontWeight: 700, color: '#10b981', fontSize: '1.1rem' }}>
-                  ₹{cf.amount.toLocaleString()}
-                </td>
-                <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                  {cf.description || '—'}
-                </td>
-                <td style={{ padding: '16px', textAlign: 'right' }}>
-                  <button
-                    onClick={() => handleEdit(cf)}
-                    style={{
-                      background: 'rgba(59,130,246,0.1)', color: '#3b82f6',
-                      border: 'none', padding: '6px 12px', borderRadius: '6px',
-                      fontSize: '0.875rem', cursor: 'pointer', marginRight: '8px',
-                    }}
-                  >
-                    ✏️ Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(cf._id, cf.grade)}
-                    style={{
-                      background: 'rgba(239,68,68,0.1)', color: '#ef4444',
-                      border: 'none', padding: '6px 12px', borderRadius: '6px',
-                      fontSize: '0.875rem', cursor: 'pointer',
-                    }}
-                  >
-                    🗑️ Delete
-                  </button>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  {classFees.length === 0 ? 'No class fees configured yet. Click "+ Add Class Fee" to get started.' : 'No results found.'}
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              filtered.map(cf => (
+                <tr key={cf._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>🏫 {cf.grade}</td>
+                  <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                    {cf.subject || <span style={{ opacity: 0.4 }}>—</span>}
+                  </td>
+                  <td style={{ padding: '16px', fontWeight: 700, color: '#10b981', fontSize: '1.1rem' }}>
+                    ₹{cf.amount.toLocaleString()}
+                  </td>
+                  <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                    {cf.description || '—'}
+                  </td>
+                  <td style={{ padding: '16px', textAlign: 'right' }}>
+                    <button
+                      onClick={() => handleEdit(cf)}
+                      style={{
+                        background: 'rgba(59,130,246,0.1)', color: '#3b82f6',
+                        border: 'none', padding: '6px 12px', borderRadius: '6px',
+                        fontSize: '0.875rem', cursor: 'pointer', marginRight: '8px',
+                      }}
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(cf._id, cf.grade)}
+                      style={{
+                        background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+                        border: 'none', padding: '6px 12px', borderRadius: '6px',
+                        fontSize: '0.875rem', cursor: 'pointer',
+                      }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
