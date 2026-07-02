@@ -9,13 +9,16 @@ export default function StudentsPage() {
   const [editMode, setEditMode] = useState<'add' | 'edit' | 'changeClass'>('add');
   const [searchTerm, setSearchTerm] = useState('');
   const [schoolName, setSchoolName] = useState('');
+  const [userRole, setUserRole] = useState<string>('admin');
+  const isTeacher = userRole === 'teacher';
   const [newStudent, setNewStudent] = useState({
     name: '',
     fatherName: '',
     rollNumber: '',
     grade: '',
     section: '',
-    parentContact: ''
+    parentContact: '',
+    note: ''
   });
   const [isMounted, setIsMounted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -36,7 +39,7 @@ export default function StudentsPage() {
       setShowAddForm(false);
       setFormError(null);
     } else {
-      setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '' });
+      setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '', note: '' });
       setEditingStudentId(null);
       setEditMode('add');
       setFormError(null);
@@ -51,7 +54,8 @@ export default function StudentsPage() {
       rollNumber: student.rollNumber,
       grade: student.grade,
       section: student.section,
-      parentContact: student.parentContact || ''
+      parentContact: student.parentContact || '',
+      note: student.note || ''
     });
     setEditingStudentId(student._id);
     setEditMode('edit');
@@ -66,7 +70,8 @@ export default function StudentsPage() {
       rollNumber: student.rollNumber,
       grade: student.grade,
       section: student.section,
-      parentContact: student.parentContact || ''
+      parentContact: student.parentContact || '',
+      note: student.note || ''
     });
     setEditingStudentId(student._id);
     setEditMode('changeClass');
@@ -93,7 +98,10 @@ export default function StudentsPage() {
   useEffect(() => {
     fetch('/api/profile')
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.schoolName) setSchoolName(data.schoolName); })
+      .then(data => {
+        if (data?.schoolName) setSchoolName(data.schoolName);
+        if (data?.role) setUserRole(data.role);
+      })
       .catch(() => {});
   }, []);
 
@@ -116,7 +124,7 @@ export default function StudentsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (res.ok) {
-        setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '' });
+        setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '', note: '' });
         setEditingStudentId(null);
         setEditMode('add');
         setFormError(null);
@@ -136,7 +144,7 @@ export default function StudentsPage() {
     setEditingStudentId(null);
     setEditMode('add');
     setFormError(null);
-    setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '' });
+    setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '', note: '' });
   };
 
   const getFormTitle = () => {
@@ -388,9 +396,13 @@ export default function StudentsPage() {
             {editMode !== 'changeClass' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', gridColumn: 'span 2' }}>
                 <label>Parent Contact</label>
-                <input type="text" placeholder="+1 234 567 890" value={newStudent.parentContact} onChange={e => setNewStudent({ ...newStudent, parentContact: e.target.value })} />
+                <input type="text" placeholder="+91 234 567 890" value={newStudent.parentContact} onChange={e => setNewStudent({ ...newStudent, parentContact: e.target.value })} />
               </div>
-            )}
+            )} {/* Parent Contact - hidden in changeClass mode */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', gridColumn: 'span 2' }}>
+                <label>Note</label>
+                <input type="text" placeholder="Note......." value={newStudent.note} onChange={e => setNewStudent({ ...newStudent, note: e.target.value })} required />
+              </div>
 
             {/* Inline error banner */}
             {formError && (
@@ -437,15 +449,16 @@ export default function StudentsPage() {
               <th style={{ padding: '16px' }}>Name</th>
               <th style={{ padding: '16px' }}>fatherName</th>
               <th style={{ padding: '16px' }}>Roll No</th>
-              <th style={{ padding: '16px' }}>Grade</th>
+              <th style={{ padding: '16px' }}>class</th>
               <th style={{ padding: '16px' }}>Section</th>
               <th style={{ padding: '16px' }}>Contact</th>
+              <th style={{ padding: '16px' }}>Note</th>
             </tr>
           </thead>
           <tbody>
             {filteredStudents.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No students found. Add your first student!</td>
+                <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No students found. Add your first student!</td>
               </tr>
             ) : (
               filteredStudents.map((student) => (
@@ -467,6 +480,7 @@ export default function StudentsPage() {
                   <td style={{ padding: '16px' }}>{student.grade}</td>
                   <td style={{ padding: '16px' }}>{student.section}</td>
                   <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{student.parentContact || 'N/A'}</td>
+                  <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>{student.note || '—'}</td>
                   <td style={{ padding: '16px', textAlign: 'right' }}>
                     <button
                       onClick={() => handleChangeClassClick(student)}
@@ -499,20 +513,22 @@ export default function StudentsPage() {
                     >
                       ✏️ Edit
                     </button>
-                    <button
-                      onClick={() => handleDeleteClick(student._id, student.name)}
-                      style={{
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        color: '#ef4444',
-                        border: 'none',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      🗑️ Delete
-                    </button>
+                    {!isTeacher && (
+                      <button
+                        onClick={() => handleDeleteClick(student._id, student.name)}
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          color: '#ef4444',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '0.875rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🗑️ Delete
+                      </button>
+                    )}
                     <Link href={`/api/students/${student._id}/pdf`} target="_blank" rel="noopener noreferrer">
                       <button style={{
                         background: 'rgba(34, 197, 94, 0.1)',
