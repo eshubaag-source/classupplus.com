@@ -3,7 +3,7 @@ import React from 'react';
 import DashboardClient from './DashboardClient';
 
 export const metadata = {
-  title: 'EduFlow - School Management',
+  title: 'Classupplus- School Management',
   description: 'Premium School Data Management System',
   icons: {
     icon: '/eschool-logo.png',
