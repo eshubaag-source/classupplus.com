@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       const selectedIds = idsParam.split(',').filter(Boolean);
       query._id = { $in: selectedIds };
     }
-    
+
     if (payload.role === 'teacher') {
       const classFilter = await getTeacherClassFilter(payload);
       if (!classFilter) {
@@ -81,9 +81,9 @@ export async function GET(request: Request) {
 
       let y = height - 80;
       const lineHeight = 16;
-      
-      const header = ['Student', 'Father Name', 'Class/Sec', 'Type', 'Utr', 'Month', 'Paid Amt', 'Last Year', 'Status'];
-      const colWidths = [120, 120, 70, 80, 110, 90, 80, 80, 70];
+
+      const header = ['Receipt No', 'Student', 'Father Name', 'Class/Sec', 'Type', 'Utr', 'Month', 'Paid Amt', 'Last Year', 'Status'];
+      const colWidths = [90, 110, 110, 70, 80, 100, 90, 80, 80, 70];
       let x = 30;
       header.forEach((text, i) => {
         page.drawText(text, { x, y, size: 12, font: fontBold, color: rgb(0, 0, 0) });
@@ -95,7 +95,9 @@ export async function GET(request: Request) {
         x = 30;
         const student = fee.studentId || {};
         const feeType = fee.category === 'Fees' ? 'Class fees' : 'school Fee';
+        const receiptNo = fee._id ? `#${fee._id.toString().substring(18).toUpperCase()}` : '-';
         const row = [
+          receiptNo,
           (student.name || '-').substring(0, 18),
           (student.fatherName || fee.fatherName || '-').substring(0, 18),
           `${student.grade || '-'} ${student.section || ''}`.substring(0, 10),
@@ -106,12 +108,12 @@ export async function GET(request: Request) {
           `Rs. ${fee.lastyear || 0}`,
           (fee.status || 'Pending')
         ];
-        
+
         row.forEach((cell, i) => {
           page.drawText(cell, { x, y, size: 11, font: fontRegular, color: rgb(0, 0, 0) });
           x += colWidths[i];
         });
-        
+
         y -= lineHeight;
         if (y < 40) {
           page = pdfDoc.addPage([950, 800]);
@@ -185,13 +187,13 @@ export async function GET(request: Request) {
       const receiptNo = `#${fee._id.toString().substring(18).toUpperCase()}`;
 
       const indigo = rgb(99 / 255, 102 / 255, 241 / 255);
-      const white  = rgb(1, 1, 1);
-      const gray1  = rgb(75 / 255, 85 / 255, 99 / 255);
-      const gray2  = rgb(107 / 255, 114 / 255, 128 / 255);
-      const gray3  = rgb(229 / 255, 231 / 255, 235 / 255);
-      const gray4  = rgb(249 / 255, 250 / 255, 251 / 255);
-      const dark   = rgb(17 / 255, 24 / 255, 39 / 255);
-      const red    = rgb(220 / 255, 38 / 255, 38 / 255);
+      const white = rgb(1, 1, 1);
+      const gray1 = rgb(75 / 255, 85 / 255, 99 / 255);
+      const gray2 = rgb(107 / 255, 114 / 255, 128 / 255);
+      const gray3 = rgb(229 / 255, 231 / 255, 235 / 255);
+      const gray4 = rgb(249 / 255, 250 / 255, 251 / 255);
+      const dark = rgb(17 / 255, 24 / 255, 39 / 255);
+      const red = rgb(220 / 255, 38 / 255, 38 / 255);
 
       const s = Math.min(w / 450, h / 600);
       const sc = (v: number) => v * s;
@@ -216,7 +218,7 @@ export async function GET(request: Request) {
 
       const hdrTop = oy + h - hdrH;
       centered(schoolName.toUpperCase(), hdrTop + sc(55), sc(14), fontBold, white);
-      centered('FEES PAYMENT RECEIPT',   hdrTop + sc(36), sc(9),  fontBold, rgb(0.85, 0.88, 1));
+      centered('FEES PAYMENT RECEIPT', hdrTop + sc(36), sc(9), fontBold, rgb(0.85, 0.88, 1));
 
       // Receipt No & Date
       const metaY = oy + h - hdrH - sc(22);
@@ -239,15 +241,15 @@ export async function GET(request: Request) {
 
       const sf = (label: string, val: string, fx: number, fy: number) => {
         page.drawText(label, { x: ox + fx, y: fy, size: sc(8), font: fontBold, color: gray2 });
-        page.drawText(val,   { x: ox + fx + sc(72), y: fy, size: sc(8), font: fontRegular, color: dark });
+        page.drawText(val, { x: ox + fx + sc(72), y: fy, size: sc(8), font: fontRegular, color: dark });
       };
 
       const row1Y = cardY + cardH - sc(18);
       const row2Y = row1Y - sc(18);
       const row3Y = row2Y - sc(18);
-      sf('Student Name:', student.name || '—',          sc(28), row1Y);
-      sf("Father's Name:", student.fatherName || '—',   sc(28), row2Y);
-      sf('Roll Number:',  student.rollNumber || '—',    sc(28), row3Y);
+      sf('Student Name:', student.name || '—', sc(28), row1Y);
+      sf("Father's Name:", student.fatherName || '—', sc(28), row2Y);
+      sf('Roll Number:', student.rollNumber || '—', sc(28), row3Y);
       sf('Class/Grade:', `${student.grade || '—'} (${student.section || '—'})`, sc(160), row1Y);
       sf('UTR:', fee.utr || '—', sc(160), row2Y);
 
@@ -262,7 +264,7 @@ export async function GET(request: Request) {
       // Table headers
       const thY = ppY - sc(18);
       const cols = [sc(25), sc(118), sc(185), sc(248), sc(310)];
-      const headers = ['Description', 'Month', 'Class Fee','Utr', 'Paid Amt', 'Balance'];
+      const headers = ['Description', 'Month', 'Class Fee', 'Utr', 'Paid Amt', 'Balance'];
       headers.forEach((h2, i) => page.drawText(h2, { x: ox + cols[i], y: thY, size: sc(7.5), font: fontBold, color: gray1 }));
 
       page.drawLine({ start: { x: ox + sc(15), y: thY - sc(7) }, end: { x: ox + w - sc(15), y: thY - sc(7) }, thickness: 0.6, color: rgb(156 / 255, 163 / 255, 175 / 255) });
@@ -270,14 +272,14 @@ export async function GET(request: Request) {
       const rowDataY = thY - sc(18);
       let desc = 'school Fees';
       let expectedAmount = classAmount > 0 ? classAmount : 0;
-      
+
       if (fee.category === 'cless fees') {
         desc = 'school Fees';
         expectedAmount = fee.totalFees || 0;
       }
 
-      const currentBalance = fee.category === 'school Fees' 
-        ? Math.max(0, expectedAmount - fee.amount) 
+      const currentBalance = fee.category === 'school Fees'
+        ? Math.max(0, expectedAmount - fee.amount)
         : balance;
 
       const vals = [
