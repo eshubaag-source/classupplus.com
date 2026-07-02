@@ -11,6 +11,7 @@ export default function FeesPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingFeeId, setEditingFeeId] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState('');
+  const [userRole, setUserRole] = useState<string>('admin');
 
   const [newFee, setNewFee] = useState({
     studentId: '',
@@ -32,6 +33,9 @@ export default function FeesPage() {
   const [notifyResult, setNotifyResult] = useState<{ success?: boolean; message?: string } | null>(null);
   const [showDailyModal, setShowDailyModal] = useState(false);
 
+  // Derived: teacher users can only view records, not add/edit/reprint
+  const isTeacher = userRole === 'teacher';
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -40,10 +44,13 @@ export default function FeesPage() {
       month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
     }));
     fetchData();
-    // Fetch school name from profile
+    // Fetch school name and role from profile
     fetch('/api/profile')
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.schoolName) setSchoolName(data.schoolName); })
+      .then(data => {
+        if (data?.schoolName) setSchoolName(data.schoolName);
+        if (data?.role) setUserRole(data.role);
+      })
       .catch(() => { });
   }, []);
 
@@ -286,7 +293,7 @@ export default function FeesPage() {
           )}
         </div>
         <div className="page-header-actions">
-          {selectedIds.length > 0 && (
+          {!isTeacher && selectedIds.length > 0 && (
             <button
               onClick={() => setSelectedIds([])}
               style={{
@@ -305,20 +312,23 @@ export default function FeesPage() {
             </button>
           )}
 
-    
+          {/* Download: all users (including teachers) can download the full list */}
           <a
-            href={selectedIds.length > 0 ? `/api/fees/pdf?ids=${selectedIds.join(',')}` : `/api/fees/pdf`}
+            href="/api/fees/pdf"
             target="_blank"
             rel="noopener noreferrer"
             style={{ textDecoration: 'none' }}
           >
             <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-              {selectedIds.length > 0 ? `Download ${selectedIds.length} Receipts` : 'Download Fees List'}
+              ⬇️ Download Fees List
             </button>
           </a>
-          <button className="btn-primary" onClick={handleOpenAddForm}>
-            {showAddForm && !editingFeeId ? 'Cancel' : showAddForm && editingFeeId ? 'Cancel Edit' : '+ Record Payment'}
-          </button>
+          {/* Add Record: hidden for teachers */}
+          {!isTeacher && (
+            <button className="btn-primary" onClick={handleOpenAddForm}>
+              {showAddForm && !editingFeeId ? 'Cancel' : showAddForm && editingFeeId ? 'Cancel Edit' : '+ Record Payment'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -420,7 +430,7 @@ export default function FeesPage() {
         </div>
       )}
 
-      {showAddForm && (
+      {showAddForm && !isTeacher && (
         <div className="glass card" style={{ marginBottom: '2rem' }}>
           {/* School Name Banner */}
           {schoolName && (
@@ -628,7 +638,7 @@ export default function FeesPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
             <tr>
-              <th style={{ padding: '16px', width: '60px', textAlign: 'center' }}>Select</th>
+              {!isTeacher && <th style={{ padding: '16px', width: '60px', textAlign: 'center' }}>Select</th>}
               <th style={{ padding: '16px' }}>Student</th>
               <th style={{ padding: '16px' }}>fatherName</th>
               <th style={{ padding: '16px' }}>Type</th>
@@ -640,7 +650,7 @@ export default function FeesPage() {
               <th style={{ padding: '16px' }}>Utr</th>
               <th style={{ padding: '16px' }}>Last Year Fees</th>
               <th style={{ padding: '16px' }}>Date</th>
-              <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>
+              {!isTeacher && <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -649,15 +659,17 @@ export default function FeesPage() {
             ) : (
               filteredFees.map((fee) => (
                 <tr key={fee._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                  <td style={{ padding: '16px', textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(fee._id)}
-                      disabled={!selectedIds.includes(fee._id) && selectedIds.length >= 4}
-                      onChange={(e) => handleCheckboxChange(fee._id, e.target.checked)}
-                      style={{ cursor: 'pointer', width: '18px', height: '18px' }}
-                    />
-                  </td>
+                  {!isTeacher && (
+                    <td style={{ padding: '16px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(fee._id)}
+                        disabled={!selectedIds.includes(fee._id) && selectedIds.length >= 4}
+                        onChange={(e) => handleCheckboxChange(fee._id, e.target.checked)}
+                        style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                      />
+                    </td>
+                  )}
                   <td style={{ padding: '16px' }}>
                     <div style={{ fontWeight: 600 }}>{
                       typeof fee.studentId === 'string'
@@ -763,56 +775,58 @@ export default function FeesPage() {
                   <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                     {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : fee.createdAt ? new Date(fee.createdAt).toLocaleDateString() : '—'}
                   </td>
-                  <td style={{ padding: '16px', textAlign: 'right' }}>
-                    <a
-                      href={`/api/fees/${fee._id}/pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ textDecoration: 'none' }}
-                    >
+                  {!isTeacher && (
+                    <td style={{ padding: '16px', textAlign: 'right' }}>
+                      <a
+                        href={`/api/fees/${fee._id}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <button
+                          style={{
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            color: '#10b981',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            marginRight: '8px',
+                          }}
+                        >
+                          🖨️ Receipt
+                        </button>
+                      </a>
                       <button
+                        onClick={() => {
+                          setEditingFeeId(fee._id);
+                          setNewFee({
+                            studentId: typeof fee.studentId === 'string' ? fee.studentId : fee.studentId?._id || '',
+                            amount: fee.amount.toString(),
+                            month: fee.month,
+                            utr: fee.utr,
+                            lastyear: fee.lastyear || fee.lastyeae || '',
+                            status: fee.status,
+                            description: fee.description || '',
+                            paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                          });
+                          setShowAddForm(true);
+                        }}
                         style={{
-                          background: 'rgba(16, 185, 129, 0.1)',
-                          color: '#10b981',
+                          background: 'rgba(59, 130, 246, 0.1)',
+                          color: '#3b82f6',
                           border: 'none',
                           padding: '6px 12px',
                           borderRadius: '6px',
                           fontSize: '0.875rem',
                           cursor: 'pointer',
-                          marginRight: '8px',
                         }}
                       >
-                        🖨️ Receipt
+                        ✏️ Edit
                       </button>
-                    </a>
-                    <button
-                      onClick={() => {
-                        setEditingFeeId(fee._id);
-                        setNewFee({
-                          studentId: typeof fee.studentId === 'string' ? fee.studentId : fee.studentId?._id || '',
-                          amount: fee.amount.toString(),
-                          month: fee.month,
-                          utr: fee.utr,
-                          lastyear: fee.lastyear || fee.lastyeae || '',
-                          status: fee.status,
-                          description: fee.description || '',
-                          paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-                        });
-                        setShowAddForm(true);
-                      }}
-                      style={{
-                        background: 'rgba(59, 130, 246, 0.1)',
-                        color: '#3b82f6',
-                        border: 'none',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      ✏️ Edit
-                    </button>
-                  </td>
+                    </td>
+                  )}
                 </tr>
               ))
             )}
