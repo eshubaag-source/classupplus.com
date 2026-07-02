@@ -42,7 +42,7 @@ export async function GET(
 
     // Get school name from admin details
     const admin = await Admin.findById(adminId).lean().exec();
-    const schoolName = admin?.schoolName || 'E\'School';
+    const schoolName = admin?.schoolName || 'Classupplus';
 
     // Calculate balance
     const totalFees = fee.totalFees || 0;
@@ -194,33 +194,50 @@ export async function GET(
       color: rgb(156 / 255, 163 / 255, 175 / 255),
     });
 
+    // Last year fees calculation
+    const lastYearVal = (fee as any).lastyear;
+    const hasLastYear = lastYearVal != null && String(lastYearVal).trim() !== '' && String(lastYearVal).trim() !== '—';
+    const lastYearAmt = hasLastYear ? (parseFloat(String(lastYearVal)) || 0) : 0;
+    const totalPaid = fee.amount 
+
     // Table rows
-    const rowY = 240;
+    let rowY = 240;
     page.drawText('Vehicle Transport', { x: 40, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
     page.drawText(fee.month, { x: 170, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
     page.drawText(totalFees > 0 ? `Rs. ${totalFees}` : '—', { x: 250, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
     page.drawText(`Rs. ${fee.amount}`, { x: 315, y: rowY, size: 9.5, font: fontBold, color: rgb(17 / 255, 24 / 255, 39 / 255) });
     page.drawText(`Rs. ${balance}`, { x: 380, y: rowY, size: 9.5, font: fontBold, color: rgb(220 / 255, 38 / 255, 38 / 255) });
 
+    if (hasLastYear) {
+      rowY -= 20;
+      page.drawText('Last Year Fees', { x: 40, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+      page.drawText('—', { x: 170, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+      page.drawText('Pending', { x: 250, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+      page.drawText('—', { x: 315, y: rowY, size: 9.5, font: fontBold, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+      page.drawText(`Rs. ${lastYearVal}`, { x: 380, y: rowY, size: 9.5, font: fontBold, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+    }
+
+    const tableBottomY = rowY - 15;
     // Table bottom border
     page.drawLine({
-      start: { x: 30, y: 225 },
-      end: { x: width - 30, y: 225 },
+      start: { x: 30, y: tableBottomY },
+      end: { x: width - 30, y: tableBottomY },
       thickness: 1,
       color: rgb(229 / 255, 231 / 255, 235 / 255),
     });
 
+    const totalRowY = tableBottomY - 25;
     // Draw total row
     page.drawText('Total Paid Amount:', {
       x: width - 200,
-      y: 200,
+      y: totalRowY,
       size: 10.5,
       font: fontBold,
       color: rgb(75 / 255, 85 / 255, 99 / 255),
     });
-    page.drawText(`Rs. ${fee.amount}`, {
+    page.drawText(`Rs. ${totalPaid}`, {
       x: width - 75,
-      y: 200,
+      y: totalRowY,
       size: 11,
       font: fontBold,
       color: rgb(99 / 255, 102 / 255, 241 / 255),
