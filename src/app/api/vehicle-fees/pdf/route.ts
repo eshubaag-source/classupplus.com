@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       .exec();
 
     const admin = await Admin.findById(adminId).select('schoolName').lean().exec();
-    const schoolName = admin?.schoolName || "E'School";
+    const schoolName = admin?.schoolName || "Classupplis";
 
     // Filter out records where student population failed/missing
     const validFees = fees.filter((f: any) => f.studentId);
@@ -69,8 +69,8 @@ export async function GET(request: Request) {
       let y = height - 80;
       const lineHeight = 16;
       
-      const header = ['Student', 'Father Name', 'Class/Sec', 'Bus No', 'City', 'Utr', 'Month', 'Paid Amt', 'Last Year', 'Status'];
-      const colWidths = [110, 110, 70, 70, 80, 110, 90, 80, 80, 70];
+      const header = ['Receipt No', 'Student', 'Father Name', 'Class/Sec', 'Bus No', 'City', 'Utr', 'Month', 'Paid Amt', 'Last Year', 'Status'];
+      const colWidths = [90, 100, 100, 70, 70, 80, 100, 90, 80, 80, 70];
       let x = 30;
       header.forEach((text, i) => {
         page.drawText(text, { x, y, size: 12, font: fontBold, color: rgb(0, 0, 0) });
@@ -81,7 +81,9 @@ export async function GET(request: Request) {
       validFees.forEach((fee: any) => {
         x = 30;
         const student = fee.studentId || {};
+        const receiptNo = fee._id ? `#${fee._id.toString().substring(18).toUpperCase()}` : '-';
         const row = [
+          receiptNo,
           (student.name || '-').substring(0, 18),
           (student.fatherName || fee.fatherName || '-').substring(0, 18),
           `${student.grade || '-'} ${student.section || ''}`.substring(0, 10),
