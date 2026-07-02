@@ -291,6 +291,7 @@ export default function TeachersPage() {
                     'Mathematics',
                     'Entrepreneurship',
                     '── Arts / Humanities Stream ──',
+                    'Geography',
                     'History',
                     'Political Science',
                     'Geography',
