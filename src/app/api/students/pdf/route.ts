@@ -11,6 +11,7 @@ interface StudentRecord {
   grade: string;
   section: string;
   parentContact: string;
+  note: string;
 }
 
 // Real function to fetch all students from DB
@@ -30,7 +31,7 @@ async function getAllStudents() {
 
   // Select only required fields
   const students = await Student.find(query)
-    .select('name fatherName rollNumber grade section parentContact')
+    .select('name fatherName rollNumber grade section parentContact note')
     .lean()
     .exec();
   // Normalize to the shape expected by PDF generator
@@ -42,6 +43,7 @@ async function getAllStudents() {
     grade: s.grade,
     section: s.section,
     parentContact: s.parentContact || '',
+    note: s.note || '',
   }));
 }
 
@@ -67,8 +69,8 @@ export async function GET() {
   const lineHeight = 14;
   let y = startY;
 
-  const header = ['Name', 'Father', 'Roll', 'Grade', 'Section', 'Contact'];
-  const colWidths = [100, 100, 60, 50, 50, 100];
+  const header = ['Name', 'Father', 'Roll', 'Class', 'Section', 'Contact', 'Note'];
+  const colWidths =  [100,    100,     50,    60,      60,         100,       90];
   let x = 30;
   header.forEach((text, i) => {
     page.drawText(text, { x, y, size: 12, font: fontBold, color: rgb(0, 0, 0) });
@@ -78,9 +80,9 @@ export async function GET() {
   y -= lineHeight;
   students.forEach((s: StudentRecord) => {
     x = 30;
-    const row = [s.name, s.fatherName, s.rollNumber, s.grade, s.section, s.parentContact];
+    const row = [s.name, s.fatherName, s.rollNumber, s.grade, s.section, s.parentContact, s.note];
     row.forEach((cell, i) => {
-      page.drawText(cell, { x, y, size: 11, font: fontRegular, color: rgb(0, 0, 0) });
+      page.drawText(String(cell ?? ''), { x, y, size: 11, font: fontRegular, color: rgb(0, 0, 0) });
       x += colWidths[i];
     });
     y -= lineHeight;
