@@ -158,7 +158,8 @@ export default function AttendancePage() {
               <th style={{ padding: '16px' }}>Student Name</th>
               <th style={{ padding: '16px' }}>Father Name</th>
               <th style={{ padding: '16px' }}>Roll No</th>
-              <th style={{ padding: '16px' }}>Grade</th>
+              <th style={{ padding: '16px' }}>Class</th>
+              <th style={{ padding: '16px' }}>Note</th>
               <th style={{ padding: '16px', textAlign: 'center' }}>Status</th>
             </tr>
           </thead>
@@ -177,6 +178,7 @@ export default function AttendancePage() {
                   <td style={{ padding: '16px',  fontWeight: 600}}>{student.fatherName}</td>
                   <td style={{ padding: '16px' }}>{student.rollNumber}</td>
                   <td style={{ padding: '16px' }}>{student.grade}</td>
+                  <td style={{ padding: '16px' }}>{student.note}</td>
                   <td style={{ padding: '16px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                       <button 
