@@ -228,6 +228,7 @@ export default function ClassFeesPage() {
                     <option>Entrepreneurship</option>
                   </optgroup>
                   <optgroup label="── Arts / Humanities ──">
+                    <option>Arts</option>
                     <option>History</option>
                     <option>Political Science</option>
                     <option>Geography</option>
