@@ -8,8 +8,8 @@ const StudentSchema = new mongoose.Schema({
   grade: { type: String, required: true },
   section: { type: String, required: true },
   parentContact: { type: String },
+  note: { type: String, required: false },
   createdAt: { type: Date, default: Date.now },
-  note: {type: String, require: true},
 });
 
 // Roll number unique per class (grade + section), NOT school-wide.
