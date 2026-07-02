@@ -30,6 +30,7 @@ export default function FeesPage() {
   const [notifyType, setNotifyType] = useState<'SMS' | 'WhatsApp' | 'Both'>('Both');
   const [notifySending, setNotifySending] = useState(false);
   const [notifyResult, setNotifyResult] = useState<{ success?: boolean; message?: string } | null>(null);
+  const [showDailyModal, setShowDailyModal] = useState(false);
 
 
   useEffect(() => {
@@ -129,6 +130,16 @@ export default function FeesPage() {
       (f.month || '').toLowerCase().includes(search) ||
       (f.feeType || '').toLowerCase().includes(search);
   });
+
+  // ── Daily totals (fees recorded/paid today) ──────────────────────────────
+  const todayStr = new Date().toLocaleDateString();
+  const todayFees = allFees.filter(f => {
+    const d = f.paidDate ? new Date(f.paidDate) : f.createdAt ? new Date(f.createdAt) : null;
+    return d && d.toLocaleDateString() === todayStr;
+  });
+  const todaySchoolTotal  = todayFees.filter(f => f.feeType === 'School Fee').reduce((s, f) => s + Number(f.amount || 0), 0);
+  const todayVehicleTotal = todayFees.filter(f => f.feeType === 'Vehicle Fee').reduce((s, f) => s + Number(f.amount || 0), 0);
+  const todayGrandTotal   = todaySchoolTotal + todayVehicleTotal;
 
   const handleOpenAddForm = () => {
     setNewFee({
@@ -293,6 +304,8 @@ export default function FeesPage() {
               Clear Selection ({selectedIds.length})
             </button>
           )}
+
+    
           <a
             href={selectedIds.length > 0 ? `/api/fees/pdf?ids=${selectedIds.join(',')}` : `/api/fees/pdf`}
             target="_blank"
@@ -308,6 +321,104 @@ export default function FeesPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Daily Summary Stat Cards ──────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.09), rgba(139,92,246,0.07))', border: '1.5px solid rgba(99,102,241,0.2)', borderRadius: '16px', padding: '18px 22px' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>🏫 Today School Fees</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#6366f1', lineHeight: 1.1 }}>₹{todaySchoolTotal.toLocaleString()}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{todayFees.filter((f: any) => f.feeType === 'School Fee').length} records</div>
+        </div>
+        <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.07))', border: '1.5px solid rgba(16,185,129,0.22)', borderRadius: '16px', padding: '18px 22px' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>💰 Today Grand Total</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>₹{todayGrandTotal.toLocaleString()}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{todayFees.length} total records today</div>
+        </div>
+        <div style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.07), rgba(220,38,38,0.06))', border: '1.5px solid rgba(239,68,68,0.17)', borderRadius: '16px', padding: '18px 22px' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>📋 All-Time Collected</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#dc2626', lineHeight: 1.1 }}>₹{allFees.reduce((s: number, f: any) => s + Number(f.amount || 0), 0).toLocaleString()}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{allFees.length} total records</div>
+        </div>
+      </div>
+
+      {/* ── Daily Total Modal ─────────────────────────────────────────── */}
+      {showDailyModal && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) setShowDailyModal(false); }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        >
+          <div style={{ background: 'var(--glass-bg, #fff)', backdropFilter: 'blur(24px)', border: '1px solid var(--glass-border, #e5e7eb)', borderRadius: '24px', padding: '32px', maxWidth: '580px', width: '100%', boxShadow: '0 32px 80px rgba(0,0,0,0.22)', maxHeight: '90vh', overflowY: 'auto' }}>
+
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>📊 Daily Fee Summary</h2>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+              <button onClick={() => setShowDailyModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-muted)', lineHeight: 1, padding: '4px' }}>✕</button>
+            </div>
+
+            {/* Summary Totals */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 18px', borderRadius: '12px', background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.15)' }}>
+                <span style={{ fontWeight: 600, color: '#6366f1' }}>🏫 School Fees Collected</span>
+                <span style={{ fontWeight: 800, fontSize: '1.15rem', color: '#6366f1' }}>₹{todaySchoolTotal.toLocaleString()}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 18px', borderRadius: '12px', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.18)' }}>
+                <span style={{ fontWeight: 600, color: '#d97706' }}>🚍 Transport Fees Collected</span>
+                <span style={{ fontWeight: 800, fontSize: '1.15rem', color: '#d97706' }}>₹{todayVehicleTotal.toLocaleString()}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 18px', borderRadius: '12px', background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.08))', border: '1.5px solid rgba(16,185,129,0.28)' }}>
+                <span style={{ fontWeight: 700, color: '#059669', fontSize: '1.05rem' }}>💰 Grand Total Today</span>
+                <span style={{ fontWeight: 900, fontSize: '1.45rem', color: '#059669' }}>₹{todayGrandTotal.toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* Today's Records Table */}
+            <div style={{ marginBottom: '22px' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+                Today's Records ({todayFees.length})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '280px', overflowY: 'auto' }}>
+                {todayFees.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)', fontSize: '0.9rem', background: 'rgba(0,0,0,0.02)', borderRadius: '12px', border: '1px dashed var(--glass-border, #e5e7eb)' }}>
+                    No fees recorded today yet.
+                  </div>
+                ) : todayFees.map((f: any) => {
+                  const sName = typeof f.studentId === 'string'
+                    ? (students.find((s: any) => s._id === f.studentId)?.name ?? 'Unknown')
+                    : (f.studentId?.name ?? 'Unknown');
+                  const isVehicle = f.feeType === 'Vehicle Fee';
+                  return (
+                    <div key={f._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 15px', borderRadius: '10px', background: isVehicle ? 'rgba(245,158,11,0.05)' : 'rgba(99,102,241,0.05)', border: `1px solid ${isVehicle ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.12)'}` }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{sName}</div>
+                        <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          {isVehicle ? '🚍' : '🏫'} {f.feeType} &nbsp;•&nbsp; {f.month}
+                          {f.utr ? <span> &nbsp;•&nbsp; UTR: {f.utr}</span> : null}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                        <span style={{ fontWeight: 800, fontSize: '1rem', color: isVehicle ? '#d97706' : '#6366f1' }}>₹{Number(f.amount || 0).toLocaleString()}</span>
+                        <span style={{ fontSize: '0.7rem', padding: '2px 9px', borderRadius: '999px', fontWeight: 700, background: f.status === 'Paid' ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.14)', color: f.status === 'Paid' ? '#059669' : '#d97706', whiteSpace: 'nowrap' }}>{f.status}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Download All Button */}
+            <a href="/api/fees/pdf" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block' }}>
+              <button style={{ width: '100%', padding: '13px', borderRadius: '12px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', fontWeight: 700, fontSize: '0.95rem', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(99,102,241,0.28)' }}>
+                ⬇️ Download All Fees Data (PDF)
+              </button>
+            </a>
+          </div>
+        </div>
+      )}
 
       {showAddForm && (
         <div className="glass card" style={{ marginBottom: '2rem' }}>
