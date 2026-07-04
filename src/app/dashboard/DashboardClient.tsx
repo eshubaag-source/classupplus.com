@@ -70,7 +70,10 @@ export default function DashboardClient({ children }: { children: React.ReactNod
             <NavLink href="/dashboard" label="Overview" icon="📊" onNav={() => setSidebarOpen(false)} />
 
             {role === 'admin' && (
-              <NavLink href="/dashboard/teachers" label="Teachers" icon="👨‍🏫" onNav={() => setSidebarOpen(false)} />
+              <>
+                <NavLink href="/dashboard/teachers" label="Teachers" icon="👨‍🏫" onNav={() => setSidebarOpen(false)} />
+                <NavLink href="/dashboard/salary" label="Salary" icon="💸" onNav={() => setSidebarOpen(false)} />
+              </>
             )}
 
             <NavLink href="/dashboard/students" label="Students" icon="👥" onNav={() => setSidebarOpen(false)} />
