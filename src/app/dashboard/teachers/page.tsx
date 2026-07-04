@@ -17,6 +17,8 @@ export default function TeachersPage() {
     aadhaarNumber: '',
     qualification: '',
     subject: '',
+    post: '',
+    monthlySalary: '',
     password: ''
   });
   const [userRole, setUserRole] = useState('admin');
@@ -52,7 +54,7 @@ export default function TeachersPage() {
     if (showAddForm && !editingTeacherId) {
       setShowAddForm(false);
     } else {
-      setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', password: '' });
+      setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', post: '', monthlySalary: '', password: '' });
       setEditingTeacherId(null);
       setShowAddForm(true);
     }
@@ -69,6 +71,8 @@ export default function TeachersPage() {
       aadhaarNumber: teacher.aadhaarNumber || '',
       qualification: teacher.qualification || '',
       subject: teacher.subject || '',
+      post: teacher.post || '',
+      monthlySalary: teacher.monthlySalary != null ? String(teacher.monthlySalary) : '',
       password: ''
     });
     setEditingTeacherId(teacher._id);
@@ -106,7 +110,7 @@ export default function TeachersPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (res.ok) {
-        setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', password: '' });
+        setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', post: '', monthlySalary: '', password: '' });
         setEditingTeacherId(null);
         setShowAddForm(false);
         fetchTeachers();
@@ -122,7 +126,7 @@ export default function TeachersPage() {
   const handleCancelForm = () => {
     setShowAddForm(false);
     setEditingTeacherId(null);
-    setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', password: '' });
+    setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', post: '', monthlySalary: '', password: '' });
   };
 
   if (!isMounted) return null;
@@ -130,6 +134,9 @@ export default function TeachersPage() {
     t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const totalMonthlySalary = teachers.reduce((sum, t) => sum + (Number(t.monthlySalary) || 0), 0);
+  const teachersWithSalary = teachers.filter(t => Number(t.monthlySalary) > 0).length;
 
   return (
     <div>
@@ -169,6 +176,89 @@ export default function TeachersPage() {
           )}
         </div>
       </div>
+
+      {userRole === 'admin' && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '1rem',
+          marginBottom: '1.5rem',
+        }}>
+          {/* Total Monthly Salary */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(234,179,8,0.08))',
+            border: '1px solid rgba(245,158,11,0.3)',
+            borderRadius: '16px',
+            padding: '20px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+          }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.4rem',
+              flexShrink: 0,
+              boxShadow: '0 4px 12px rgba(245,158,11,0.35)',
+            }}>
+              💰
+            </div>
+            <div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Total Monthly Salary
+              </p>
+              <p style={{ fontSize: '1.6rem', fontWeight: 800, margin: '2px 0 0', color: '#f59e0b', lineHeight: 1.1 }}>
+                ₹{totalMonthlySalary.toLocaleString('en-IN')}
+              </p>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                {teachersWithSalary} of {teachers.length} teacher{teachers.length !== 1 ? 's' : ''} assigned
+              </p>
+            </div>
+          </div>
+
+          {/* Total Teachers */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))',
+            border: '1px solid rgba(99,102,241,0.3)',
+            borderRadius: '16px',
+            padding: '20px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+          }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.4rem',
+              flexShrink: 0,
+              boxShadow: '0 4px 12px rgba(99,102,241,0.35)',
+            }}>
+              👨‍🏫
+            </div>
+            <div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Total Teachers
+              </p>
+              <p style={{ fontSize: '1.6rem', fontWeight: 800, margin: '2px 0 0', color: 'var(--primary)', lineHeight: 1.1 }}>
+                {teachers.length}
+              </p>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                Avg. ₹{teachers.length > 0 ? Math.round(totalMonthlySalary / teachers.length).toLocaleString('en-IN') : 0} / teacher
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <input
@@ -365,6 +455,49 @@ export default function TeachersPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label>Post / Designation</label>
+              <select
+                value={newTeacher.post}
+                onChange={e => setNewTeacher({ ...newTeacher, post: e.target.value })}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: '1.5px solid var(--glass-border)',
+                  background: 'var(--glass-bg)',
+                  color: 'var(--text)',
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">— Select Post —</option>
+                <option value="Head Teacher">Head Teacher</option>
+                <option value="Senior Teacher">Senior Teacher</option>
+                <option value="PGT">PGT (Post Graduate Teacher)</option>
+                <option value="TGT">TGT (Trained Graduate Teacher)</option>
+                <option value="PRT">PRT (Primary Teacher)</option>
+                <option value="Assistant Teacher">Assistant Teacher</option>
+                <option value="Guest Teacher">Guest Teacher</option>
+                <option value="Librarian">Librarian</option>
+                <option value="Lab Assistant">Lab Assistant</option>
+                <option value="Physical Education Teacher">Physical Education Teacher</option>
+                <option value="Vice Principal">Vice Principal</option>
+                <option value="Principal">Principal</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label>Monthly Salary (₹)</label>
+              <input
+                type="number"
+                placeholder="e.g. 35000"
+                min="0"
+                value={newTeacher.monthlySalary}
+                onChange={e => setNewTeacher({ ...newTeacher, monthlySalary: e.target.value })}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label>Password {editingTeacherId && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>(Leave blank to keep unchanged)</span>}</label>
               <input type="password" placeholder={editingTeacherId ? "Enter new password" : "Set teacher password"} value={newTeacher.password || ''} onChange={e => setNewTeacher({ ...newTeacher, password: e.target.value })} required={!editingTeacherId} />
             </div>
@@ -387,6 +520,8 @@ export default function TeachersPage() {
               <th style={{ padding: '16px' }}>Phone</th>
               <th style={{ padding: '16px' }}>Class/Sec</th>
               <th style={{ padding: '16px' }}>Subject</th>
+              <th style={{ padding: '16px' }}>Post</th>
+              <th style={{ padding: '16px' }}>Salary (₹)</th>
               <th style={{ padding: '16px' }}>Qual.</th>
               <th style={{ padding: '16px' }}>Aadhaar</th>
               {userRole === 'admin' && (
@@ -397,7 +532,7 @@ export default function TeachersPage() {
           <tbody>
             {filteredTeachers.length === 0 ? (
               <tr>
-                <td colSpan={userRole === 'admin' ? 7 : 6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No teachers found. Add your first teacher!</td>
+                <td colSpan={userRole === 'admin' ? 9 : 8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No teachers found. Add your first teacher!</td>
               </tr>
             ) : (
               filteredTeachers.map((teacher) => (
@@ -417,6 +552,31 @@ export default function TeachersPage() {
                     </span>
                   </td>
                   <td style={{ padding: '16px' }}>{teacher.subject || '—'}</td>
+                  <td style={{ padding: '16px' }}>
+                    {teacher.post ? (
+                      <span style={{
+                        background: 'rgba(16,185,129,0.1)',
+                        color: '#10b981',
+                        padding: '3px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                      }}>{teacher.post}</span>
+                    ) : '—'}
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                    {teacher.monthlySalary ? (
+                      <span style={{
+                        background: 'rgba(245,158,11,0.1)',
+                        color: '#f59e0b',
+                        padding: '3px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                      }}>₹{Number(teacher.monthlySalary).toLocaleString('en-IN')}</span>
+                    ) : '—'}
+                  </td>
                   <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{teacher.qualification || '—'}</td>
                   <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{teacher.aadhaarNumber || '—'}</td>
                   {userRole === 'admin' && (
