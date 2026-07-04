@@ -27,7 +27,7 @@ export default function DashboardClient({ children }: { children: React.ReactNod
       } else {
         alert('Logout failed');
       }
-    } catch (err) {}
+    } catch (err) { }
   };
 
   return (
@@ -67,25 +67,25 @@ export default function DashboardClient({ children }: { children: React.ReactNod
           </div>
 
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-            <NavLink href="/dashboard"             label="Overview"     icon="📊" onNav={() => setSidebarOpen(false)} />
+            <NavLink href="/dashboard" label="Overview" icon="📊" onNav={() => setSidebarOpen(false)} />
 
             {role === 'admin' && (
-              <NavLink href="/dashboard/teachers"  label="Teachers"     icon="👨‍🏫" onNav={() => setSidebarOpen(false)} />
+              <NavLink href="/dashboard/teachers" label="Teachers" icon="👨‍🏫" onNav={() => setSidebarOpen(false)} />
             )}
 
-            <NavLink href="/dashboard/students"    label="Students"     icon="👥" onNav={() => setSidebarOpen(false)} />
-            <NavLink href="/dashboard/attendance"  label="Attendance"   icon="📅" onNav={() => setSidebarOpen(false)} />
+            <NavLink href="/dashboard/students" label="Students" icon="👥" onNav={() => setSidebarOpen(false)} />
+            <NavLink href="/dashboard/attendance" label="Attendance" icon="📅" onNav={() => setSidebarOpen(false)} />
 
             {role === 'admin' && (
-              <NavLink href="/dashboard/class-fees" label="Class Fees"  icon="🏫" onNav={() => setSidebarOpen(false)} />
+              <NavLink href="/dashboard/class-fees" label="Class Fees" icon="🏫" onNav={() => setSidebarOpen(false)} />
             )}
 
-            <NavLink href="/dashboard/fees"        label="Fees"         icon="💰" onNav={() => setSidebarOpen(false)} />
+            <NavLink href="/dashboard/fees" label="Fees" icon="💰" onNav={() => setSidebarOpen(false)} />
             <NavLink href="/dashboard/vehicle-fees" label="Vehicle Fees" icon="🚍" onNav={() => setSidebarOpen(false)} />
             <NavLink href="/dashboard/notifications" label="Notifications" icon="💬" onNav={() => setSidebarOpen(false)} />
 
             {role === 'admin' && (
-              <NavLink href="/dashboard/vehicles"  label="Vehicles"     icon="🚌" onNav={() => setSidebarOpen(false)} />
+              <NavLink href="/dashboard/vehicles" label="Vehicles" icon="🚌" onNav={() => setSidebarOpen(false)} />
             )}
 
             <NavLink
