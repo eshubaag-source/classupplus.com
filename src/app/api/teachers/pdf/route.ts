@@ -13,7 +13,7 @@ export async function GET() {
     const teachers = await Teacher.find({ adminId }).lean().exec();
 
     const pdfDoc = await PDFDocument.create();
-    let currentPage = pdfDoc.addPage([800, 600]); // landscape for more columns
+    let currentPage = pdfDoc.addPage([1050, 620]); // wider landscape for more columns
     const { height } = currentPage.getSize();
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -31,8 +31,8 @@ export async function GET() {
     const lineHeight = 16;
     let y = startY;
 
-    const header = ['School', 'Name', 'Email', 'Phone', 'Class/Sec', 'Subject', 'Qual.', 'Aadhaar'];
-    const colWidths = [90, 150, 160, 80, 60, 65, 60, 85];
+    const header = ['School', 'Name', 'Email', 'Phone', 'Class/Sec', 'Subject', 'Post', 'Salary (Rs)', 'Qual.', 'Aadhaar'];
+    const colWidths = [90, 130, 155, 80, 60, 70, 100, 80, 70, 90];
     let x = 30;
     
     header.forEach((text, i) => {
@@ -43,23 +43,26 @@ export async function GET() {
     y -= lineHeight;
     teachers.forEach((t: any) => {
       x = 30;
+      const salary = t.monthlySalary ? `Rs ${Number(t.monthlySalary).toLocaleString('en-IN')}` : '-';
       const row = [
-        (t.schoolName || '-').substring(0, 15),
-        (t.name || '-').substring(0, 22),
-        (t.email || '-').substring(0, 28),
-        (t.phone || '-').substring(0, 15),
+        (t.schoolName || '-').substring(0, 14),
+        (t.name || '-').substring(0, 20),
+        (t.email || '-').substring(0, 26),
+        (t.phone || '-').substring(0, 14),
         `${t.grade || '-'} ${t.section || ''}`.substring(0, 10),
         (t.subject || '-').substring(0, 10),
+        (t.post || '-').substring(0, 16),
+        salary.substring(0, 14),
         (t.qualification || '-').substring(0, 10),
         (t.aadhaarNumber || '-').substring(0, 14),
       ];
       row.forEach((cell, i) => {
-        currentPage.drawText(cell, { x, y, size: 10, font: fontRegular, color: rgb(0, 0, 0) });
+        currentPage.drawText(cell, { x, y, size: 9, font: fontRegular, color: rgb(0, 0, 0) });
         x += colWidths[i];
       });
       y -= lineHeight;
       if (y < 40) {
-        currentPage = pdfDoc.addPage([800, 600]);
+        currentPage = pdfDoc.addPage([1050, 620]);
         y = height - 40;
       }
     });
