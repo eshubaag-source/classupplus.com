@@ -185,16 +185,24 @@ export default function DashboardPage() {
         <h1 className="page-title">
           Welcome back, {role === 'teacher' ? (teacherName || 'Teacher') : (schoolName || 'Admin')}
         </h1>
-        <p style={{ color: 'var(--text-muted)' }}>Here&apos;s what&apos;s happening in your school/choching today.</p>
+        <p style={{ color: 'var(--text-muted)' }}>Here&apos;s what&apos;s happening in your school today.</p>
       </div>
 
       <div className="stats-grid" style={{ marginBottom: '40px' }}>
         <StatCard title="Total Students" value={stats.totalStudents} icon="👥" color="#6366f1" href="/dashboard/students" />
-        <StatCard title="Total Teachers" value={stats.totalTeachers} icon="👩‍🏫" color="#ec4899" href="/dashboard/teachers" />
-        <StatCard title="Total Vehicles" value={stats.totalVehicles} icon="🚌" color="#8b5cf6" href="/dashboard/vehicles" />
+        {role === 'admin' && (
+          <StatCard title="Total Teachers" value={stats.totalTeachers} icon="👩‍🏫" color="#ec4899" href="/dashboard/teachers" />
+        )}
+        {role === 'admin' && (
+          <StatCard title="Total Vehicles" value={stats.totalVehicles} icon="🚌" color="#8b5cf6" href="/dashboard/vehicles" />
+        )}
         <StatCard title="Attendance Today" value={stats.attendanceToday} icon="✅" color="#10b981" href="/dashboard/attendance" />
-        <StatCard title="Fees Collected" value={`₹${stats.totalFees}`} icon="💰" color="#f59e0b" href="/dashboard/fees" />
-        <StatCard title="Total Vehicle Fees" value={`₹${stats.totalVehicleFees}`} icon="🚍" color="#4f46e5" href="/dashboard/vehicle-fees" subtitle={`₹${stats.paidVehicleFees} Paid · ₹${stats.pendingVehicleFees} Pending`} />
+        {role === 'admin' && (
+          <StatCard title="Fees Collected" value={`₹${stats.totalFees}`} icon="💰" color="#f59e0b" href="/dashboard/fees" />
+        )}
+        {role === 'admin' && (
+          <StatCard title="Total Vehicle Fees" value={`₹${stats.totalVehicleFees}`} icon="🚍" color="#4f46e5" href="/dashboard/vehicle-fees" subtitle={`₹${stats.paidVehicleFees} Paid · ₹${stats.pendingVehicleFees} Pending`} />
+        )}
       </div>
 
       <div className="content-grid">
