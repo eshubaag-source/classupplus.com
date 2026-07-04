@@ -298,17 +298,31 @@ export default function VehicleFeesPage() {
               Clear Selection ({selectedIds.length})
             </button>
           )}
-          {/* Download: all users (including teachers) can download the full list */}
-          <a
-            href="/api/vehicle-fees/pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textDecoration: 'none' }}
-          >
-            <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-              ⬇️ Download Fees List
-            </button>
-          </a>
+          {/* Download/Print Button */}
+          {selectedIds.length >= 2 && selectedIds.length <= 4 ? (
+            <a
+              href={`/api/vehicle-fees/pdf?ids=${selectedIds.join(',')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none' }}
+              id="print-receipts-btn"
+            >
+              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+                🖨️ Print
+              </button>
+            </a>
+          ) : (
+            <a
+              href="/api/vehicle-fees/pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none' }}
+            >
+              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                ⬇️ Download Fees List
+              </button>
+            </a>
+          )}
           {!isTeacher && (
             <button className="btn-primary" onClick={() => setShowAddForm(!showAddForm)}>Add Record</button>
           )}
