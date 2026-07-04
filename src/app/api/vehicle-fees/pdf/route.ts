@@ -4,6 +4,8 @@ import dbConnect from '@/lib/db';
 import { VehicleFee } from '@/models/VehicleFee';
 import Student from '@/models/Student';
 import Admin from '@/models/Admin';
+import Fees from '@/models/Fees';
+import { ClassFee } from '@/models/ClassFee';
 import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
 
 export async function GET(request: Request) {
@@ -46,6 +48,7 @@ export async function GET(request: Request) {
 
     const admin = await Admin.findById(adminId).select('schoolName').lean().exec();
     const schoolName = admin?.schoolName || "Classupplis";
+    const classFees = await ClassFee.find({ adminId }).lean().exec();
 
     // Filter out records where student population failed/missing
     const validFees = fees.filter((f: any) => f.studentId);
@@ -138,11 +141,66 @@ export async function GET(request: Request) {
     const recordsPerPage = 4;
     const totalPages = Math.max(1, Math.ceil(totalRecords / recordsPerPage));
 
+    // Helper to find class fee for a student grade
+    const normalizeGrade = (g: string) =>
+      g.trim().toLowerCase().replace(/^class\s+/i, '').replace(/(th|st|nd|rd)$/i, '').trim();
+
     // Draw one receipt on a specific page
-    const drawReceipt = (page: any, fee: any, ox: number, oy: number, w: number, h: number) => {
-      const student = fee.studentId;
-      const totalFees = fee.totalFees || 0;
-      const balance = Math.max(0, totalFees - fee.amount);
+    const drawReceipt = async (page: any, fee: any, ox: number, oy: number, w: number, h: number) => {
+      const student = fee.studentId || {};
+      
+      // Determine if the current record is a vehicle fee
+      const isVehicleFee = fee.category === 'vehicle';
+      let schoolFeeRecord: any = null;
+      let vehicleFeeRecord: any = null;
+
+      if (isVehicleFee) {
+        vehicleFeeRecord = fee;
+        // Look up companion school fee
+        schoolFeeRecord = await Fees.findOne({
+          adminId,
+          studentId: student._id,
+          month: fee.month,
+        }).lean().exec();
+      } else {
+        schoolFeeRecord = fee;
+        // Look up companion vehicle fee
+        vehicleFeeRecord = await VehicleFee.findOne({
+          adminId,
+          studentId: student._id,
+          month: fee.month,
+        }).lean().exec();
+      }
+
+      // Calculate school fee details
+      let classAmount = 0;
+      if (student.grade) {
+        const gradeNorm = normalizeGrade(student.grade);
+        const subjectNorm = (student.subject || '').trim().toLowerCase();
+        
+        let match = classFees.find((cf: any) => 
+          normalizeGrade(cf.grade) === gradeNorm && 
+          (cf.subject || '').trim().toLowerCase() === subjectNorm
+        );
+        
+        if (!match) {
+          match = classFees.find((cf: any) => 
+            normalizeGrade(cf.grade) === gradeNorm && 
+            (cf.subject || '') === ''
+          );
+        }
+        
+        if (match) {
+          classAmount = match.amount;
+        }
+      }
+      if (classAmount === 0 && schoolFeeRecord && schoolFeeRecord.classFee) {
+        classAmount = Number(schoolFeeRecord.classFee) || 0;
+      }
+
+      // Calculate transport details
+      const transportAmount = vehicleFeeRecord ? vehicleFeeRecord.amount : 0;
+      const transportTotal = vehicleFeeRecord ? (vehicleFeeRecord.totalFees ?? 0) : 0;
 
       const dateStr = fee.paidDate
         ? new Date(fee.paidDate).toLocaleDateString(undefined, { dateStyle: 'medium' })
@@ -220,7 +278,9 @@ export async function GET(request: Request) {
       
       sf('Vehicle/Bus:', fee.busNumber || '—',                                     sc(200), row1Y);
       sf('City:',  fee.city || '—',                                                sc(200), row2Y);
-      sf('UTR:',  fee.utr || '—',                                                  sc(200), row3Y);
+      
+      const utrStr = (schoolFeeRecord?.utr || vehicleFeeRecord?.utr || '—');
+      sf('UTR:',  utrStr,                                                          sc(200), row3Y);
 
       // Separator
       const sep2Y = cardY - sc(10);
@@ -232,38 +292,63 @@ export async function GET(request: Request) {
 
       // Table headers
       const thY = ppY - sc(18);
-      const cols = [sc(25), sc(118), sc(182), sc(245), sc(308)];
-      const headers = ['Description', 'Month', 'Route Fee', 'Paid Amt', 'Balance'];
+      const cols = [sc(20), sc(110), sc(180), sc(245), sc(310)];
+      const headers = ['Description', 'Month', 'Total Fee', 'Paid Amt', 'Balance'];
       headers.forEach((h2, i) => page.drawText(h2, { x: ox + cols[i], y: thY, size: sc(7.5), font: fontBold, color: gray1 }));
 
       page.drawLine({ start: { x: ox + sc(15), y: thY - sc(7) }, end: { x: ox + w - sc(15), y: thY - sc(7) }, thickness: 0.6, color: rgb(156 / 255, 163 / 255, 175 / 255) });
 
-      const rowDataY = thY - sc(18);
-      const vals = [
-        'Vehicle Transport',
-        fee.month,
-        totalFees > 0 ? `Rs. ${totalFees}` : '—',
-        `Rs. ${fee.amount}`,
-        `Rs. ${balance}`,
-      ];
-      vals.forEach((v, i) => {
-        const isAmt = i >= 3;
-        page.drawText(v, { x: ox + cols[i], y: rowDataY, size: sc(7.5), font: isAmt ? fontBold : fontRegular, color: i === 4 ? red : dark });
-      });
+      let rowDataY = thY - sc(18);
 
-      page.drawLine({ start: { x: ox + sc(15), y: rowDataY - sc(10) }, end: { x: ox + w - sc(15), y: rowDataY - sc(10) }, thickness: 0.5, color: gray3 });
+      // School Fees Row (Duty)
+      if (schoolFeeRecord) {
+        const schoolBalance = Math.max(0, classAmount - schoolFeeRecord.amount);
+        const schoolVals = [
+          'School Fees',
+          schoolFeeRecord.month,
+          classAmount > 0 ? `Rs. ${classAmount}` : '—',
+          `Rs. ${schoolFeeRecord.amount}`,
+          `Rs. ${schoolBalance}`,
+        ];
+        schoolVals.forEach((v, i) => {
+          const isAmt = i >= 3;
+          page.drawText(v, { x: ox + cols[i], y: rowDataY, size: sc(7.5), font: isAmt ? fontBold : fontRegular, color: i === 4 ? red : dark });
+        });
+        rowDataY -= sc(15);
+      }
+
+      // Transport Fee Row (Vehicle charges)
+      if (vehicleFeeRecord) {
+        const vehicleBalance = Math.max(0, transportTotal - vehicleFeeRecord.amount);
+        const vehicleVals = [
+          'Transport Fee',
+          vehicleFeeRecord.month,
+          transportTotal > 0 ? `Rs. ${transportTotal}` : '—',
+          `Rs. ${vehicleFeeRecord.amount}`,
+          `Rs. ${vehicleBalance}`,
+        ];
+        vehicleVals.forEach((v, i) => {
+          const isAmt = i >= 3;
+          page.drawText(v, { x: ox + cols[i], y: rowDataY, size: sc(7.5), font: isAmt ? fontBold : fontRegular, color: i === 4 ? red : dark });
+        });
+        rowDataY -= sc(15);
+      }
+
+      page.drawLine({ start: { x: ox + sc(15), y: rowDataY }, end: { x: ox + w - sc(15), y: rowDataY }, thickness: 0.5, color: gray3 });
 
       // Total row
-      const totalY = rowDataY - sc(22);
+      const grandPaid = (schoolFeeRecord ? schoolFeeRecord.amount : 0) + (vehicleFeeRecord ? vehicleFeeRecord.amount : 0);
+      const totalY = rowDataY - sc(15);
       const totalLabel = 'Total Paid:';
       const totalLabelW = fontBold.widthOfTextAtSize(totalLabel, sc(8.5));
       page.drawText(totalLabel,        { x: ox + w - sc(18) - totalLabelW - sc(40), y: totalY, size: sc(8.5), font: fontBold, color: gray1 });
-      page.drawText(`Rs. ${fee.amount}`, { x: ox + w - sc(18) - sc(38), y: totalY, size: sc(8.5), font: fontBold, color: indigo });
+      page.drawText(`Rs. ${grandPaid}`, { x: ox + w - sc(18) - sc(38), y: totalY, size: sc(8.5), font: fontBold, color: indigo });
 
       // Stamp
       const stampX = ox + w - sc(90);
       const stampY2 = oy + sc(50);
-      if (fee.status === 'Paid') {
+      const isPaid = (schoolFeeRecord ? schoolFeeRecord.status === 'Paid' : true) && (vehicleFeeRecord ? vehicleFeeRecord.status === 'Paid' : true);
+      if (isPaid) {
         page.drawRectangle({ x: stampX, y: stampY2, width: sc(65), height: sc(26), borderWidth: 1.5, borderColor: rgb(16 / 255, 185 / 255, 129 / 255), color: rgb(240 / 255, 253 / 255, 250 / 255), rotate: degrees(-12) });
         page.drawText('PAID', { x: stampX + sc(14), y: stampY2 + sc(6), size: sc(13), font: fontBold, color: rgb(16 / 255, 185 / 255, 129 / 255), rotate: degrees(-12) });
       } else {
@@ -309,7 +394,7 @@ export async function GET(request: Request) {
         const ox = MARGIN + col * (cellW + GAP);
         const oy = MARGIN + row * (cellH + GAP);
 
-        drawReceipt(page, fee, ox, oy, cellW, cellH);
+        await drawReceipt(page, fee, ox, oy, cellW, cellH);
       }
     }
 
