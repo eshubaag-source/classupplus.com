@@ -191,6 +191,13 @@ export default function SalaryPage() {
           )}
         </div>
         <div className="page-header-actions">
+          {month && (
+            <a href={`/api/salary/pdf?month=${month}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                Download PDF
+              </button>
+            </a>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Select Month:</label>
             <input
