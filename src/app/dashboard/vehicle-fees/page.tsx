@@ -314,24 +314,26 @@ export default function VehicleFeesPage() {
           )}
         </div>
       </div>
-            {/* ── Daily Summary Stat Cards ──────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(234,88,12,0.07))', border: '1.5px solid rgba(245,158,11,0.22)', borderRadius: '16px', padding: '18px 22px' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>🚍 Today Transport Fees</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#d97706', lineHeight: 1.1 }}>₹{todayVehicleTotal.toLocaleString()}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{todayFees.filter((f: any) => f.feeType === 'Vehicle Fee').length} records</div>
+      {/* ── Daily Summary Stat Cards ──────────────────────────────────── */}
+      {!isTeacher && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(234,88,12,0.07))', border: '1.5px solid rgba(245,158,11,0.22)', borderRadius: '16px', padding: '18px 22px' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>🚍 Today Transport Fees</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#d97706', lineHeight: 1.1 }}>₹{todayVehicleTotal.toLocaleString()}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{todayFees.filter((f: any) => f.feeType === 'Vehicle Fee').length} records</div>
+          </div>
+          <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.07))', border: '1.5px solid rgba(16,185,129,0.22)', borderRadius: '16px', padding: '18px 22px' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>💰 Today Grand Total</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>₹{todayVehicleTotal.toLocaleString()}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{todayFees.length} total records today</div>
+          </div>
+          <div style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.07), rgba(220,38,38,0.06))', border: '1.5px solid rgba(239,68,68,0.17)', borderRadius: '16px', padding: '18px 22px' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>📋 All-Time Collected</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#dc2626', lineHeight: 1.1 }}>₹{fees.reduce((s: number, f: any) => s + Number(f.amount || 0), 0).toLocaleString()}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{fees.length} total records</div>
+          </div>
         </div>
-        <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.07))', border: '1.5px solid rgba(16,185,129,0.22)', borderRadius: '16px', padding: '18px 22px' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>💰 Today Grand Total</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#059669', lineHeight: 1.1 }}>₹{todayVehicleTotal.toLocaleString()}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{todayFees.length} total records today</div>
-        </div>
-        <div style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.07), rgba(220,38,38,0.06))', border: '1.5px solid rgba(239,68,68,0.17)', borderRadius: '16px', padding: '18px 22px' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>📋 All-Time Collected</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#dc2626', lineHeight: 1.1 }}>₹{fees.reduce((s: number, f: any) => s + Number(f.amount || 0), 0).toLocaleString()}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{fees.length} total records</div>
-        </div>
-      </div>
+      )}
 
       {showAddForm && !isTeacher && (
         <div className="glass card" style={{ marginBottom: '2rem' }}>
