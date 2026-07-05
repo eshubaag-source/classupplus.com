@@ -373,6 +373,7 @@ export default function SettingsPage() {
                     borderRadius: '12px',
                     color: 'var(--foreground)',
                     transition: 'all 0.2s ease',
+                    cursor: 'not-allowed',
                   }}
                 />
               </div>
@@ -406,6 +407,7 @@ export default function SettingsPage() {
                       borderRadius: '12px',
                       color: 'var(--foreground)',
                       transition: 'all 0.2s ease',
+                      cursor: 'not-allowed',
                     }}
                   />
                 </div>
@@ -436,6 +438,7 @@ export default function SettingsPage() {
                       borderRadius: '12px',
                       color: 'var(--foreground)',
                       transition: 'all 0.2s ease',
+                      cursor: 'not-allowed',
                     }}
                   />
                 </div>
