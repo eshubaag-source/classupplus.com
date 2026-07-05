@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/db';
 import Admin from '@/models/Admin';
 import { Teacher } from '@/models/Teacher';
@@ -16,9 +15,59 @@ async function getUserFromToken() {
   try {
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
-    return payload as { id: string; username: string; role?: string };
+    return payload as { id: string; username: string; role?: string; adminId?: string };
   } catch {
     return null;
+  }
+}
+
+export async function GET() {
+  try {
+    const userPayload = await getUserFromToken();
+    if (!userPayload) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    await dbConnect();
+    const role = userPayload.role || 'admin';
+
+    if (role === 'admin') {
+      const admin = await Admin.findById(userPayload.id).select('-password');
+      if (!admin) return NextResponse.json({ message: 'Admin not found' }, { status: 404 });
+
+      return NextResponse.json({
+        role: 'admin',
+        username: admin.username,
+        schoolName: admin.schoolName || '',
+        email: admin.email || '',
+        mobileNumber: admin.mobileNumber || '',
+        twilioAccountSid: admin.twilioAccountSid || '',
+        twilioAuthToken: admin.twilioAuthToken || '',
+        twilioSmsNumber: admin.twilioSmsNumber || '',
+        twilioWhatsappNumber: admin.twilioWhatsappNumber || '',
+        smsEnabled: admin.smsEnabled !== false,
+        whatsappEnabled: admin.whatsappEnabled !== false,
+      });
+    } else {
+      const teacher = await Teacher.findById(userPayload.id).select('-password');
+      if (!teacher) return NextResponse.json({ message: 'Teacher not found' }, { status: 404 });
+
+      return NextResponse.json({
+        role: 'teacher',
+        username: teacher.email, // using email as primary identifier
+        name: teacher.name || '',
+        email: teacher.email || '',
+        phone: teacher.phone || '',
+        grade: teacher.grade || '',
+        section: teacher.section || '',
+        schoolName: teacher.schoolName || '',
+        aadhaarNumber: teacher.aadhaarNumber || '',
+        qualification: teacher.qualification || '',
+        subject: teacher.subject || '',
+      });
+    }
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
 
@@ -31,48 +80,109 @@ export async function PUT(req: Request) {
 
     await dbConnect();
     const role = userPayload.role || 'admin';
-    const { currentPassword, newPassword } = await req.json();
+    const body = await req.json();
 
-    if (!currentPassword || !newPassword) {
-      return NextResponse.json({ message: 'Both current and new passwords are required' }, { status: 400 });
-    }
-
-    if (newPassword.length < 6) {
-      return NextResponse.json({ message: 'New password must be at least 6 characters' }, { status: 400 });
-    }
-
-    let user;
     if (role === 'admin') {
-      user = await Admin.findById(userPayload.id);
-    } else {
-      user = await Teacher.findById(userPayload.id);
-    }
-
-    if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
-    }
-
-    if (!user.password) {
-      // If no password set, we allow them to set one without requiring current password
-      // But this endpoint usually requires currentPassword. Let's assume they must provide something or we skip check.
-      // For simplicity, let's just allow it if they pass any currentPassword string when there's none stored.
-      // Wait, teachers might not have a password if created by Admin.
-      if (currentPassword !== 'default' && currentPassword !== '') {
-          // If they didn't have a password, they shouldn't hit this path unless we design a "set password" flow.
+      if (body.email) {
+        const existingEmail = await Admin.findOne({ email: body.email, _id: { $ne: userPayload.id } });
+        const existingTeacherEmail = await Teacher.findOne({ email: body.email });
+        if (existingEmail || existingTeacherEmail) {
+          return NextResponse.json({ message: 'Email is already registered.' }, { status: 400 });
+        }
       }
-    } else {
-      const isMatch = await bcrypt.compare(currentPassword, user.password);
-      if (!isMatch) {
-        return NextResponse.json({ message: 'Current password is incorrect' }, { status: 403 });
+      
+      if (body.mobileNumber) {
+        const existingMobile = await Admin.findOne({ mobileNumber: body.mobileNumber, _id: { $ne: userPayload.id } });
+        const existingTeacherPhone = await Teacher.findOne({ phone: body.mobileNumber });
+        if (existingMobile || existingTeacherPhone) {
+          return NextResponse.json({ message: 'Mobile number is already registered.' }, { status: 400 });
+        }
       }
+
+      const admin = await Admin.findByIdAndUpdate(
+        userPayload.id,
+        {
+          schoolName: body.schoolName,
+          email: body.email,
+          mobileNumber: body.mobileNumber,
+          twilioAccountSid: body.twilioAccountSid,
+          twilioAuthToken: body.twilioAuthToken,
+          twilioSmsNumber: body.twilioSmsNumber,
+          twilioWhatsappNumber: body.twilioWhatsappNumber,
+          smsEnabled: body.smsEnabled,
+          whatsappEnabled: body.whatsappEnabled,
+        },
+        { new: true, runValidators: true }
+      ).select('-password');
+
+      if (!admin) return NextResponse.json({ message: 'Admin not found' }, { status: 404 });
+
+      return NextResponse.json({
+        role: 'admin',
+        username: admin.username,
+        schoolName: admin.schoolName || '',
+        email: admin.email || '',
+        mobileNumber: admin.mobileNumber || '',
+        twilioAccountSid: admin.twilioAccountSid || '',
+        twilioAuthToken: admin.twilioAuthToken || '',
+        twilioSmsNumber: admin.twilioSmsNumber || '',
+        twilioWhatsappNumber: admin.twilioWhatsappNumber || '',
+        smsEnabled: admin.smsEnabled !== false,
+        whatsappEnabled: admin.whatsappEnabled !== false,
+      });
+    } else {
+      if (body.email) {
+        const existingEmail = await Teacher.findOne({ email: body.email, _id: { $ne: userPayload.id } });
+        const existingAdminEmail = await Admin.findOne({ email: body.email });
+        if (existingEmail || existingAdminEmail) {
+          return NextResponse.json({ message: 'Email is already registered.' }, { status: 400 });
+        }
+      }
+      
+      if (body.phone) {
+        const existingPhone = await Teacher.findOne({ phone: body.phone, _id: { $ne: userPayload.id } });
+        const existingAdminPhone = await Admin.findOne({ mobileNumber: body.phone });
+        if (existingPhone || existingAdminPhone) {
+          return NextResponse.json({ message: 'Phone number is already registered.' }, { status: 400 });
+        }
+      }
+
+      const teacher = await Teacher.findByIdAndUpdate(
+        userPayload.id,
+        {
+          name: body.name,
+          email: body.email,
+          phone: body.phone,
+          grade: body.grade,
+          section: body.section,
+          schoolName: body.schoolName,
+          aadhaarNumber: body.aadhaarNumber,
+          qualification: body.qualification,
+          subject: body.subject,
+        },
+        { new: true, runValidators: true }
+      ).select('-password');
+
+      if (!teacher) return NextResponse.json({ message: 'Teacher not found' }, { status: 404 });
+
+      return NextResponse.json({
+        role: 'teacher',
+        username: teacher.email,
+        name: teacher.name || '',
+        email: teacher.email || '',
+        phone: teacher.phone || '',
+        grade: teacher.grade || '',
+        section: teacher.section || '',
+        schoolName: teacher.schoolName || '',
+        aadhaarNumber: teacher.aadhaarNumber || '',
+        qualification: teacher.qualification || '',
+        subject: teacher.subject || '',
+      });
     }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
-    await user.save();
-
-    return NextResponse.json({ message: 'Password changed successfully' });
   } catch (error: any) {
+    if (error.code === 11000) {
+      return NextResponse.json({ message: 'Email already in use.' }, { status: 400 });
+    }
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
