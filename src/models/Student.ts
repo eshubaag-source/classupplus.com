@@ -9,6 +9,9 @@ const StudentSchema = new mongoose.Schema({
   section: { type: String, required: true },
   parentContact: { type: String },
   note: { type: String, required: false },
+  subjectPaperNumber: { type: String, default: '' },
+  subject: { type: String, default: '' },
+  totalNumber: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 });
 
