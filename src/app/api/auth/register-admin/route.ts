@@ -1,56 +1,53 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/db';
+import { Teacher } from '@/models/Teacher';
 import Admin from '@/models/Admin';
 
 export async function POST(req: Request) {
   try {
     await dbConnect();
-    const { username, schoolName, email, mobileNumber, password } = await req.json();
+    const { name, email, phone, schoolName, password, grade, section } = await req.json();
 
-    if (!username || !schoolName || !email || !mobileNumber || !password) {
+    if (!name || !email || !phone || !schoolName || !password) {
       return NextResponse.json({ message: 'All fields are required.' }, { status: 400 });
     }
 
-    if (password.length < 6) {
-      return NextResponse.json({ message: 'Password must be at least 6 characters.' }, { status: 400 });
+    // Check if teacher with email already exists
+    const existingTeacher = await Teacher.findOne({ email });
+    const existingAdminEmail = await Admin.findOne({ email });
+    if (existingTeacher || existingAdminEmail) {
+      return NextResponse.json({ message: 'Email is already registered.' }, { status: 400 });
     }
 
-    // Check if username already exists
-    const existingUsername = await Admin.findOne({ username });
-    if (existingUsername) {
-      return NextResponse.json({ message: 'Username is already taken. Please choose a different one.' }, { status: 400 });
+    // Check if teacher with phone already exists
+    const existingPhone = await Teacher.findOne({ phone });
+    const existingAdminPhone = await Admin.findOne({ mobileNumber: phone });
+    if (existingPhone || existingAdminPhone) {
+      return NextResponse.json({ message: 'Phone number is already registered.' }, { status: 400 });
     }
 
-    // Check if school name already has an admin account
-    const existingSchool = await Admin.findOne({ schoolName: { $regex: new RegExp(`^${schoolName.trim()}$`, 'i') } });
-    if (existingSchool) {
-      return NextResponse.json({ message: `An admin account for "${schoolName}" already exists. Each school can only have one admin.` }, { status: 400 });
+    // Find the admin associated with this schoolName
+    const admin = await Admin.findOne({ schoolName: new RegExp(`^${schoolName}$`, 'i') });
+    if (!admin) {
+      return NextResponse.json({ message: 'School not found. Please check the school name.' }, { status: 400 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await Admin.create({
-      username,
-      schoolName: schoolName.trim(),
+    const newTeacher = await Teacher.create({
+      adminId: admin._id,
+      name,
       email,
-      mobileNumber,
-      password: hashedPassword,
+      phone,
+      grade: grade || '',
+      section: section || '',
+      schoolName: admin.schoolName, // normalize casing
+      password: hashedPassword
     });
 
-    return NextResponse.json({ message: 'Admin account created successfully' }, { status: 201 });
+    return NextResponse.json({ message: 'Teacher account created successfully' }, { status: 201 });
   } catch (error: any) {
-    if (error.code === 11000) {
-      // Identify which field caused the duplicate
-      const field = error.keyPattern;
-      if (field?.schoolName) {
-        return NextResponse.json({ message: 'An admin account for this school already exists. Each school can only have one admin.' }, { status: 400 });
-      }
-      if (field?.username) {
-        return NextResponse.json({ message: 'Username is already taken. Please choose a different one.' }, { status: 400 });
-      }
-      return NextResponse.json({ message: 'Account already exists with these details.' }, { status: 400 });
-    }
     return NextResponse.json({ message: error.message || 'Registration failed' }, { status: 500 });
   }
 }
