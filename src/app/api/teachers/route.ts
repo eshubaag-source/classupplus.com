@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import { Teacher } from '@/models/Teacher';
+import Admin from '@/models/Admin';
 import { getAdminId } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 
@@ -32,8 +33,16 @@ export async function POST(request: Request) {
 
     // Check for unique email
     const existingTeacher = await Teacher.findOne({ email: payload.email });
-    if (existingTeacher) {
-      return NextResponse.json({ message: 'A teacher with this email already exists.' }, { status: 400 });
+    const existingAdminEmail = await Admin.findOne({ email: payload.email });
+    if (existingTeacher || existingAdminEmail) {
+      return NextResponse.json({ message: 'A user with this email already exists.' }, { status: 400 });
+    }
+
+    // Check for unique phone
+    const existingPhone = await Teacher.findOne({ phone: payload.phone });
+    const existingAdminPhone = await Admin.findOne({ mobileNumber: payload.phone });
+    if (existingPhone || existingAdminPhone) {
+      return NextResponse.json({ message: 'A user with this phone number already exists.' }, { status: 400 });
     }
 
     let hashedPassword;
