@@ -15,8 +15,16 @@ export async function POST(req: Request) {
 
     // Check if teacher with email already exists
     const existingTeacher = await Teacher.findOne({ email });
-    if (existingTeacher) {
+    const existingAdminEmail = await Admin.findOne({ email });
+    if (existingTeacher || existingAdminEmail) {
       return NextResponse.json({ message: 'Email is already registered.' }, { status: 400 });
+    }
+
+    // Check if teacher with phone already exists
+    const existingPhone = await Teacher.findOne({ phone });
+    const existingAdminPhone = await Admin.findOne({ mobileNumber: phone });
+    if (existingPhone || existingAdminPhone) {
+      return NextResponse.json({ message: 'Phone number is already registered.' }, { status: 400 });
     }
 
     // Find the admin associated with this schoolName
