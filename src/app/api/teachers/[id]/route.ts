@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import { Teacher } from '@/models/Teacher';
+import Admin from '@/models/Admin';
 import { getAdminId, getTokenPayload } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 
@@ -22,6 +23,21 @@ export async function PUT(
       body.password = await bcrypt.hash(body.password, 10);
     } else {
       delete body.password; // Do not update password if not provided
+    }
+    if (body.email) {
+      const existingEmail = await Teacher.findOne({ email: body.email, _id: { $ne: id } });
+      const existingAdminEmail = await Admin.findOne({ email: body.email });
+      if (existingEmail || existingAdminEmail) {
+        return NextResponse.json({ message: 'A user with this email already exists.' }, { status: 400 });
+      }
+    }
+
+    if (body.phone) {
+      const existingPhone = await Teacher.findOne({ phone: body.phone, _id: { $ne: id } });
+      const existingAdminPhone = await Admin.findOne({ mobileNumber: body.phone });
+      if (existingPhone || existingAdminPhone) {
+        return NextResponse.json({ message: 'A user with this phone number already exists.' }, { status: 400 });
+      }
     }
 
     const updatedTeacher = await Teacher.findOneAndUpdate(
