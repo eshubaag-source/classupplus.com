@@ -84,7 +84,7 @@ export async function POST(req: Request) {
         });
 
         await transporter.sendMail({
-          from: `"School System" <${process.env.SMTP_USER || 'noreply@school.com'}>`,
+          from: `"Classupplus" <${process.env.SMTP_USER || 'noreply@school.com'}>`,
           to: destination,
           subject: 'Your Login OTP',
           html: `<p>Your OTP for login is: <strong>${otpCode}</strong></p><p>This OTP is valid for 5 minutes.</p>`,
