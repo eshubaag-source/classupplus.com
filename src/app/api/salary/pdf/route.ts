@@ -120,6 +120,7 @@ export async function GET(req: Request) {
     y -= lineHeight + 5;
 
     // Draw rows
+let receiptCount = 0;
     teachers.forEach((teacher: any) => {
       x = 30;
       const rec = salaryMap.get(teacher._id.toString());
