@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       });
 
       await transporter.sendMail({
-        from: `"School System" <${process.env.SMTP_USER || 'noreply@school.com'}>`,
+        from: `"Classupplus" <${process.env.SMTP_USER || 'noreply@school.com'}>`,
         to: destination,
         subject: 'Reset Password OTP',
         html: `
