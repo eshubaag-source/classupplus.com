@@ -447,7 +447,7 @@ export default function StudentsPage() {
           <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
             <tr>
               <th style={{ padding: '16px' }}>Name</th>
-              <th style={{ padding: '16px' }}>fatherName</th>
+              <th style={{ padding: '16px' }}>Father Name</th>
               <th style={{ padding: '16px' }}>Roll No</th>
               <th style={{ padding: '16px' }}>class</th>
               <th style={{ padding: '16px' }}>Section</th>
