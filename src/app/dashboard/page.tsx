@@ -214,7 +214,7 @@ export default function DashboardPage() {
               <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
                 <tr>
                   <th style={{ padding: '16px' }}>Name</th>
-                  <th style={{ padding: '16px' }}>Father</th>
+                  <th style={{ padding: '16px' }}>Father Name</th>
                   <th style={{ padding: '16px' }}>Roll</th>
                   <th style={{ padding: '16px' }}>Class</th>
                   <th style={{ padding: '16px' }}>Section</th>
