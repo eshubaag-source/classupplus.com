@@ -449,7 +449,7 @@ export default function StudentsPage() {
               <th style={{ padding: '16px' }}>Name</th>
               <th style={{ padding: '16px' }}>Father Name</th>
               <th style={{ padding: '16px' }}>Roll No</th>
-              <th style={{ padding: '16px' }}>class</th>
+              <th style={{ padding: '16px' }}>Class</th>
               <th style={{ padding: '16px' }}>Section</th>
               <th style={{ padding: '16px' }}>Contact</th>
               <th style={{ padding: '16px' }}>Note</th>
