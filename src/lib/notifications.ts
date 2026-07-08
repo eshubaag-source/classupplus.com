@@ -51,6 +51,9 @@ export async function sendNotification({
       throw new Error('Admin not found');
     }
 
+    // Prepend school name to the message
+    message = `[${admin.schoolName}] ${message}`;
+
     // 2. Fetch student
     const student = await Student.findById(studentId);
     if (!student) {
