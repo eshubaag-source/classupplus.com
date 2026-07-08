@@ -6,7 +6,7 @@ import autoTable from 'jspdf-autotable';
 interface Vehicle {
   _id: string;
   vehicleNumber: string;
-  city: string;
+  city: string; 
   totalFees: number;
   driverNumber?: string;
   description?: string;
