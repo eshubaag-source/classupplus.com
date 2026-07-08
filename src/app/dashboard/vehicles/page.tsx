@@ -16,7 +16,7 @@ interface Vehicle {
 const emptyForm = {
   vehicleNumber: '',
   city: '',
-  totalFees: 0,
+  totalFees: 0 as number | string,
   driverNumber: '',
   description: '',
 };
@@ -130,13 +130,13 @@ export default function VehiclesPage() {
 
     const doc = new jsPDF();
     const title = "Vehicles Data";
-    
+
     doc.setFontSize(16);
     doc.text(schoolName || "School Name Not Available", 14, 20);
-    
+
     doc.setFontSize(12);
     doc.text(title, 14, 30);
-    
+
     const headers = [["Bus Number", "City", "Driver Contact", "Total Fees", "Notes"]];
     const data = vehicles.map(v => [
       v.vehicleNumber,
@@ -254,7 +254,7 @@ export default function VehiclesPage() {
                 type="number"
                 placeholder="e.g. 1500"
                 value={form.totalFees}
-                onChange={e => setForm({ ...form, totalFees: e.target.value })}
+                onChange={e => setForm({ ...form, totalFees: e.target.value ? Number(e.target.value) : 0 })}
                 required
                 min={0}
               />
