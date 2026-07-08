@@ -14,6 +14,7 @@ export default function ClassPaperPage() {
   const [editRows, setEditRows] = useState<Record<string, EditRow>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [schoolName, setSchoolName] = useState('');
 
   // Bulk Message Modal State
   const [showModal, setShowModal] = useState(false);
@@ -28,8 +29,14 @@ export default function ClassPaperPage() {
   }, []);
 
   const fetchStudents = async () => {
-    const res = await fetch('/api/students');
+    const [res, profileRes] = await Promise.all([
+      fetch('/api/students'),
+      fetch('/api/profile')
+    ]);
     const data = await res.json();
+    const profile = await profileRes.json();
+    if (profile.schoolName) setSchoolName(profile.schoolName);
+    
     const list = Array.isArray(data) ? data : [];
     setStudents(list);
     // Initialize edit rows from fetched data
@@ -139,10 +146,36 @@ export default function ClassPaperPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Class Paper Management</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Manage subject paper numbers and send bulk messages.</p>
+          <h1 className="page-title" style={{ margin: 0 }}>Class Paper Management</h1>
+          <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Manage subject paper numbers and send bulk messages.</p>
+          {schoolName && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginTop: '8px',
+              padding: '6px 14px',
+              borderRadius: '999px',
+              background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.12))',
+              border: '1px solid rgba(99,102,241,0.25)',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: 'var(--primary)',
+            }}>
+              🏫 {schoolName}
+            </div>
+          )}
         </div>
-        <div className="page-header-actions">
+        <div className="page-header-actions" style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className="btn-primary"
+            onClick={() => {
+              window.open('/api/classpaper/pdf', '_blank');
+            }}
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+          >
+            📥 Download List
+          </button>
           <button
             className="btn-primary"
             onClick={() => setShowModal(true)}
