@@ -3,54 +3,54 @@ import React, { useEffect, useState } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-interface Vehicle {
+interface ClassFee {
   _id: string;
-  vehicleNumber: string;
-  city: string;
-  totalFees: number;
-  driverNumber?: string;
+  grade: string;
+  subject?: string;
+  amount: number;
   description?: string;
   createdAt?: string;
 }
 
 const emptyForm = {
-  vehicleNumber: '',
-  city: '',
-  totalFees: '',
-  driverNumber: '',
+  grade: '',
+  subject: '',
+  amount: '',
   description: '',
 };
 
-export default function VehiclesPage() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+export default function ClassFeesPage() {
+  const [classFees, setClassFees] = useState<ClassFee[]>([]);
   const [isMounted, setIsMounted] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [searchTerm, setSearchTerm] = useState('');
   const [schoolName, setSchoolName] = useState('');
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
-    fetchVehicles();
+    fetchClassFees();
     fetch('/api/profile')
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.schoolName) setSchoolName(data.schoolName); })
       .catch(() => { });
   }, []);
 
-  const fetchVehicles = async () => {
+  const fetchClassFees = async () => {
     try {
-      const res = await fetch('/api/vehicles', { headers: { Accept: 'application/json' } });
+      const res = await fetch('/api/class-fees', { headers: { Accept: 'application/json' } });
       if (res.ok) {
-        const data: Vehicle[] = await res.json();
-        setVehicles(data);
+        const data = await res.json();
+        setClassFees(Array.isArray(data) ? data : []);
+        setFetchError(null);
       } else {
-        const err = await res.json().catch(() => ({ message: 'Failed to fetch' }));
-        alert(err.message);
+        const err = await res.json().catch(() => ({ message: 'Failed to fetch class fees' }));
+        setFetchError(err.message);
       }
     } catch (e: any) {
-      console.error('Failed to fetch vehicles', e);
+      setFetchError('Network error: ' + e.message);
     }
   };
 
@@ -60,15 +60,14 @@ export default function VehiclesPage() {
     setShowForm(true);
   };
 
-  const handleEdit = (v: Vehicle) => {
+  const handleEdit = (cf: ClassFee) => {
     setForm({
-      vehicleNumber: v.vehicleNumber,
-      city: v.city,
-      totalFees: v.totalFees.toString(),
-      driverNumber: v.driverNumber || '',
-      description: v.description || '',
+      grade: cf.grade,
+      subject: cf.subject || '',
+      amount: cf.amount.toString(),
+      description: cf.description || '',
     });
-    setEditingId(v._id);
+    setEditingId(cf._id);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -76,14 +75,13 @@ export default function VehiclesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
-      vehicleNumber: form.vehicleNumber,
-      city: form.city,
-      totalFees: Number(form.totalFees),
-      driverNumber: form.driverNumber,
+      grade: form.grade,
+      subject: form.subject || '',
+      amount: Number(form.amount),
       description: form.description,
     };
 
-    const url = editingId ? `/api/vehicles?id=${editingId}` : '/api/vehicles';
+    const url = editingId ? `/api/class-fees?id=${editingId}` : '/api/class-fees';
     const method = editingId ? 'PUT' : 'POST';
 
     try {
@@ -94,7 +92,7 @@ export default function VehiclesPage() {
       });
 
       if (res.ok) {
-        await fetchVehicles();
+        await fetchClassFees();
         setForm(emptyForm);
         setEditingId(null);
         setShowForm(false);
@@ -107,12 +105,12 @@ export default function VehiclesPage() {
     }
   };
 
-  const handleDelete = async (id: string, vehicleNumber: string) => {
-    if (!confirm(`Delete vehicle "${vehicleNumber}"?`)) return;
+  const handleDelete = async (id: string, grade: string) => {
+    if (!confirm(`Delete fee for "${grade}"?`)) return;
     try {
-      const res = await fetch(`/api/vehicles?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/class-fees?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
-        setVehicles(prev => prev.filter(v => v._id !== id));
+        setClassFees(prev => prev.filter(cf => cf._id !== id));
       } else {
         const err = await res.json().catch(() => ({ message: 'Failed to delete' }));
         alert('Error: ' + err.message);
@@ -122,41 +120,14 @@ export default function VehiclesPage() {
     }
   };
 
-  const handleDownloadCSV = () => {
-    if (vehicles.length === 0) {
-      alert("No vehicles data to download.");
-      return;
-    }
-
-    const headers = ["Bus Number", "City", "Total Fees", "Driver Contact", "Notes"];
-
-    const rows = vehicles.map(v => [
-      `"${v.vehicleNumber}"`,
-      `"${v.city}"`,
-      v.totalFees,
-      `"${v.driverNumber || ''}"`,
-      `"${v.description || ''}"`
-    ]);
-
-    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'vehicles_data.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const handleDownloadPDF = () => {
-    if (vehicles.length === 0) {
-      alert("No vehicles data to download.");
+    if (classFees.length === 0) {
+      alert("No class fees data to download.");
       return;
     }
 
     const doc = new jsPDF();
-    const title = "Vehicles Data";
+    const title = "Class Fees Data";
     
     doc.setFontSize(16);
     doc.text(schoolName || "School Name Not Available", 14, 20);
@@ -164,13 +135,12 @@ export default function VehiclesPage() {
     doc.setFontSize(12);
     doc.text(title, 14, 30);
     
-    const headers = [["Bus Number", "City", "Driver Contact", "Total Fees", "Notes"]];
-    const data = vehicles.map(v => [
-      v.vehicleNumber,
-      v.city,
-      v.driverNumber || '-',
-      `Rs. ${v.totalFees}`,
-      v.description || '-'
+    const headers = [["Class / Grade", "Subject", "Fees Amount", "Notes"]];
+    const data = classFees.map(cf => [
+      cf.grade,
+      cf.subject || '-',
+      `Rs. ${cf.amount}`,
+      cf.description || '-'
     ]);
 
     autoTable(doc, {
@@ -179,13 +149,11 @@ export default function VehiclesPage() {
       body: data,
     });
 
-    doc.save('vehicles_data.pdf');
+    doc.save('class_fees_data.pdf');
   };
 
-  const filtered = vehicles.filter(v =>
-    v.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (v.driverNumber || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const filtered = classFees.filter(cf =>
+    cf.grade.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (!isMounted) return null;
@@ -195,8 +163,8 @@ export default function VehiclesPage() {
       {/* Header */}
       <div className="page-header">
         <div>
-          <h1 className="page-title">Vehicles</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Manage your school bus fleet — city, bus number, and route fees.</p>
+          <h1 className="page-title">Class Fees</h1>
+          <p style={{ color: 'var(--text-muted)' }}>Configure default school fee amounts for each class/grade.</p>
           {schoolName && (
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '8px',
@@ -214,7 +182,7 @@ export default function VehiclesPage() {
             📄 Download PDF
           </button>
           <button className="btn-primary" onClick={showForm ? () => { setShowForm(false); setEditingId(null); } : handleOpenAdd}>
-            {showForm ? (editingId ? 'Cancel Edit' : 'Cancel') : '+ Add Vehicle'}
+            {showForm ? (editingId ? 'Cancel Edit' : 'Cancel') : '+ Add Class Fee'}
           </button>
         </div>
       </div>
@@ -222,19 +190,10 @@ export default function VehiclesPage() {
       {/* Summary cards */}
       <div className="stats-grid" style={{ marginBottom: '2rem' }}>
         <div className="glass card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span style={{ fontSize: '2rem' }}>🚌</span>
+          <span style={{ fontSize: '2rem' }}>🏫</span>
           <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Total Vehicles</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700 }}>{vehicles.length}</div>
-          </div>
-        </div>
-        <div className="glass card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span style={{ fontSize: '2rem' }}>🏙️</span>
-          <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Cities Covered</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700 }}>
-              {new Set(vehicles.map(v => v.city)).size}
-            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Classes Configured</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 700 }}>{classFees.length}</div>
           </div>
         </div>
         <div className="glass card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -242,7 +201,7 @@ export default function VehiclesPage() {
           <div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Total Monthly Fees</div>
             <div style={{ fontSize: '1.8rem', fontWeight: 700 }}>
-              ₹{vehicles.reduce((acc, v) => acc + (v.totalFees || 0), 0).toLocaleString()}
+              ₹{classFees.reduce((acc, cf) => acc + (cf.amount || 0), 0).toLocaleString()}
             </div>
           </div>
         </div>
@@ -252,62 +211,139 @@ export default function VehiclesPage() {
       {showForm && (
         <div className="glass card" style={{ marginBottom: '2rem' }}>
           <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem', color: 'var(--primary)' }}>
-            {editingId ? '✏️ Edit Vehicle' : '🚌 Add New Vehicle'}
+            {editingId ? '✏️ Edit Class Fee' : '🏫 Add New Class Fee'}
           </h2>
           <form onSubmit={handleSubmit} className="responsive-grid-2">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Bus / Vehicle Number</label>
-              <input
-                type="text"
-                placeholder="e.g. RJ-01-AB-1234"
-                value={form.vehicleNumber}
-                onChange={e => setForm({ ...form, vehicleNumber: e.target.value })}
+              <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Class / Grade</label>
+              <select
+                value={form.grade}
+                onChange={e => setForm({ ...form, grade: e.target.value, subject: '' })}
                 required
-              />
+                style={{
+                  padding: '10px 14px', borderRadius: '10px',
+                  border: '1.5px solid var(--glass-border)',
+                  background: 'var(--glass-bg)', color: 'var(--text)',
+                  fontSize: '0.95rem', cursor: 'pointer',
+                }}
+              >
+                <option value="">— Select Class —</option>
+                {['Nursary', 'L.K.G', 'U.K.G', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map(g => (
+                  <option key={g} value={`Class ${g}`}>Class {g}</option>
+                ))}
+                <option value="Other">Other / Custom</option>
+              </select>
+              {form.grade === 'Other' && (
+                <input
+                  type="text"
+                  placeholder="e.g. LKG, UKG, Nursery"
+                  onChange={e => setForm({ ...form, grade: e.target.value })}
+                  style={{ marginTop: '6px' }}
+                  autoFocus
+                />
+              )}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>City / Route Area</label>
-              <input
-                type="text"
-                placeholder="e.g. Jaipur"
-                value={form.city}
-                onChange={e => setForm({ ...form, city: e.target.value })}
-                required
-              />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Fees (₹)</label>
+            {/* Subject dropdown — only for Class 11 / 12 */}
+            {['Class 11', 'Class 12'].includes(form.grade) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Subject / Stream</label>
+                <select
+                  value={form.subject}
+                  onChange={e => setForm({ ...form, subject: e.target.value })}
+                  style={{
+                    padding: '10px 14px', borderRadius: '10px',
+                    border: '1.5px solid var(--glass-border)',
+                    background: 'var(--glass-bg)', color: 'var(--text)',
+                    fontSize: '0.95rem', cursor: 'pointer',
+                  }}
+                >
+                  <option value="">— General / All Streams —</option>
+                  <optgroup label="── Science Stream ──">
+                    <option>Physics</option>
+                    <option>Chemistry</option>
+                    <option>Biology</option>
+                    <option>Mathematics</option>
+                    <option>Computer Science</option>
+                    <option>Agriculture</option>
+                    <option>Informatics Practices</option>
+                  </optgroup>
+                  <optgroup label="── Commerce Stream ──">
+                    <option>Accountancy</option>
+                    <option>Business Studies</option>
+                    <option>Economics</option>
+                    <option>Entrepreneurship</option>
+                  </optgroup>
+                  <optgroup label="── Arts / Humanities ──">
+                    <option>Arts</option>
+                    <option>History</option>
+                    <option>Political Science</option>
+                    <option>Geography</option>
+                    <option>Sociology</option>
+                    <option>Psychology</option>
+                    <option>Philosophy</option>
+                    <option>Fine Arts</option>
+                    <option>Home Science</option>
+                  </optgroup>
+                  <optgroup label="── Common / Language ──">
+                    <option>English</option>
+                    <option>Hindi</option>
+                    <option>Sanskrit</option>
+                    <option>Physical Education</option>
+                  </optgroup>
+                </select>
+              </div>
+            )}
+
+
+            <div className="form-full-width" style={{
+              display: 'flex', flexDirection: 'column', gap: '0.5rem'
+            }}>
+              <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                Monthly Fee Amount (₹)
+              </label>
               <input
                 type="number"
                 placeholder="e.g. 1500"
-                value={form.totalFees}
-                onChange={e => setForm({ ...form, totalFees: e.target.value })}
+                value={form.amount}
+                onChange={e => setForm({ ...form, amount: e.target.value })}
                 required
                 min={0}
+                style={{ fontSize: '1rem' }}
               />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Driver Contact</label>
-              <input
-                type="text"
-                placeholder="e.g. 9876543210"
-                value={form.driverNumber}
-                onChange={e => setForm({ ...form, driverNumber: e.target.value })}
-              />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+
+            <div className="form-full-width" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Notes (Optional)</label>
               <input
                 type="text"
-                placeholder="Driver name, route stops, etc."
+                placeholder="Any special notes for this class fee..."
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
               />
             </div>
             <button type="submit" className="btn-primary form-full-width">
-              {editingId ? 'Save Changes' : 'Add Vehicle'}
+              {editingId ? 'Save Changes' : 'Add Class Fee'}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Fetch error banner */}
+      {fetchError && (
+        <div style={{
+          marginBottom: '1rem',
+          padding: '12px 16px',
+          borderRadius: '10px',
+          background: 'rgba(239,68,68,0.08)',
+          border: '1px solid rgba(239,68,68,0.25)',
+          color: '#dc2626',
+          fontSize: '0.9rem',
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'center',
+        }}>
+          <span>⚠️</span>
+          <span>{fetchError}</span>
         </div>
       )}
 
@@ -315,7 +351,7 @@ export default function VehiclesPage() {
       <div style={{ marginBottom: '1.5rem' }}>
         <input
           type="text"
-          placeholder="Search by bus number or city..."
+          placeholder="Search by class or grade..."
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.95rem' }}
@@ -327,10 +363,9 @@ export default function VehiclesPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
             <tr>
-              <th style={{ padding: '16px' }}>Bus Number</th>
-              <th style={{ padding: '16px' }}>City</th>
-              <th style={{ padding: '16px' }}>Driver Contact</th>
-              <th style={{ padding: '16px' }}>Total Fees</th>
+              <th style={{ padding: '16px' }}>Class / Grade</th>
+              <th style={{ padding: '16px' }}>Subject</th>
+              <th style={{ padding: '16px' }}>Fees Amount</th>
               <th style={{ padding: '16px' }}>Notes</th>
               <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>
             </tr>
@@ -339,32 +374,25 @@ export default function VehiclesPage() {
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  {vehicles.length === 0 ? 'No vehicles added yet. Click "+ Add Vehicle" to get started.' : 'No results found.'}
+                  {classFees.length === 0 ? 'No class fees configured yet. Click "+ Add Class Fee" to get started.' : 'No results found.'}
                 </td>
               </tr>
             ) : (
-              filtered.map(v => (
-                <tr key={v._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                  <td style={{ padding: '16px' }}>
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '8px',
-                      background: 'rgba(99,102,241,0.08)', color: 'var(--primary)',
-                      padding: '4px 12px', borderRadius: '6px', fontWeight: 700, fontSize: '0.9rem',
-                    }}>
-                      🚌 {v.vehicleNumber}
-                    </div>
+              filtered.map(cf => (
+                <tr key={cf._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>🏫 {cf.grade}</td>
+                  <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                    {cf.subject || <span style={{ opacity: 0.4 }}>—</span>}
                   </td>
-                  <td style={{ padding: '16px', fontWeight: 600 }}>🏙️ {v.city}</td>
-                  <td style={{ padding: '16px', fontWeight: 600 }}>📞 {v.driverNumber || '—'}</td>
                   <td style={{ padding: '16px', fontWeight: 700, color: '#10b981', fontSize: '1.1rem' }}>
-                    ₹{v.totalFees.toLocaleString()}
+                    ₹{cf.amount.toLocaleString()}
                   </td>
                   <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                    {v.description || '—'}
+                    {cf.description || '—'}
                   </td>
                   <td style={{ padding: '16px', textAlign: 'right' }}>
                     <button
-                      onClick={() => handleEdit(v)}
+                      onClick={() => handleEdit(cf)}
                       style={{
                         background: 'rgba(59,130,246,0.1)', color: '#3b82f6',
                         border: 'none', padding: '6px 12px', borderRadius: '6px',
@@ -374,7 +402,7 @@ export default function VehiclesPage() {
                       ✏️ Edit
                     </button>
                     <button
-                      onClick={() => handleDelete(v._id, v.vehicleNumber)}
+                      onClick={() => handleDelete(cf._id, cf.grade)}
                       style={{
                         background: 'rgba(239,68,68,0.1)', color: '#ef4444',
                         border: 'none', padding: '6px 12px', borderRadius: '6px',
