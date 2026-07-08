@@ -1,5 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface Vehicle {
   _id: string;
@@ -127,7 +129,7 @@ export default function VehiclesPage() {
     }
 
     const headers = ["Bus Number", "City", "Total Fees", "Driver Contact", "Notes"];
-    
+
     const rows = vehicles.map(v => [
       `"${v.vehicleNumber}"`,
       `"${v.city}"`,
@@ -145,6 +147,39 @@ export default function VehiclesPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDownloadPDF = () => {
+    if (vehicles.length === 0) {
+      alert("No vehicles data to download.");
+      return;
+    }
+
+    const doc = new jsPDF();
+    const title = "Vehicles Data";
+    
+    doc.setFontSize(16);
+    doc.text(schoolName || "School Name Not Available", 14, 20);
+    
+    doc.setFontSize(12);
+    doc.text(title, 14, 30);
+    
+    const headers = [["Bus Number", "City", "Driver Contact", "Total Fees", "Notes"]];
+    const data = vehicles.map(v => [
+      v.vehicleNumber,
+      v.city,
+      v.driverNumber || '-',
+      `Rs. ${v.totalFees}`,
+      v.description || '-'
+    ]);
+
+    autoTable(doc, {
+      startY: 35,
+      head: headers,
+      body: data,
+    });
+
+    doc.save('vehicles_data.pdf');
   };
 
   const filtered = vehicles.filter(v =>
@@ -175,8 +210,8 @@ export default function VehiclesPage() {
           )}
         </div>
         <div className="page-header-actions" style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn-primary" onClick={handleDownloadCSV} style={{ background: '#10b981' }}>
-            📥 Download All Data
+          <button className="btn-primary" onClick={handleDownloadPDF} style={{ background: '#ef4444' }}>
+            📄 Download PDF
           </button>
           <button className="btn-primary" onClick={showForm ? () => { setShowForm(false); setEditingId(null); } : handleOpenAdd}>
             {showForm ? (editingId ? 'Cancel Edit' : 'Cancel') : '+ Add Vehicle'}
@@ -289,71 +324,71 @@ export default function VehiclesPage() {
 
       {/* Table */}
       <div className="glass table-wrapper">
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-        <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
-          <tr>
-            <th style={{ padding: '16px' }}>Bus Number</th>
-            <th style={{ padding: '16px' }}>City</th>
-            <th style={{ padding: '16px' }}>Driver Contact</th>
-            <th style={{ padding: '16px' }}>Total Fees</th>
-            <th style={{ padding: '16px' }}>Notes</th>
-            <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.length === 0 ? (
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
             <tr>
-              <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                {vehicles.length === 0 ? 'No vehicles added yet. Click "+ Add Vehicle" to get started.' : 'No results found.'}
-              </td>
+              <th style={{ padding: '16px' }}>Bus Number</th>
+              <th style={{ padding: '16px' }}>City</th>
+              <th style={{ padding: '16px' }}>Driver Contact</th>
+              <th style={{ padding: '16px' }}>Total Fees</th>
+              <th style={{ padding: '16px' }}>Notes</th>
+              <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>
             </tr>
-          ) : (
-            filtered.map(v => (
-              <tr key={v._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                <td style={{ padding: '16px' }}>
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '8px',
-                    background: 'rgba(99,102,241,0.08)', color: 'var(--primary)',
-                    padding: '4px 12px', borderRadius: '6px', fontWeight: 700, fontSize: '0.9rem',
-                  }}>
-                    🚌 {v.vehicleNumber}
-                  </div>
-                </td>
-                <td style={{ padding: '16px', fontWeight: 600 }}>🏙️ {v.city}</td>
-                <td style={{ padding: '16px', fontWeight: 600 }}>📞 {v.driverNumber || '—'}</td>
-                <td style={{ padding: '16px', fontWeight: 700, color: '#10b981', fontSize: '1.1rem' }}>
-                  ₹{v.totalFees.toLocaleString()}
-                </td>
-                <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                  {v.description || '—'}
-                </td>
-                <td style={{ padding: '16px', textAlign: 'right' }}>
-                  <button
-                    onClick={() => handleEdit(v)}
-                    style={{
-                      background: 'rgba(59,130,246,0.1)', color: '#3b82f6',
-                      border: 'none', padding: '6px 12px', borderRadius: '6px',
-                      fontSize: '0.875rem', cursor: 'pointer', marginRight: '8px',
-                    }}
-                  >
-                    ✏️ Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(v._id, v.vehicleNumber)}
-                    style={{
-                      background: 'rgba(239,68,68,0.1)', color: '#ef4444',
-                      border: 'none', padding: '6px 12px', borderRadius: '6px',
-                      fontSize: '0.875rem', cursor: 'pointer',
-                    }}
-                  >
-                    🗑️ Delete
-                  </button>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  {vehicles.length === 0 ? 'No vehicles added yet. Click "+ Add Vehicle" to get started.' : 'No results found.'}
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              filtered.map(v => (
+                <tr key={v._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                  <td style={{ padding: '16px' }}>
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '8px',
+                      background: 'rgba(99,102,241,0.08)', color: 'var(--primary)',
+                      padding: '4px 12px', borderRadius: '6px', fontWeight: 700, fontSize: '0.9rem',
+                    }}>
+                      🚌 {v.vehicleNumber}
+                    </div>
+                  </td>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>🏙️ {v.city}</td>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>📞 {v.driverNumber || '—'}</td>
+                  <td style={{ padding: '16px', fontWeight: 700, color: '#10b981', fontSize: '1.1rem' }}>
+                    ₹{v.totalFees.toLocaleString()}
+                  </td>
+                  <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                    {v.description || '—'}
+                  </td>
+                  <td style={{ padding: '16px', textAlign: 'right' }}>
+                    <button
+                      onClick={() => handleEdit(v)}
+                      style={{
+                        background: 'rgba(59,130,246,0.1)', color: '#3b82f6',
+                        border: 'none', padding: '6px 12px', borderRadius: '6px',
+                        fontSize: '0.875rem', cursor: 'pointer', marginRight: '8px',
+                      }}
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(v._id, v.vehicleNumber)}
+                      style={{
+                        background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+                        border: 'none', padding: '6px 12px', borderRadius: '6px',
+                        fontSize: '0.875rem', cursor: 'pointer',
+                      }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
