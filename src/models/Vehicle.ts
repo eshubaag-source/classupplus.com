@@ -23,8 +23,8 @@ const VehicleSchema: Schema = new Schema(
   { timestamps: true }
 );
 
-// A vehicle number must be unique per school
-VehicleSchema.index({ adminId: 1, vehicleNumber: 1 }, { unique: true });
+// A vehicle number can appear repeatedly
+VehicleSchema.index({ adminId: 1, vehicleNumber: 1 });
 
 export const Vehicle =
   mongoose.models.Vehicle || mongoose.model<IVehicle>('Vehicle', VehicleSchema);
