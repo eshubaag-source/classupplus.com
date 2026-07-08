@@ -120,6 +120,33 @@ export default function VehiclesPage() {
     }
   };
 
+  const handleDownloadCSV = () => {
+    if (vehicles.length === 0) {
+      alert("No vehicles data to download.");
+      return;
+    }
+
+    const headers = ["Bus Number", "City", "Total Fees", "Driver Contact", "Notes"];
+    
+    const rows = vehicles.map(v => [
+      `"${v.vehicleNumber}"`,
+      `"${v.city}"`,
+      v.totalFees,
+      `"${v.driverNumber || ''}"`,
+      `"${v.description || ''}"`
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'vehicles_data.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const filtered = vehicles.filter(v =>
     v.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
     v.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -147,7 +174,10 @@ export default function VehiclesPage() {
             </div>
           )}
         </div>
-        <div className="page-header-actions">
+        <div className="page-header-actions" style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn-primary" onClick={handleDownloadCSV} style={{ background: '#10b981' }}>
+            📥 Download All Data
+          </button>
           <button className="btn-primary" onClick={showForm ? () => { setShowForm(false); setEditingId(null); } : handleOpenAdd}>
             {showForm ? (editingId ? 'Cancel Edit' : 'Cancel') : '+ Add Vehicle'}
           </button>
