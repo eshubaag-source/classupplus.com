@@ -16,7 +16,7 @@ interface Vehicle {
 const emptyForm = {
   vehicleNumber: '',
   city: '',
-  totalFees: '',
+  totalFees: 0,
   driverNumber: '',
   description: '',
 };
