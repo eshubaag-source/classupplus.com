@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build", 
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -12,8 +12,10 @@
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.3",
     "jsonwebtoken": "^9.0.3",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "mongodb": "^7.2.0",
-    "mongoose": "^9.6.3",
+    "mongoose": "^9.7.3",
     "next": "16.2.7",
     "nodemailer": "^9.0.1",
     "pdf-lib": "^1.17.1",
