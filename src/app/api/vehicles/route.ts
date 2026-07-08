@@ -33,9 +33,6 @@ export async function POST(request: Request) {
     await vehicle.save();
     return NextResponse.json(vehicle, { status: 201 });
   } catch (error: any) {
-    if (error.code === 11000) {
-      return NextResponse.json({ message: 'A vehicle with this number already exists.' }, { status: 400 });
-    }
     return NextResponse.json({ message: error.message || 'Failed to create vehicle' }, { status: 500 });
   }
 }
