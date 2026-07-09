@@ -17,7 +17,7 @@ async function getUserFromToken() {
     const { payload } = await jwtVerify(token, secret);
     return payload as { id: string; username: string; role?: string; adminId?: string; sessionId?: string };
   } catch {
-    return null;
+    return null;  
   }
 }
 
