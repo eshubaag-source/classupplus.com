@@ -13,7 +13,7 @@ async function getUserFromToken() {
   if (!token) return null;
 
   try {
-    const secret = new TextEncoder().encode(JWT_SECRET);
+    const secret = new TextEncoder().encode(JWT_SECRET); // jwt
     const { payload } = await jwtVerify(token, secret);
     return payload as { id: string; username: string; role?: string; adminId?: string; sessionId?: string };
   } catch {
