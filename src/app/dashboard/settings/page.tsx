@@ -37,9 +37,28 @@ export default function SettingsPage() {
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [showTwilioToken, setShowTwilioToken] = useState(false);
 
+  // Sessions state
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+
   useEffect(() => {
     fetchProfile();
+    fetchSessions();
   }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const res = await fetch('/api/auth/sessions');
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch sessions', err);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -138,6 +157,25 @@ export default function SettingsPage() {
     setProfile(original);
     setHasChanges(false);
     setSaveStatus('idle');
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    if (!confirm('Are you sure you want to log out this device?')) return;
+    try {
+      const res = await fetch(`/api/auth/sessions?id=${sessionId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setSessions(sessions.filter(s => s._id !== sessionId));
+        // If they deleted their current session, they will likely get redirected or get a 401 on next action.
+        // We could also do a hard reload here if they deleted the current session.
+      } else {
+        alert('Failed to log out device.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred.');
+    }
   };
 
   const handlePasswordChange = async () => {
@@ -767,6 +805,64 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Active Devices Card */}
+      <div className="glass card" style={{
+        padding: '24px 32px',
+        marginBottom: '24px',
+      }}>
+        <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          📱 Active Devices
+        </h3>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+          You are currently logged in on {sessions.length} device{sessions.length === 1 ? '' : 's'}.
+        </p>
+        
+        {sessionsLoading ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading devices...</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {sessions.map((session) => (
+              <div key={session._id} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px',
+                borderRadius: '12px',
+                background: 'rgba(0,0,0,0.02)',
+                border: '1px solid var(--glass-border)',
+              }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--foreground)' }}>
+                    {session.userAgent || 'Unknown Device'}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    IP: {session.ipAddress} • Last active: {new Date(session.lastActive).toLocaleString()}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleRevokeSession(session._id)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: '#ef4444',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
+                >
+                  Log Out
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Change Password Card */}
