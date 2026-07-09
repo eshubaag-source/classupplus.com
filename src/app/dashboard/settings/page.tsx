@@ -228,6 +228,40 @@ export default function SettingsPage() {
     return { label: 'Strong', color: '#10b981', width: '100%' };
   };
 
+  const parseDeviceName = (ua: string): string => {
+    if (!ua) return 'Unknown Device';
+    // Detect OS
+    let os = 'Unknown OS';
+    if (/Android/i.test(ua)) {
+      const match = ua.match(/Android ([\d.]+)/);
+      os = match ? `Android ${match[1]}` : 'Android';
+    } else if (/iPhone|iPad|iPod/i.test(ua)) {
+      os = /iPad/i.test(ua) ? 'iPad' : 'iPhone';
+    } else if (/Windows NT/i.test(ua)) {
+      os = 'Windows';
+    } else if (/Mac OS X/i.test(ua)) {
+      os = 'macOS';
+    } else if (/Linux/i.test(ua)) {
+      os = 'Linux';
+    }
+    // Detect browser
+    let browser = 'Browser';
+    if (/Edg\//i.test(ua)) {
+      browser = 'Edge';
+    } else if (/OPR\//i.test(ua) || /Opera/i.test(ua)) {
+      browser = 'Opera';
+    } else if (/Firefox\//i.test(ua)) {
+      browser = 'Firefox';
+    } else if (/SamsungBrowser/i.test(ua)) {
+      browser = 'Samsung Browser';
+    } else if (/Chrome\//i.test(ua)) {
+      browser = /Mobile/i.test(ua) ? 'Chrome Mobile' : 'Chrome';
+    } else if (/Safari\//i.test(ua)) {
+      browser = 'Safari';
+    }
+    return `${browser} on ${os}`;
+  };
+
   const getInitials = () => {
     if (profile.role === 'admin' && profile.schoolName) {
       return profile.schoolName.split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
@@ -835,7 +869,7 @@ export default function SettingsPage() {
               }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--foreground)' }}>
-                    {session.userAgent || 'Unknown Device'}
+                    {parseDeviceName(session.userAgent)}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                     IP: {session.ipAddress} • Last active: {new Date(session.lastActive).toLocaleString()}
