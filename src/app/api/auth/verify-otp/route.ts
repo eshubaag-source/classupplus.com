@@ -55,12 +55,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'User account not found.' }, { status: 404 });
     }
 
+    const userAgent = req.headers.get('user-agent') || 'Unknown Device';
+    const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'Unknown IP';
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1 day
+
+    const { Session } = await import('@/models/Session');
+    const newSession = await Session.create({
+      userId: user._id,
+      role: decoded.role,
+      userAgent,
+      ipAddress,
+      expiresAt,
+    });
+
     // Sign the final session JWT token (same payload as original credentials check)
     const tokenPayload = {
       id: user._id,
       username: decoded.role === 'admin' ? user.username : user.email,
       role: decoded.role,
       adminId: decoded.role === 'admin' ? user._id : user.adminId,
+      sessionId: newSession._id,
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET, {
