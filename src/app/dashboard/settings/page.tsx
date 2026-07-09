@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { UAParser } from 'ua-parser-js';
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<any>({
@@ -24,7 +23,7 @@ export default function SettingsPage() {
     smsEnabled: true,
     whatsappEnabled: true,
   });
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -82,26 +81,26 @@ export default function SettingsPage() {
     let changed = false;
     if (updated.role === 'admin') {
       changed = updated.schoolName !== original.schoolName ||
-                updated.email !== original.email ||
-                updated.mobileNumber !== original.mobileNumber ||
-                updated.twilioAccountSid !== original.twilioAccountSid ||
-                updated.twilioAuthToken !== original.twilioAuthToken ||
-                updated.twilioSmsNumber !== original.twilioSmsNumber ||
-                updated.twilioWhatsappNumber !== original.twilioWhatsappNumber ||
-                updated.smsEnabled !== original.smsEnabled ||
-                updated.whatsappEnabled !== original.whatsappEnabled;
+        updated.email !== original.email ||
+        updated.mobileNumber !== original.mobileNumber ||
+        updated.twilioAccountSid !== original.twilioAccountSid ||
+        updated.twilioAuthToken !== original.twilioAuthToken ||
+        updated.twilioSmsNumber !== original.twilioSmsNumber ||
+        updated.twilioWhatsappNumber !== original.twilioWhatsappNumber ||
+        updated.smsEnabled !== original.smsEnabled ||
+        updated.whatsappEnabled !== original.whatsappEnabled;
     } else {
       changed = updated.name !== original.name ||
-                updated.email !== original.email ||
-                updated.phone !== original.phone ||
-                updated.grade !== original.grade ||
-                updated.section !== original.section ||
-                updated.schoolName !== original.schoolName ||
-                updated.aadhaarNumber !== original.aadhaarNumber ||
-                updated.qualification !== original.qualification ||
-                updated.subject !== original.subject;
+        updated.email !== original.email ||
+        updated.phone !== original.phone ||
+        updated.grade !== original.grade ||
+        updated.section !== original.section ||
+        updated.schoolName !== original.schoolName ||
+        updated.aadhaarNumber !== original.aadhaarNumber ||
+        updated.qualification !== original.qualification ||
+        updated.subject !== original.subject;
     }
-    
+
     setHasChanges(changed);
     setSaveStatus('idle');
   };
@@ -351,7 +350,7 @@ export default function SettingsPage() {
 
         {/* Form Fields */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
+
           {isAdmin ? (
             <>
               <div className="responsive-grid-2">
@@ -398,25 +397,25 @@ export default function SettingsPage() {
                   }}>
                     🏫 School Name
                   </label>
-                <input
-                  type="text"
-                  value={profile.schoolName || ''}
-                  onChange={(e) => handleChange('schoolName', e.target.value)}
-                  placeholder="Enter your school name"
-                  style={{
-                    width: '100%',
-                    padding: '14px 16px',
-                    fontSize: '1rem',
-                    background: 'var(--glass-bg)',
-                    border: '1px solid var(--glass-border)',
-                    borderRadius: '12px',
-                    color: 'var(--foreground)',
-                    transition: 'all 0.2s ease',
-                    cursor: 'not-allowed',
-                  }}
-                />
+                  <input
+                    type="text"
+                    value={profile.schoolName || ''}
+                    onChange={(e) => handleChange('schoolName', e.target.value)}
+                    placeholder="Enter your school name"
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      fontSize: '1rem',
+                      background: 'var(--glass-bg)',
+                      border: '1px solid var(--glass-border)',
+                      borderRadius: '12px',
+                      color: 'var(--foreground)',
+                      transition: 'all 0.2s ease',
+                      cursor: 'not-allowed',
+                    }}
+                  />
+                </div>
               </div>
-            </div>
 
               {/* Email & Mobile side by side */}
               <div className="responsive-grid-2">
@@ -819,7 +818,7 @@ export default function SettingsPage() {
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
           You are currently logged in on {sessions.length} device{sessions.length === 1 ? '' : 's'}.
         </p>
-        
+
         {sessionsLoading ? (
           <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading devices...</div>
         ) : (
@@ -836,28 +835,7 @@ export default function SettingsPage() {
               }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--foreground)' }}>
-                    {(() => {
-                      if (!session.userAgent || session.userAgent === 'Unknown Device') return 'Unknown Device';
-                      const parser = new UAParser(session.userAgent);
-                      const device = parser.getDevice();
-                      const os = parser.getOS();
-                      const browser = parser.getBrowser();
-                      
-                      let name = '';
-                      if (device.vendor && device.model) {
-                        name = `${device.vendor} ${device.model}`;
-                      } else if (os.name) {
-                        name = `${os.name} Device`;
-                      } else {
-                        name = 'Unknown Device';
-                      }
-                      
-                      if (browser.name) {
-                        name += ` (${browser.name})`;
-                      }
-                      
-                      return name;
-                    })()}
+                    {session.userAgent || 'Unknown Device'}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                     IP: {session.ipAddress} • Last active: {new Date(session.lastActive).toLocaleString()}
@@ -1059,8 +1037,8 @@ export default function SettingsPage() {
                   border: passwords.confirm && passwords.new !== passwords.confirm
                     ? '1px solid #ef4444'
                     : passwords.confirm && passwords.new === passwords.confirm
-                    ? '1px solid #10b981'
-                    : '1px solid var(--glass-border)',
+                      ? '1px solid #10b981'
+                      : '1px solid var(--glass-border)',
                   borderRadius: '12px',
                   color: 'var(--foreground)',
                   transition: 'all 0.2s ease',
