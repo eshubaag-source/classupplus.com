@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { UAParser } from 'ua-parser-js';
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<any>({
@@ -835,7 +836,28 @@ export default function SettingsPage() {
               }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--foreground)' }}>
-                    {session.userAgent || 'Unknown Device'}
+                    {(() => {
+                      if (!session.userAgent || session.userAgent === 'Unknown Device') return 'Unknown Device';
+                      const parser = new UAParser(session.userAgent);
+                      const device = parser.getDevice();
+                      const os = parser.getOS();
+                      const browser = parser.getBrowser();
+                      
+                      let name = '';
+                      if (device.vendor && device.model) {
+                        name = `${device.vendor} ${device.model}`;
+                      } else if (os.name) {
+                        name = `${os.name} Device`;
+                      } else {
+                        name = 'Unknown Device';
+                      }
+                      
+                      if (browser.name) {
+                        name += ` (${browser.name})`;
+                      }
+                      
+                      return name;
+                    })()}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                     IP: {session.ipAddress} • Last active: {new Date(session.lastActive).toLocaleString()}
