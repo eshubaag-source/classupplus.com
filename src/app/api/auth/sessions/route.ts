@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-import { NextResponse } from 'next/server'; 
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import dbConnect from '@/lib/db';
@@ -13,11 +13,11 @@ async function getUserFromToken() {
   if (!token) return null;
 
   try {
-    const secret = new TextEncoder().encode(JWT_SECRET); // jwt
+    const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
     return payload as { id: string; username: string; role?: string; adminId?: string; sessionId?: string };
   } catch {
-    return null;  
+    return null;
   }
 }
 
