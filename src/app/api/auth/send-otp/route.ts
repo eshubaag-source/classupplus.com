@@ -91,12 +91,11 @@ export async function POST(req: Request) {
         });
         console.log(`Email sent successfully to ${destination}`);
       } catch (emailError: any) {
-        console.error('Email sending failed:', emailError);
-        // Continue anyway in dev, but maybe fail in prod if you want strictly
+        throw new Error(`Email delivery failed: ${emailError.message || emailError}`);
       }
     } else {
       // Phone / SMS logic would go here (e.g. Twilio, AWS SNS)
-      console.log(`[SMS MOCK] Sending OTP ${otpCode} to phone ${destination}`);
+      console.log(`[SMS MOCK] Sending OTP ${otpCode} to phone: ${destination}`);
     }
 
     const responsePayload: any = {
