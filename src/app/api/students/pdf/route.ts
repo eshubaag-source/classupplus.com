@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import Student from '@/models/Student';
+import Admin from '@/models/Admin';
 import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
 interface StudentRecord {
   _id: string;
@@ -22,6 +23,10 @@ async function getAllStudents() {
   const adminId = payload.adminId;
   await dbConnect();
 
+  // Fetch school name
+  const adminDoc = await Admin.findById(adminId).select('schoolName').lean().exec();
+  const schoolName = (adminDoc as any)?.schoolName || 'School';
+
   let query: any = { adminId };
   if (payload.role === 'teacher') {
     const classFilter = await getTeacherClassFilter(payload);
@@ -35,7 +40,7 @@ async function getAllStudents() {
     .lean()
     .exec();
   // Normalize to the shape expected by PDF generator
-  return (students as any).map((s: any) => ({
+  const records = (students as any).map((s: any) => ({
     _id: s._id?.toString(),
     name: s.name,
     fatherName: s.fatherName,
@@ -45,10 +50,11 @@ async function getAllStudents() {
     parentContact: s.parentContact || '',
     note: s.note || '',
   }));
+  return { students: records, schoolName };
 }
 
 export async function GET() {
-  const students = await getAllStudents();
+  const { students, schoolName } = await getAllStudents();
 
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([600, 800]);
@@ -56,16 +62,25 @@ export async function GET() {
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-  // Title
-  page.drawText('All Students Record', {
+  // School Name Header
+  page.drawText(schoolName.toUpperCase(), {
     x: 30,
-    y: height - 40,
-    size: 24,
+    y: height - 38,
+    size: 20,
     font: fontBold,
-    color: rgb(0, 0, 0.8),
+    color: rgb(0.09, 0.05, 0.4),
   });
 
-  const startY = height - 80;
+  // Report subtitle
+  page.drawText('All Students Record', {
+    x: 30,
+    y: height - 62,
+    size: 13,
+    font: fontRegular,
+    color: rgb(0.35, 0.35, 0.45),
+  });
+
+  const startY = height - 90;
   const lineHeight = 14;
   let y = startY;
 
