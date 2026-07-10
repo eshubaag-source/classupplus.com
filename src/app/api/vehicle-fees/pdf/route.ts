@@ -61,15 +61,25 @@ export async function GET(request: Request) {
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-      page.drawText('All Vehicle Fees Record', {
+      // School Name Header
+      page.drawText(schoolName.toUpperCase(), {
         x: 30,
-        y: height - 40,
-        size: 24,
+        y: height - 38,
+        size: 20,
         font: fontBold,
-        color: rgb(0, 0, 0.8),
+        color: rgb(0.09, 0.05, 0.4),
       });
 
-      let y = height - 80;
+      // Report subtitle
+      page.drawText('All Vehicle Fees Record', {
+        x: 30,
+        y: height - 62,
+        size: 13,
+        font: fontRegular,
+        color: rgb(0.35, 0.35, 0.45),
+      });
+
+      let y = height - 90;
       const lineHeight = 16;
       
       const header = ['Receipt No', 'Student', 'Father Name', 'Class/Sec', 'Bus No', 'City', 'Utr', 'Month', 'Paid Amt', 'Last Year', 'Status'];
