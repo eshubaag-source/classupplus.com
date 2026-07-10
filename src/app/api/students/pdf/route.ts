@@ -66,7 +66,7 @@ export async function GET() {
   page.drawText(schoolName.toUpperCase(), {
     x: 30,
     y: height - 38,
-    size: 20,
+    size: 14,
     font: fontBold,
     color: rgb(0.09, 0.05, 0.4),
   });
