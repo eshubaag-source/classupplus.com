@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 
     const classFees = await ClassFee.find({ adminId }).lean().exec();
     const admin = await Admin.findById(adminId).select('schoolName').lean().exec();
-    const schoolName = admin?.schoolName || "E'School";
+    const schoolName = admin?.schoolName || "classupplus";
 
     // Filter out records where student population failed/missing
     const validFees = allFees.filter((f: any) => f.studentId);
@@ -71,15 +71,25 @@ export async function GET(request: Request) {
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-      page.drawText('All Fees Record', {
+      // School Name Header
+      page.drawText(schoolName.toUpperCase(), {
         x: 30,
-        y: height - 40,
-        size: 24,
+        y: height - 38,
+        size: 20,
         font: fontBold,
-        color: rgb(0, 0, 0.8),
+        color: rgb(0.09, 0.05, 0.4),
       });
 
-      let y = height - 80;
+      // Report subtitle
+      page.drawText('All Fees Record', {
+        x: 30,
+        y: height - 62,
+        size: 13,
+        font: fontRegular,
+        color: rgb(0.35, 0.35, 0.45),
+      });
+
+      let y = height - 90;
       const lineHeight = 16;
 
       const header = ['Receipt No', 'Student', 'Father Name', 'Class/Sec', 'Type', 'Utr', 'Month', 'Paid Amt', 'Last Year', 'Status'];
@@ -298,7 +308,7 @@ export async function GET(request: Request) {
 
       // Total row
       const totalY = rowDataY - sc(22);
-      const totalLabel = 'Total Paid:';
+      const totalLabel = 'Total Paid :';
       const totalLabelW = fontBold.widthOfTextAtSize(totalLabel, sc(8.5));
       page.drawText(totalLabel, { x: ox + w - sc(18) - totalLabelW - sc(40), y: totalY, size: sc(8.5), font: fontBold, color: gray1 });
       page.drawText(`Rs. ${fee.amount}`, { x: ox + w - sc(18) - sc(38), y: totalY, size: sc(8.5), font: fontBold, color: indigo });
