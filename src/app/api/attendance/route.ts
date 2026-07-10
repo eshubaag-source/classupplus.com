@@ -1,85 +1,152 @@
 import { NextResponse } from 'next/server';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import Attendance from '@/models/Attendance';
 import Student from '@/models/Student';
+import Admin from '@/models/Admin';
 import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
-import { sendNotification } from '@/lib/notifications';
 
 export async function GET(req: Request) {
   try {
     await dbConnect();
     const { searchParams } = new URL(req.url);
-    const date = searchParams.get('date');
-    
-    const payload = await getTokenPayload();
-    if (!payload) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-
-    const adminId = payload.adminId;
-    const query: any = date ? { date: new Date(date), adminId } : { adminId };
-
-    if (payload.role === 'teacher') {
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
-      // Get students in teacher's class
-      const students = await Student.find({ adminId, ...classFilter }).select('_id');
-      const studentIds = students.map(s => s._id);
-      query.studentId = { $in: studentIds };
+    const dateStr = searchParams.get('date');
+    if (!dateStr) {
+      return new NextResponse('Date parameter is required', { status: 400 });
     }
 
-    const attendance = await Attendance.find(query).populate('studentId');
-    // Filter out records where studentId populated to null (e.g. deleted students)
-    const filteredAttendance = attendance.filter((a: any) => a.studentId);
-    return NextResponse.json(filteredAttendance);
-  } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
-  }
-}
-
-export async function POST(req: Request) {
-  try {
-    await dbConnect();
-    const body = await req.json();
-    const { studentId, status, date } = body;
-    
     const payload = await getTokenPayload();
-    if (!payload) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    if (!payload) return new NextResponse('Unauthorized', { status: 401 });
 
     const adminId = payload.adminId;
 
-    const student = await Student.findOne({ _id: studentId, adminId });
-    if (!student) return NextResponse.json({ message: 'Student not found' }, { status: 404 });
+    // Fetch school name
+    const adminDoc = await Admin.findById(adminId).select('schoolName').lean().exec();
+    const schoolName = (adminDoc as any)?.schoolName || 'School';
 
+    // Determine the month range based on the selected date
+    const selectedDate = new Date(dateStr);
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+    const studentQuery: any = { adminId };
+    
     if (payload.role === 'teacher') {
       const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
+      if (!classFilter) return new NextResponse('Teacher profile not found', { status: 404 });
+      studentQuery.grade = classFilter.grade;
+      studentQuery.section = classFilter.section;
+    }
 
-      if (!classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
-        return NextResponse.json({ message: 'Unauthorized to record attendance for this student' }, { status: 403 });
+    const students = await Student.find(studentQuery).lean().exec();
+    const studentIds = students.map(s => s._id);
+
+    const attendanceRecords = await Attendance.find({
+      adminId,
+      studentId: { $in: studentIds },
+      date: { $gte: startDate, $lte: endDate }
+    }).lean().exec();
+
+    // Aggregate attendance
+    const attendanceMap = new Map();
+    students.forEach((s: any) => {
+      attendanceMap.set(s._id.toString(), {
+        rollNumber: s.rollNumber,
+        name: s.name,
+        grade: `${s.grade} - ${s.section}`,
+        present: 0,
+        absent: 0
+      });
+    });
+
+    attendanceRecords.forEach((record: any) => {
+      const sid = record.studentId.toString();
+      const stats = attendanceMap.get(sid);
+      if (stats) {
+        if (record.status === 'Present') stats.present += 1;
+        if (record.status === 'Absent') stats.absent += 1;
       }
-    }
+    });
 
-    const attendance = await Attendance.findOneAndUpdate(
-      { studentId, date: new Date(date), adminId },
-      { status, adminId },
-      { upsert: true, new: true }
-    );
+    const monthName = selectedDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
-    // Send notification if contact number is available
-    if (student.parentContact) {
-      const formattedDate = new Date(date).toLocaleDateString(undefined, { dateStyle: 'medium' });
-      const messageText = `Attendance Alert: Your child ${student.name} has been marked ${status} on ${formattedDate}.`;
-      sendNotification({
-        adminId,
-        studentId: studentId.toString(),
-        type: 'Both',
-        category: 'Attendance',
-        message: messageText
-      }).catch(err => console.error('Attendance notify error:', err));
-    }
+    // Generate PDF
+    const pdfDoc = await PDFDocument.create();
+    let currentPage = pdfDoc.addPage([600, 800]); 
+    const { height } = currentPage.getSize();
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    // School Name Header
+    currentPage.drawText(schoolName.toUpperCase(), {
+      x: 50,
+      y: height - 40,
+      size: 20,
+      font: fontBold,
+      color: rgb(0.09, 0.05, 0.4),
+    });
+
+    // Report subtitle
+    currentPage.drawText(`Monthly Attendance Report - ${monthName}`, {
+      x: 50,
+      y: height - 65,
+      size: 13,
+      font: fontRegular,
+      color: rgb(0.35, 0.35, 0.45),
+    });
+
+    const startY = height - 105;
+    const lineHeight = 20;
+    let y = startY;
+
+    const header = ['Roll No', 'Name', 'Class/Sec', 'Total Present', 'Total Absent'];
+    const colWidths = [80, 180, 100, 90, 90];
+    let x = 50;
     
-    return NextResponse.json(attendance);
-  } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    header.forEach((text, i) => {
+      currentPage.drawText(text, { x, y, size: 12, font: fontBold, color: rgb(0, 0, 0) });
+      x += colWidths[i];
+    });
+
+    y -= lineHeight + 5;
+    
+    const rows = Array.from(attendanceMap.values());
+    
+    rows.forEach((row: any) => {
+      x = 50;
+      const rowData = [
+        (row.rollNumber || '-').substring(0, 10),
+        (row.name || '-').substring(0, 30),
+        (row.grade || '-').substring(0, 15),
+        row.present.toString(),
+        row.absent.toString()
+      ];
+
+      rowData.forEach((cell, i) => {
+        currentPage.drawText(cell, { x, y, size: 10, font: fontRegular, color: rgb(0, 0, 0) });
+        x += colWidths[i];
+      });
+      y -= lineHeight;
+      if (y < 40) {
+        currentPage = pdfDoc.addPage([600, 800]);
+        y = height - 50;
+      }
+    });
+
+    const pdfBytes = await pdfDoc.save();
+    const pdfBlob = new Uint8Array(pdfBytes);
+
+    return new NextResponse(pdfBlob, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="attendance-${monthName.replace(/\s+/g, '-')}.pdf"`,
+      },
+    });
+  } catch (err: any) {
+    console.error(err);
+    return new NextResponse('Internal Server Error: ' + err.message, { status: 500 });
   }
 }
