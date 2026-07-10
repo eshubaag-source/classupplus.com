@@ -3,6 +3,7 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import TeacherSalary from '@/models/TeacherSalary';
 import { Teacher } from '@/models/Teacher';
+import Admin from '@/models/Admin';
 import { getTokenPayload } from '@/lib/auth';
 
 const formatMonthStr = (monthStr: string) => {
@@ -36,8 +37,10 @@ export async function GET(req: Request) {
 
     const adminId = payload.adminId;
 
-    // Fetch all teachers for this admin
+    // Fetch all teachers and admin info for this admin
     const teachers = await Teacher.find({ adminId }).sort({ name: 1 }).lean();
+    const adminDoc = await Admin.findById(adminId).select('schoolName').lean().exec();
+    const schoolName = (adminDoc as any)?.schoolName || 'School';
 
     // Fetch all salary records for this month and admin
     const salaries = await TeacherSalary.find({ adminId, month }).lean();
@@ -57,13 +60,22 @@ export async function GET(req: Request) {
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-    // Title
+    // School Name Header
+    currentPage.drawText(schoolName.toUpperCase(), {
+      x: 30,
+      y: height - 32,
+      size: 22,
+      font: fontBold,
+      color: rgb(0.09, 0.05, 0.4),
+    });
+
+    // Report subtitle
     currentPage.drawText(`Teacher Salary Report - ${displayMonth}`, {
       x: 30,
-      y: height - 40,
-      size: 20,
-      font: fontBold,
-      color: rgb(0.09, 0.05, 0.4), // Indigo shade matching premium vibe
+      y: height - 58,
+      size: 13,
+      font: fontRegular,
+      color: rgb(0.35, 0.35, 0.45),
     });
 
     // Summary calculation
@@ -79,7 +91,7 @@ export async function GET(req: Request) {
       `Total Monthly Budget: Rs ${totalBudget.toLocaleString('en-IN')}   |   Paid: Rs ${totalPaid.toLocaleString('en-IN')}   |   Pending: Rs ${Math.max(0, totalPending).toLocaleString('en-IN')}`,
       {
         x: 30,
-        y: height - 65,
+        y: height - 82,
         size: 11,
         font: fontBold,
         color: rgb(0.3, 0.3, 0.3),
@@ -88,13 +100,13 @@ export async function GET(req: Request) {
 
     // Draw Line
     currentPage.drawLine({
-      start: { x: 30, y: height - 75 },
-      end: { x: 1070, y: height - 75 },
+      start: { x: 30, y: height - 92 },
+      end: { x: 1070, y: height - 92 },
       thickness: 1,
       color: rgb(0.8, 0.8, 0.8),
     });
 
-    const startY = height - 100;
+    const startY = height - 115;
     const lineHeight = 18;
     let y = startY;
 
