@@ -482,7 +482,7 @@ export default function LoginPage() {
 
               <div className="form-full-width" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label>Email Address</label>
-                <input type="email" placeholder="john.doe@scclassupplus.com" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} disabled={loading} required />
+                <input type="email" placeholder="john.doe@classupplus.com" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} disabled={loading} required />
               </div>
 
               <div className="form-full-width" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
