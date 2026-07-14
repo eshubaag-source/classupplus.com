@@ -26,6 +26,8 @@ export default function LoginPage() {
   const [regGrade, setRegGrade] = useState('');
   const [regSection, setRegSection] = useState('');
   const [regSchoolName, setRegSchoolName] = useState('');
+  const [regQualification, setRegQualification] = useState('');
+  const [regSubject, setRegSubject] = useState('');
   const [regPassword, setRegPassword] = useState('');
 
   // Forgot/Reset Password State
@@ -132,6 +134,8 @@ export default function LoginPage() {
           grade: regGrade,
           section: regSection,
           schoolName: regSchoolName,
+          qualification: regQualification,
+          subject: regSubject,
           password: regPassword
         }),
         headers: { 'Content-Type': 'application/json' },
@@ -143,7 +147,7 @@ export default function LoginPage() {
         setUsername(regEmail);
         setPassword('');
         // Clear teacher reg state
-        setRegName(''); setRegEmail(''); setRegPhone(''); setRegGrade(''); setRegSection(''); setRegSchoolName(''); setRegPassword('');
+        setRegName(''); setRegEmail(''); setRegPhone(''); setRegGrade(''); setRegSection(''); setRegSchoolName(''); setRegQualification(''); setRegSubject(''); setRegPassword('');
       } else {
         const data = await res.json();
         setError(data.message || 'Registration failed');
@@ -484,6 +488,16 @@ export default function LoginPage() {
               <div className="form-full-width" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label>Phone Number</label>
                 <input type="text" placeholder="+1 234 567 890" value={regPhone} onChange={(e) => setRegPhone(e.target.value)} disabled={loading} required />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label>Qualification</label>
+                <input type="text" placeholder="E.g. M.Sc., B.Ed." value={regQualification} onChange={(e) => setRegQualification(e.target.value)} disabled={loading} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label>Subject</label>
+                <input type="text" placeholder="E.g. Mathematics" value={regSubject} onChange={(e) => setRegSubject(e.target.value)} disabled={loading} />
               </div>
 
               <div className="form-full-width" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
