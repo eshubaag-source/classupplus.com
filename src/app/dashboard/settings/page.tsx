@@ -440,7 +440,7 @@ export default function SettingsPage() {
                       width: '100%',
                       padding: '14px 16px',
                       fontSize: '1rem',
-                      background: 'var(--glass-bg)',
+                      background: 'rgba(0,0,0,0.05)',
                       border: '1px solid var(--glass-border)',
                       borderRadius: '12px',
                       color: 'var(--foreground)',
@@ -469,12 +469,12 @@ export default function SettingsPage() {
                     type="email"
                     value={profile.email || ''}
                     onChange={(e) => handleChange('email', e.target.value)}
-                    placeholder="admin@school.com"
+                    placeholder="admin@classupplus.com"
                     style={{
                       width: '100%',
                       padding: '14px 16px',
                       fontSize: '1rem',
-                      background: 'var(--glass-bg)',
+                      background: 'rgba(0,0,0,0.05)',
                       border: '1px solid var(--glass-border)',
                       borderRadius: '12px',
                       color: 'var(--foreground)',
@@ -505,7 +505,7 @@ export default function SettingsPage() {
                       width: '100%',
                       padding: '14px 16px',
                       fontSize: '1rem',
-                      background: 'var(--glass-bg)',
+                      background: 'rgba(0,0,0,0.05)',
                       border: '1px solid var(--glass-border)',
                       borderRadius: '12px',
                       color: 'var(--foreground)',
