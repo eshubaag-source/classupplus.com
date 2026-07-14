@@ -7,7 +7,7 @@ import Admin from '@/models/Admin';
 export async function POST(req: Request) {
   try {
     await dbConnect();
-    const { name, email, phone, schoolName, password, grade, section } = await req.json();
+    const { name, email, phone, schoolName, password, grade, section, qualification, subject } = await req.json();
 
     if (!name || !email || !phone || !schoolName || !password) {
       return NextResponse.json({ message: 'All fields are required.' }, { status: 400 });
@@ -43,6 +43,8 @@ export async function POST(req: Request) {
       grade: grade || '',
       section: section || '',
       schoolName: admin.schoolName, // normalize casing
+      qualification: qualification || '',
+      subject: subject || '',
       password: hashedPassword
     });
 
