@@ -656,7 +656,7 @@ export default function FeesPage() {
             <tr>
               {!isTeacher && <th style={{ padding: '16px', width: '60px', textAlign: 'center' }}>Select</th>}
               <th style={{ padding: '16px' }}>Student</th>
-              <th style={{ padding: '16px' }}>fatherName</th>
+              <th style={{ padding: '16px' }}>Father Name</th>
               <th style={{ padding: '16px' }}>Type</th>
               <th style={{ padding: '16px' }}>For Month</th>
               <th style={{ padding: '16px' }}>Class Fee</th>
