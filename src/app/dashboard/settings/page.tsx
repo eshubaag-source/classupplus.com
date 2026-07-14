@@ -16,10 +16,8 @@ export default function SettingsPage() {
     aadhaarNumber: '',
     qualification: '',
     subject: '',
-    twilioAccountSid: '',
-    twilioAuthToken: '',
-    twilioSmsNumber: '',
-    twilioWhatsappNumber: '',
+    fast2smsApiKey: '',
+    fast2smsWabaPhoneId: '',
     smsEnabled: true,
     whatsappEnabled: true,
   });
@@ -35,7 +33,7 @@ export default function SettingsPage() {
   const [pwSaving, setPwSaving] = useState(false);
   const [pwStatus, setPwStatus] = useState<{ type: 'idle' | 'success' | 'error'; message: string }>({ type: 'idle', message: '' });
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
-  const [showTwilioToken, setShowTwilioToken] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
 
   // Sessions state
   const [sessions, setSessions] = useState<any[]>([]);
@@ -83,10 +81,8 @@ export default function SettingsPage() {
       changed = updated.schoolName !== original.schoolName ||
         updated.email !== original.email ||
         updated.mobileNumber !== original.mobileNumber ||
-        updated.twilioAccountSid !== original.twilioAccountSid ||
-        updated.twilioAuthToken !== original.twilioAuthToken ||
-        updated.twilioSmsNumber !== original.twilioSmsNumber ||
-        updated.twilioWhatsappNumber !== original.twilioWhatsappNumber ||
+        updated.fast2smsApiKey !== original.fast2smsApiKey ||
+        updated.fast2smsWabaPhoneId !== original.fast2smsWabaPhoneId ||
         updated.smsEnabled !== original.smsEnabled ||
         updated.whatsappEnabled !== original.whatsappEnabled;
     } else {
@@ -113,10 +109,8 @@ export default function SettingsPage() {
         schoolName: profile.schoolName,
         email: profile.email,
         mobileNumber: profile.mobileNumber,
-        twilioAccountSid: profile.twilioAccountSid,
-        twilioAuthToken: profile.twilioAuthToken,
-        twilioSmsNumber: profile.twilioSmsNumber,
-        twilioWhatsappNumber: profile.twilioWhatsappNumber,
+        fast2smsApiKey: profile.fast2smsApiKey,
+        fast2smsWabaPhoneId: profile.fast2smsWabaPhoneId,
         smsEnabled: profile.smsEnabled,
         whatsappEnabled: profile.whatsappEnabled,
       } : {
@@ -1180,14 +1174,14 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Twilio SMS & WhatsApp Settings — Admin only */}
+      {/* Fast2SMS Settings — Admin only */}
       {isAdmin && (
         <div className="glass card" style={{ padding: '24px 32px', marginBottom: '24px' }}>
           <h3 style={{ fontSize: '1.1rem', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             💬 SMS &amp; WhatsApp Settings
           </h3>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '24px' }}>
-            Connect your Twilio account to send real SMS &amp; WhatsApp messages. Leave blank to use <strong>Simulation Mode</strong> (messages logged but not sent).
+            Connect your <strong>Fast2SMS</strong> account to send real SMS &amp; WhatsApp messages. Leave blank to use <strong>Simulation Mode</strong> (messages logged but not sent).
           </p>
 
           {/* Enable toggles */}
@@ -1246,70 +1240,42 @@ export default function SettingsPage() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            {/* Account SID */}
-            <div>
+            {/* API Key */}
+            <div style={{ gridColumn: '1 / -1' }}>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                🔑 Twilio Account SID
-              </label>
-              <input
-                type="text"
-                value={profile.twilioAccountSid || ''}
-                onChange={(e) => handleChange('twilioAccountSid', e.target.value)}
-                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                style={{ width: '100%', padding: '14px 16px', fontSize: '0.9rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px', color: 'var(--foreground)', fontFamily: 'monospace' }}
-              />
-            </div>
-
-            {/* Auth Token */}
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                🔐 Auth Token
+                🔑 Fast2SMS API Key
               </label>
               <div style={{ position: 'relative' }}>
                 <input
-                  type={showTwilioToken ? 'text' : 'password'}
-                  value={profile.twilioAuthToken || ''}
-                  onChange={(e) => handleChange('twilioAuthToken', e.target.value)}
-                  placeholder="Your Twilio Auth Token"
+                  type={showApiKey ? 'text' : 'password'}
+                  value={profile.fast2smsApiKey || ''}
+                  onChange={(e) => handleChange('fast2smsApiKey', e.target.value)}
+                  placeholder="Your Fast2SMS Authorization Key"
                   style={{ width: '100%', padding: '14px 48px 14px 16px', fontSize: '0.9rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px', color: 'var(--foreground)', fontFamily: 'monospace' }}
                 />
-                <button type="button" onClick={() => setShowTwilioToken(v => !v)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--text-muted)' }}>
-                  {showTwilioToken ? '🙈' : '👁️'}
+                <button type="button" onClick={() => setShowApiKey(v => !v)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--text-muted)' }}>
+                  {showApiKey ? '🙈' : '👁️'}
                 </button>
               </div>
             </div>
 
-            {/* SMS Number */}
-            <div>
+            {/* WABA Phone Number ID (for WhatsApp) */}
+            <div style={{ gridColumn: '1 / -1' }}>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                📱 Twilio SMS Number
+                🟢 WhatsApp WABA Phone Number ID
               </label>
               <input
                 type="text"
-                value={profile.twilioSmsNumber || ''}
-                onChange={(e) => handleChange('twilioSmsNumber', e.target.value)}
-                placeholder="+1234567890"
-                style={{ width: '100%', padding: '14px 16px', fontSize: '0.9rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px', color: 'var(--foreground)', fontFamily: 'monospace' }}
-              />
-            </div>
-
-            {/* WhatsApp Number */}
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                🟢 Twilio WhatsApp Number
-              </label>
-              <input
-                type="text"
-                value={profile.twilioWhatsappNumber || ''}
-                onChange={(e) => handleChange('twilioWhatsappNumber', e.target.value)}
-                placeholder="+14155238886"
+                value={profile.fast2smsWabaPhoneId || ''}
+                onChange={(e) => handleChange('fast2smsWabaPhoneId', e.target.value)}
+                placeholder="Your Fast2SMS WABA Phone Number ID (for WhatsApp)"
                 style={{ width: '100%', padding: '14px 16px', fontSize: '0.9rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '12px', color: 'var(--foreground)', fontFamily: 'monospace' }}
               />
             </div>
           </div>
 
           <div style={{ marginTop: '16px', padding: '12px 16px', borderRadius: '10px', background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            💡 <strong>Tip:</strong> In Simulation Mode (no credentials), messages are logged to the Notifications page. For real messages, enter Twilio credentials above and click <em>Save Changes</em>.
+            💡 <strong>Tip:</strong> Get your API key from the <strong>Dev API</strong> section of your Fast2SMS dashboard. For WhatsApp, also enter your <strong>WABA Phone Number ID</strong> from your Fast2SMS WhatsApp Business panel. Leave blank to use <em>Simulation Mode</em>.
           </div>
         </div>
       )}
