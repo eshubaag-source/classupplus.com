@@ -6,6 +6,7 @@ const AttendanceSchema = new mongoose.Schema({
   status: { type: String, enum: ['Present', 'Absent'], required: true },
   date: { type: Date, required: true },
   createdAt: { type: Date, default: Date.now },
+  note: {type: String, require: true},
 });
 
 // Compound index to ensure unique attendance per student per day
