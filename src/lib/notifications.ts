@@ -16,21 +16,21 @@ interface SendNotificationArgs {
 function formatPhoneNumber(phone: string): string {
   // Strip all non-digit characters except maybe a leading '+'
   let cleaned = phone.replace(/[^\d+]/g, '');
-  
+
   if (cleaned.startsWith('+')) {
     return cleaned;
   }
-  
+
   // If it's a 10-digit number, prepend +91
   if (cleaned.length === 10) {
     return `+91${cleaned}`;
   }
-  
+
   // If it starts with 91 and is 12 digits, prepend +
   if (cleaned.length === 12 && cleaned.startsWith('91')) {
     return `+${cleaned}`;
   }
-  
+
   // Return as is if we can't figure it out, but ensure it starts with '+' if it doesn't already
   return cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
 }
@@ -68,11 +68,7 @@ export async function sendNotification({
 
     const formattedContact = formatPhoneNumber(rawContact);
 
-    const hasTwilioCreds =
-      admin.twilioAccountSid &&
-      admin.twilioAuthToken &&
-      ((type === 'SMS' || type === 'Both') ? admin.twilioSmsNumber : true) &&
-      ((type === 'WhatsApp' || type === 'Both') ? admin.twilioWhatsappNumber : true);
+    const hasFast2SmsCreds = !!admin.fast2smsApiKey;
 
     const useSms = (type === 'SMS' || type === 'Both') && admin.smsEnabled !== false;
     const useWhatsapp = (type === 'WhatsApp' || type === 'Both') && admin.whatsappEnabled !== false;
@@ -88,43 +84,48 @@ export async function sendNotification({
     if (useWhatsapp) channelsToSend.push('WhatsApp');
 
     for (const channel of channelsToSend) {
-      if (hasTwilioCreds) {
-        // Send real Twilio message
+      if (hasFast2SmsCreds) {
+        // Send real Fast2SMS message
         try {
-          const accountSid = admin.twilioAccountSid;
-          const authToken = admin.twilioAuthToken;
-          
-          let fromNumber = '';
-          let toNumber = formattedContact;
+          // Strip country code for Fast2SMS — it expects 10-digit mobile numbers
+          const mobileNumber = formattedContact.replace(/^\+91/, '').replace(/^\+/, '');
+
+          let res: Response;
+          let data: any;
 
           if (channel === 'SMS') {
-            fromNumber = admin.twilioSmsNumber;
+            // Fast2SMS bulkV2 — Quick SMS route
+            res = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+              method: 'POST',
+              headers: {
+                'Authorization': admin.fast2smsApiKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                route: 'q',
+                message,
+                numbers: mobileNumber,
+              }),
+            });
+            data = await res.json();
           } else {
-            fromNumber = `whatsapp:${admin.twilioWhatsappNumber}`;
-            toNumber = `whatsapp:${formattedContact}`;
+            // Fast2SMS WhatsApp Business API
+            // Requires a pre-approved template; message_id must be stored or configured
+            const wabaPhoneId = admin.fast2smsWabaPhoneId;
+            const wabaUrl = new URL('https://www.fast2sms.com/dev/whatsapp');
+            wabaUrl.searchParams.set('message_id', '1'); // placeholder — admin should configure
+            wabaUrl.searchParams.set('phone_number_id', wabaPhoneId);
+            wabaUrl.searchParams.set('numbers', mobileNumber);
+            wabaUrl.searchParams.set('variables_values', message);
+
+            res = await fetch(wabaUrl.toString(), {
+              method: 'GET',
+              headers: { 'Authorization': admin.fast2smsApiKey },
+            });
+            data = await res.json();
           }
 
-          const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-          const basicAuth = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
-
-          // Encode parameters as application/x-www-form-urlencoded
-          const params = new URLSearchParams();
-          params.append('To', toNumber);
-          params.append('From', fromNumber);
-          params.append('Body', message);
-
-          const res = await fetch(twilioUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Basic ${basicAuth}`,
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: params.toString()
-          });
-
-          const data = await res.json();
-
-          if (res.ok) {
+          if (res.ok && data.return === true) {
             // Log success to Database
             const log = new NotificationLog({
               adminId,
@@ -136,12 +137,12 @@ export async function sendNotification({
               status: 'Sent'
             });
             await log.save();
-            results.push({ channel, status: 'Sent', sid: data.sid });
+            results.push({ channel, status: 'Sent', requestId: data.request_id });
           } else {
-            // Log Twilio API error
-            const errorMsg = data.message || `Twilio error ${res.status}`;
-            console.error(`[TWILIO ERROR] Channel: ${channel} | Error: ${errorMsg}`);
-            
+            // Log Fast2SMS API error
+            const errorMsg = (data.message && (Array.isArray(data.message) ? data.message.join(', ') : data.message)) || `Fast2SMS error ${res.status}`;
+            console.error(`[FAST2SMS ERROR] Channel: ${channel} | Error: ${errorMsg}`);
+
             const log = new NotificationLog({
               adminId,
               studentId,
@@ -155,8 +156,8 @@ export async function sendNotification({
             await log.save();
             results.push({ channel, status: 'Failed', error: errorMsg });
           }
-        } catch (twilioErr: any) {
-          console.error(`[TWILIO CALL FAILED] Channel: ${channel} | Error: ${twilioErr.message}`);
+        } catch (f2sErr: any) {
+          console.error(`[FAST2SMS CALL FAILED] Channel: ${channel} | Error: ${f2sErr.message}`);
           const log = new NotificationLog({
             adminId,
             studentId,
@@ -165,15 +166,15 @@ export async function sendNotification({
             category,
             message,
             status: 'Failed',
-            error: twilioErr.message
+            error: f2sErr.message
           });
           await log.save();
-          results.push({ channel, status: 'Failed', error: twilioErr.message });
+          results.push({ channel, status: 'Failed', error: f2sErr.message });
         }
       } else {
         // Simulation Mode: log and print console
         console.log(`[SIMULATED ${channel}] To: ${formattedContact} | Message: "${message}"`);
-        
+
         const log = new NotificationLog({
           adminId,
           studentId,
