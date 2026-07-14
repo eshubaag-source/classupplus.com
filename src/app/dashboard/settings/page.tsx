@@ -436,6 +436,7 @@ export default function SettingsPage() {
                     value={profile.schoolName || ''}
                     onChange={(e) => handleChange('schoolName', e.target.value)}
                     placeholder="Enter your school name"
+                    disabled
                     style={{
                       width: '100%',
                       padding: '14px 16px',
@@ -470,6 +471,7 @@ export default function SettingsPage() {
                     value={profile.email || ''}
                     onChange={(e) => handleChange('email', e.target.value)}
                     placeholder="admin@classupplus.com"
+                    disabled
                     style={{
                       width: '100%',
                       padding: '14px 16px',
@@ -501,6 +503,7 @@ export default function SettingsPage() {
                     value={profile.mobileNumber || ''}
                     onChange={(e) => handleChange('mobileNumber', e.target.value)}
                     placeholder="+91 98765 43210"
+                    disabled
                     style={{
                       width: '100%',
                       padding: '14px 16px',
