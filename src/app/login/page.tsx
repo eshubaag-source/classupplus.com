@@ -449,7 +449,7 @@ export default function LoginPage() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label>Email Address</label>
-                <input type="email" placeholder="admin@school.com" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} disabled={loading} required />
+                <input type="email" placeholder="admin@classupplus.com" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} disabled={loading} required />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -472,7 +472,7 @@ export default function LoginPage() {
             <form onSubmit={handleTeacherRegister} className="responsive-grid-2" style={{ gap: '1rem' }}>
               <div className="form-full-width" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label>Full Name</label>
-                <input type="text" placeholder="Full Nam" value={regName} onChange={(e) => setRegName(e.target.value)} disabled={loading} required />
+                <input type="text" placeholder="Full Name" value={regName} onChange={(e) => setRegName(e.target.value)} disabled={loading} required />
               </div>
 
               <div className="form-full-width" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -482,12 +482,12 @@ export default function LoginPage() {
 
               <div className="form-full-width" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label>Email Address</label>
-                <input type="email" placeholder="john.doe@school.com" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} disabled={loading} required />
+                <input type="email" placeholder="john.doe@scclassupplus.com" value={regEmail} onChange={(e) => setRegEmail(e.target.value)} disabled={loading} required />
               </div>
 
               <div className="form-full-width" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label>Phone Number</label>
-                <input type="text" placeholder="+1 234 567 890" value={regPhone} onChange={(e) => setRegPhone(e.target.value)} disabled={loading} required />
+                <input type="text" placeholder="+91 234 567 890" value={regPhone} onChange={(e) => setRegPhone(e.target.value)} disabled={loading} required />
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
