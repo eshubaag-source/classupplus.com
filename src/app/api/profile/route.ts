@@ -41,10 +41,8 @@ export async function GET() {
         schoolName: admin.schoolName || '',
         email: admin.email || '',
         mobileNumber: admin.mobileNumber || '',
-        twilioAccountSid: admin.twilioAccountSid || '',
-        twilioAuthToken: admin.twilioAuthToken || '',
-        twilioSmsNumber: admin.twilioSmsNumber || '',
-        twilioWhatsappNumber: admin.twilioWhatsappNumber || '',
+        fast2smsApiKey: admin.fast2smsApiKey || '',
+        fast2smsWabaPhoneId: admin.fast2smsWabaPhoneId || '',
         smsEnabled: admin.smsEnabled !== false,
         whatsappEnabled: admin.whatsappEnabled !== false,
       });
@@ -83,16 +81,30 @@ export async function PUT(req: Request) {
     const body = await req.json();
 
     if (role === 'admin') {
+      if (body.email) {
+        const existingEmail = await Admin.findOne({ email: body.email, _id: { $ne: userPayload.id } });
+        const existingTeacherEmail = await Teacher.findOne({ email: body.email });
+        if (existingEmail || existingTeacherEmail) {
+          return NextResponse.json({ message: 'Email is already registered.' }, { status: 400 });
+        }
+      }
+      
+      if (body.mobileNumber) {
+        const existingMobile = await Admin.findOne({ mobileNumber: body.mobileNumber, _id: { $ne: userPayload.id } });
+        const existingTeacherPhone = await Teacher.findOne({ phone: body.mobileNumber });
+        if (existingMobile || existingTeacherPhone) {
+          return NextResponse.json({ message: 'Mobile number is already registered.' }, { status: 400 });
+        }
+      }
+
       const admin = await Admin.findByIdAndUpdate(
         userPayload.id,
         {
           schoolName: body.schoolName,
           email: body.email,
           mobileNumber: body.mobileNumber,
-          twilioAccountSid: body.twilioAccountSid,
-          twilioAuthToken: body.twilioAuthToken,
-          twilioSmsNumber: body.twilioSmsNumber,
-          twilioWhatsappNumber: body.twilioWhatsappNumber,
+          fast2smsApiKey: body.fast2smsApiKey,
+          fast2smsWabaPhoneId: body.fast2smsWabaPhoneId,
           smsEnabled: body.smsEnabled,
           whatsappEnabled: body.whatsappEnabled,
         },
@@ -107,14 +119,28 @@ export async function PUT(req: Request) {
         schoolName: admin.schoolName || '',
         email: admin.email || '',
         mobileNumber: admin.mobileNumber || '',
-        twilioAccountSid: admin.twilioAccountSid || '',
-        twilioAuthToken: admin.twilioAuthToken || '',
-        twilioSmsNumber: admin.twilioSmsNumber || '',
-        twilioWhatsappNumber: admin.twilioWhatsappNumber || '',
+        fast2smsApiKey: admin.fast2smsApiKey || '',
+        fast2smsWabaPhoneId: admin.fast2smsWabaPhoneId || '',
         smsEnabled: admin.smsEnabled !== false,
         whatsappEnabled: admin.whatsappEnabled !== false,
       });
     } else {
+      if (body.email) {
+        const existingEmail = await Teacher.findOne({ email: body.email, _id: { $ne: userPayload.id } });
+        const existingAdminEmail = await Admin.findOne({ email: body.email });
+        if (existingEmail || existingAdminEmail) {
+          return NextResponse.json({ message: 'Email is already registered.' }, { status: 400 });
+        }
+      }
+      
+      if (body.phone) {
+        const existingPhone = await Teacher.findOne({ phone: body.phone, _id: { $ne: userPayload.id } });
+        const existingAdminPhone = await Admin.findOne({ mobileNumber: body.phone });
+        if (existingPhone || existingAdminPhone) {
+          return NextResponse.json({ message: 'Phone number is already registered.' }, { status: 400 });
+        }
+      }
+
       const teacher = await Teacher.findByIdAndUpdate(
         userPayload.id,
         {
