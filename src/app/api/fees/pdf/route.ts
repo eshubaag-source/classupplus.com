@@ -271,36 +271,35 @@ export async function GET(request: Request) {
       const ppY = sep2Y - sc(16);
       page.drawText('PAYMENT PARTICULARS', { x: ox + sc(18), y: ppY, size: sc(8.5), font: fontBold, color: indigo });
 
-      // Table headers
+      // Table headers — must match cols length (5)
       const thY = ppY - sc(18);
-      const cols = [sc(25), sc(118), sc(185), sc(248), sc(310)];
-      const headers = ['Description', 'Month', 'Class Fee', 'Utr', 'Paid Amt', 'Balance'];
+      const cols = [sc(18), sc(105), sc(180), sc(255), sc(320)];
+      const headers = ['Description', 'Month', 'Class Fee', 'Paid Amt', 'Balance'];
       headers.forEach((h2, i) => page.drawText(h2, { x: ox + cols[i], y: thY, size: sc(7.5), font: fontBold, color: gray1 }));
 
       page.drawLine({ start: { x: ox + sc(15), y: thY - sc(7) }, end: { x: ox + w - sc(15), y: thY - sc(7) }, thickness: 0.6, color: rgb(156 / 255, 163 / 255, 175 / 255) });
 
       const rowDataY = thY - sc(18);
-      let desc = 'school Fees';
+      let desc = 'School Fees';
       let expectedAmount = classAmount > 0 ? classAmount : 0;
 
-      if (fee.category === 'cless fees') {
-        desc = 'school Fees';
-        expectedAmount = fee.totalFees || 0;
+      if (fee.category === 'vehicle') {
+        desc = 'Vehicle Fees';
+        expectedAmount = (fee as any).totalFees || 0;
       }
 
-      const currentBalance = fee.category === 'school Fees'
-        ? Math.max(0, expectedAmount - fee.amount)
-        : balance;
+      const currentBalance = Math.max(0, expectedAmount - fee.amount);
 
       const vals = [
         desc,
-        fee.month,
+        fee.month || '—',
         expectedAmount > 0 ? `Rs. ${expectedAmount}` : '—',
         `Rs. ${fee.amount}`,
         `Rs. ${currentBalance}`,
       ];
       vals.forEach((v, i) => {
         const isAmt = i >= 3;
+        // Balance (index 4) in red, rest in dark
         page.drawText(v, { x: ox + cols[i], y: rowDataY, size: sc(7.5), font: isAmt ? fontBold : fontRegular, color: i === 4 ? red : dark });
       });
 
