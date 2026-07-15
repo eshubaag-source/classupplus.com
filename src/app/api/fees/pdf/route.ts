@@ -41,12 +41,12 @@ export async function GET(request: Request) {
 
     // 2. Fetch fees, class fees, and admin/school profile
     const fees = await Fees.find(query)
-      .populate('studentId')
+      .populate({ path: 'studentId', model: Student })
       .lean()
       .exec();
 
     const vehicleFees = await VehicleFee.find(query)
-      .populate('studentId')
+      .populate({ path: 'studentId', model: Student })
       .lean()
       .exec();
 
