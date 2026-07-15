@@ -5,6 +5,7 @@ type ClassPaperMark = {
   subject: string;
   totalNumber: string;
   subjectPaperNumber: string;
+  date?: string;
 };
 
 export default function ClassPaperPage() {
@@ -52,7 +53,8 @@ export default function ClassPaperPage() {
       setEditingMarks([{
         subject: student.subject || '',
         totalNumber: student.totalNumber || '',
-        subjectPaperNumber: student.subjectPaperNumber || ''
+        subjectPaperNumber: student.subjectPaperNumber || '',
+        date: ''
       }]);
     } else {
       setEditingMarks([]);
@@ -60,7 +62,7 @@ export default function ClassPaperPage() {
   };
 
   const handleAddSubject = () => {
-    setEditingMarks([...editingMarks, { subject: '', totalNumber: '', subjectPaperNumber: '' }]);
+    setEditingMarks([...editingMarks, { subject: '', totalNumber: '', subjectPaperNumber: '', date: '' }]);
   };
 
   const handleMarkChange = (index: number, field: keyof ClassPaperMark, value: string) => {
@@ -312,19 +314,26 @@ export default function ClassPaperPage() {
               <p style={{ color: 'var(--text-muted)', textAlign: 'center', margin: '2rem 0' }}>No marks added yet.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '10px', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr auto', gap: '10px', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                   <div>Subject</div>
+                  <div>Date</div>
                   <div>Total Marks</div>
                   <div>Obtained</div>
                   <div></div>
                 </div>
                 {editingMarks.map((mark, index) => (
-                  <div key={index} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '10px', alignItems: 'center' }}>
+                  <div key={index} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr auto', gap: '10px', alignItems: 'center' }}>
                     <input
                       type="text"
                       placeholder="e.g. Mathematics"
                       value={mark.subject}
                       onChange={e => handleMarkChange(index, 'subject', e.target.value)}
+                      style={inputStyle}
+                    />
+                    <input
+                      type="date"
+                      value={mark.date || ''}
+                      onChange={e => handleMarkChange(index, 'date', e.target.value)}
                       style={inputStyle}
                     />
                     <input
@@ -465,3 +474,4 @@ export default function ClassPaperPage() {
     </div>
   );
 }
+.
