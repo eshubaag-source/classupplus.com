@@ -11,6 +11,8 @@ const TeacherSchema = new mongoose.Schema({
   aadhaarNumber: { type: String },
   qualification: { type: String },
   subject: { type: String },
+  post: { type: String, default: '' },
+  monthlySalary: { type: Number, default: 0 },
   password: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
