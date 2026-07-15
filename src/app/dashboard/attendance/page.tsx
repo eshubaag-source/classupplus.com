@@ -10,6 +10,7 @@ export default function AttendancePage() {
   const [isMounted, setIsMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [schoolName, setSchoolName] = useState('');
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -27,26 +28,40 @@ export default function AttendancePage() {
 
   const fetchData = async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const [studentsRes, attendanceRes, profileRes] = await Promise.all([
         fetch('/api/students'),
         fetch(`/api/attendance?date=${date}`),
         fetch('/api/profile')
       ]);
+
+      // Validate HTTP status for students
+      if (!studentsRes.ok) {
+        const errData = await studentsRes.json().catch(() => ({}));
+        throw new Error(errData.message || `Failed to fetch students (${studentsRes.status})`);
+      }
+
       const studentsData = await studentsRes.json();
-      const attendanceData = await attendanceRes.json();
-      const profile = await profileRes.json();
+      const attendanceData = attendanceRes.ok ? await attendanceRes.json() : [];
+      const profile = profileRes.ok ? await profileRes.json() : {};
+
       if (profile.schoolName) setSchoolName(profile.schoolName);
 
-      setStudents(studentsData);
+      // Ensure students is always an array
+      setStudents(Array.isArray(studentsData) ? studentsData : []);
 
       const attMap: any = {};
-      attendanceData.forEach((record: any) => {
-        attMap[record.studentId._id || record.studentId] = record.status;
-      });
+      if (Array.isArray(attendanceData)) {
+        attendanceData.forEach((record: any) => {
+          attMap[record.studentId._id || record.studentId] = record.status;
+        });
+      }
       setAttendance(attMap);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('Fetch error:', err);
+      setFetchError(err.message || 'Failed to load data. Please try again.');
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -209,9 +224,13 @@ export default function AttendancePage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center' }}>Loading...</td></tr>
+              <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center' }}>Loading...</td></tr>
+            ) : fetchError ? (
+              <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#ef4444' }}>
+                ⚠️ {fetchError}
+              </td></tr>
             ) : students.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center' }}>Please add students first.</td></tr>
+              <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center' }}>No students found. Please add students first.</td></tr>
             ) :
               filteredStudents.length === 0 ? (
                 <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center' }}>No students found matching your search.</td></tr>
