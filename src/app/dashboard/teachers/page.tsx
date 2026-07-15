@@ -43,7 +43,7 @@ export default function TeachersPage() {
   useEffect(() => {
     fetch('/api/profile')
       .then(r => r.ok ? r.json() : null)
-      .then(data => { 
+      .then(data => {
         if (data?.schoolName) setSchoolName(data.schoolName);
         if (data?.role) setUserRole(data.role);
       })
