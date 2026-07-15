@@ -222,8 +222,8 @@ export default function FeesPage() {
         setShowAddForm(true);
         fetchData();
       } else {
-        const errData = await res.json();
-        alert(`Error: ${errData.message}`);
+        const errData = await res.json().catch(() => ({ message: 'Unknown error' }));
+        alert(`Error (${method} ${url} → ${res.status}): ${errData.message}`);
       }
     } catch (err: any) {
       alert(`Network error: ${err.message}`);
