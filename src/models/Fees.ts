@@ -9,6 +9,7 @@ const FeesSchema = new mongoose.Schema({
   paidDate: { type: Date },
   description: { type: String },
   utr: { type: String },
+  lastyear: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 
