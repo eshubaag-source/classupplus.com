@@ -277,7 +277,7 @@ export default function VehicleFeesPage() {
               🏫 {schoolName}
             </div>
           )}
-    
+
         </div>
         <div className="page-header-actions">
           {!isTeacher && selectedIds.length > 0 && (
@@ -368,7 +368,7 @@ export default function VehicleFeesPage() {
                 <option value="">Choose a student...</option>
                 {students.map((s) => (
                   <option key={s._id} value={s._id}>
-                    {s.name} {(s.fatherName)} ({s.rollNumber}) 
+                    {s.name} {(s.fatherName)} ({s.rollNumber})
                   </option>
                 ))}
               </select>
@@ -415,38 +415,38 @@ export default function VehicleFeesPage() {
                 onChange={(e) => setNewFee({ ...newFee, busNumber: e.target.value })}
               />
             </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  Last year fees 
-                  {!!editingFeeId && (
-                    <span style={{
-                      fontSize: '0.7rem',
-                      background: 'rgba(99, 102, 241, 0.1)',
-                      color: 'var(--primary)',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      fontWeight: 600,
-                    }}>
-                      🔒 Locked
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  placeholder="lastyear amount"
-                  value={newFee.lastyear}
-                  onChange={e => setNewFee({ ...newFee, lastyear: e.target.value })}
-                  required
-                  readOnly={!!editingFeeId}
-                  style={{
-                    ...(editingFeeId ? {
-                      opacity: 0.6,
-                      cursor: 'not-allowed',
-                      background: 'rgba(0,0,0,0.03)',
-                    } : {})
-                  }}
-                />
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                Last year fees
+                {!!editingFeeId && (
+                  <span style={{
+                    fontSize: '0.7rem',
+                    background: 'rgba(99, 102, 241, 0.1)',
+                    color: 'var(--primary)',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontWeight: 600,
+                  }}>
+                    🔒 Locked
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                placeholder="lastyear amount"
+                value={newFee.lastyear}
+                onChange={e => setNewFee({ ...newFee, lastyear: e.target.value })}
+                required
+                readOnly={!!editingFeeId}
+                style={{
+                  ...(editingFeeId ? {
+                    opacity: 0.6,
+                    cursor: 'not-allowed',
+                    background: 'rgba(0,0,0,0.03)',
+                  } : {})
+                }}
+              />
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label>Amount Paid</label>
               <input
@@ -531,145 +531,145 @@ export default function VehicleFeesPage() {
       </div>
 
       <div className="glass table-wrapper">
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-        <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
-          <tr>
-            {!isTeacher && <th style={{ padding: '16px', width: '60px', textAlign: 'center' }}>Select</th>}
-            <th style={{ padding: '16px' }}>Student</th>
-            <th style={{ padding: '16px' }}>Father Name</th>
-            <th style={{ padding: '16px' }}>City</th>
-            <th style={{ padding: '16px' }}>Bus No.</th>
-            <th style={{ padding: '16px' }}>Driver Contact</th>
-            <th style={{ padding: '16px' }}>UTR</th>
-            <th style={{ padding: '16px' }}>For Month</th>
-             <th style={{ padding: '16px' }}>Last Year Fees</th>
-            <th style={{ padding: '16px' }}>Total Fees</th>
-            <th style={{ padding: '16px' }}>Amount Paid</th>
-            <th style={{ padding: '16px' }}>Balance</th>
-            <th style={{ padding: '16px' }}>Status</th>
-            <th style={{ padding: '16px' }}>Date</th>
-            {!isTeacher && <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {filteredFees.length === 0 ? (
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
             <tr>
-              <td colSpan={12} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                No fee records found.
-              </td>
+              {!isTeacher && <th style={{ padding: '16px', width: '60px', textAlign: 'center' }}>Select</th>}
+              <th style={{ padding: '16px' }}>Student</th>
+              <th style={{ padding: '16px' }}>Father Name</th>
+              <th style={{ padding: '16px' }}>City</th>
+              <th style={{ padding: '16px' }}>Bus No.</th>
+              <th style={{ padding: '16px' }}>Driver Contact</th>
+              <th style={{ padding: '16px' }}>UTR</th>
+              <th style={{ padding: '16px' }}>For Month</th>
+              <th style={{ padding: '16px' }}>Last Year Fees</th>
+              <th style={{ padding: '16px' }}>Total Fees</th>
+              <th style={{ padding: '16px' }}>Amount Paid</th>
+              <th style={{ padding: '16px' }}>Balance</th>
+              <th style={{ padding: '16px' }}>Status</th>
+              <th style={{ padding: '16px' }}>Date</th>
+              {!isTeacher && <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>}
             </tr>
-          ) : (
-            filteredFees.map((fee) => (
-              <tr key={fee._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                {!isTeacher && (
-                  <td style={{ padding: '16px', textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(fee._id)}
-                      disabled={!selectedIds.includes(fee._id) && selectedIds.length >= 4}
-                      onChange={(e) => handleCheckboxChange(fee._id, e.target.checked)}
-                      style={{ cursor: 'pointer', width: '18px', height: '18px' }}
-                    />
+          </thead>
+          <tbody>
+            {filteredFees.length === 0 ? (
+              <tr>
+                <td colSpan={12} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  No fee records found.
+                </td>
+              </tr>
+            ) : (
+              filteredFees.map((fee) => (
+                <tr key={fee._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                  {!isTeacher && (
+                    <td style={{ padding: '16px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(fee._id)}
+                        disabled={!selectedIds.includes(fee._id) && selectedIds.length >= 4}
+                        onChange={(e) => handleCheckboxChange(fee._id, e.target.checked)}
+                        style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                      />
+                    </td>
+                  )}
+                  <td style={{ padding: '16px' }}>
+                    <div style={{ fontWeight: 600 }}>{
+                      typeof fee.studentId === 'string'
+                        ? (students.find((s) => s._id === fee.studentId)?.name ?? 'Unknown')
+                        : fee.studentId?.name ?? 'Unknown'
+                    }</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{
+                      typeof fee.studentId === 'string'
+                        ? (students.find((s) => s._id === fee.studentId)?.rollNumber ?? '')
+                        : fee.studentId?.rollNumber ?? ''
+                    }</div>
                   </td>
-                )}
-                <td style={{ padding: '16px' }}>
-                  <div style={{ fontWeight: 600 }}>{
-                    typeof fee.studentId === 'string'
-                      ? (students.find((s) => s._id === fee.studentId)?.name ?? 'Unknown')
-                      : fee.studentId?.name ?? 'Unknown'
-                  }</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{
-                    typeof fee.studentId === 'string'
-                      ? (students.find((s) => s._id === fee.studentId)?.rollNumber ?? '')
-                      : fee.studentId?.rollNumber ?? ''
-                  }</div>
-                </td>
-                <td style={{ padding: '16px', color: 'var(--text-muted)' }}>
-                  {typeof fee.fatherName === 'string' ?  fee.fatherName : (fee.fatherName?.name || fee.fatherName?.fatherName || fee.fatherName?._id || '—')}
-                </td>
-                <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{fee.city || '—'}</td>
-                <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{fee.busNumber || '—'}</td>
-                <td style={{ padding: '16px', fontWeight: 600 }}>
-                  {vehicles.find(v => v.vehicleNumber === fee.busNumber)?.driverNumber ? `📞 ${vehicles.find(v => v.vehicleNumber === fee.busNumber)?.driverNumber}` : '—'}
-                </td>
-                <td style={{ padding: '16px', fontWeight: 700 }}>{fee.utr || '—'}</td>
-                <td style={{ padding: '16px', fontWeight: 700 }}>{fee.month || '—'}</td>
-                <td style={{ padding: '16px', fontWeight: 700 }}>{fee.lastyear || '—'}</td>
-                <td style={{ padding: '16px', fontWeight: 600, color: '#6366f1' }}>{`₹${fee.totalFees ?? 0}`}</td>
-                <td style={{ padding: '16px', fontWeight: 700 }}>₹{fee.amount}</td>
-                <td style={{ padding: '16px', fontWeight: 600, color: '#ef4444' }}>
-                  {(() => {
-                    const balance = (fee.totalFees ?? 0) - fee.amount;
-                    return balance > 0 ? `₹${balance}` : '₹0';
-                  })()}
-                </td>
-                <td style={{ padding: '16px' }}>
-                  <span className={`badge ${fee.status === 'Paid' ? 'badge-success' : 'badge-warning'}`}>{fee.status}</span>
-                </td>
-                <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                  {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : fee.createdAt ? new Date(fee.createdAt).toLocaleDateString() : '—'}
-                </td>
-                {!isTeacher && (
-                  <td style={{ padding: '16px', textAlign: 'right' }}>
-                    <a
-                      href={`/api/vehicle-fees/${fee._id}/pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ textDecoration: 'none' }}
-                    >
+                  <td style={{ padding: '16px', color: 'var(--text-muted)' }}>
+                    {typeof fee.fatherName === 'string' ? fee.fatherName : (fee.fatherName?.name || fee.fatherName?.fatherName || fee.fatherName?._id || '—')}
+                  </td>
+                  <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{fee.city || '—'}</td>
+                  <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{fee.busNumber || '—'}</td>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>
+                    {vehicles.find(v => v.vehicleNumber === fee.busNumber)?.driverNumber ? `📞 ${vehicles.find(v => v.vehicleNumber === fee.busNumber)?.driverNumber}` : '—'}
+                  </td>
+                  <td style={{ padding: '16px', fontWeight: 700 }}>{fee.utr || '—'}</td>
+                  <td style={{ padding: '16px', fontWeight: 700 }}>{fee.month || '—'}</td>
+                  <td style={{ padding: '16px', fontWeight: 700 }}>{fee.lastyear || '—'}</td>
+                  <td style={{ padding: '16px', fontWeight: 600, color: '#6366f1' }}>{`₹${fee.totalFees ?? 0}`}</td>
+                  <td style={{ padding: '16px', fontWeight: 700 }}>₹{fee.amount}</td>
+                  <td style={{ padding: '16px', fontWeight: 600, color: '#ef4444' }}>
+                    {(() => {
+                      const balance = (fee.totalFees ?? 0) - fee.amount;
+                      return balance > 0 ? `₹${balance}` : '₹0';
+                    })()}
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                    <span className={`badge ${fee.status === 'Paid' ? 'badge-success' : 'badge-warning'}`}>{fee.status}</span>
+                  </td>
+                  <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                    {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : fee.createdAt ? new Date(fee.createdAt).toLocaleDateString() : '—'}
+                  </td>
+                  {!isTeacher && (
+                    <td style={{ padding: '16px', textAlign: 'right' }}>
+                      <a
+                        href={`/api/vehicle-fees/${fee._id}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <button
+                          style={{
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            color: '#10b981',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            marginRight: '8px',
+                          }}
+                        >
+                          🖨️ Receipt
+                        </button>
+                      </a>
                       <button
+                        onClick={() => {
+                          setEditingFeeId(fee._id);
+                          setNewFee({
+                            studentId: typeof fee.studentId === 'string' ? fee.studentId : fee.studentId?._id || '',
+                            fatherName: typeof fee.fatherName === 'string' ? fee.fatherName : fee.fatherName?._id || '',
+                            amount: fee.amount.toString(),
+                            month: fee.month,
+                            status: fee.status,
+                            utr: fee.utr,
+                            lastyear: fee.lastyear,
+                            city: fee.city || '',
+                            busNumber: fee.busNumber || '',
+                            totalFees: fee.totalFees != null ? fee.totalFees.toString() : '',
+                            description: fee.description || '',
+                            paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                          });
+                          setShowAddForm(true);
+                        }}
                         style={{
-                          background: 'rgba(16, 185, 129, 0.1)',
-                          color: '#10b981',
+                          background: 'rgba(59, 130, 246, 0.1)',
+                          color: '#3b82f6',
                           border: 'none',
                           padding: '6px 12px',
                           borderRadius: '6px',
-                          fontSize: '0.875rem',
+                          fontSize: '0.87rem',
                           cursor: 'pointer',
-                          marginRight: '8px',
                         }}
                       >
-                        🖨️ Receipt
+                        ✏️ Edit
                       </button>
-                    </a>
-                    <button
-                      onClick={() => {
-                        setEditingFeeId(fee._id);
-                        setNewFee({
-                          studentId: typeof fee.studentId === 'string' ? fee.studentId : fee.studentId?._id || '',
-                          fatherName: typeof fee.fatherName === 'string' ? fee.fatherName : fee.fatherName?._id || '',
-                          amount: fee.amount.toString(),
-                          month: fee.month,
-                          status: fee.status,
-                          utr: fee.utr,
-                          lastyear: fee.lastyear,
-                          city: fee.city || '',
-                          busNumber: fee.busNumber || '',
-                          totalFees: fee.totalFees != null ? fee.totalFees.toString() : '',
-                          description: fee.description || '',
-                          paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-                        });
-                        setShowAddForm(true);
-                      }}
-                      style={{
-                        background: 'rgba(59, 130, 246, 0.1)',
-                        color: '#3b82f6',
-                        border: 'none',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        fontSize: '0.87rem',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      ✏️ Edit
-                    </button>
-                  </td>
-                )}
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Notify Modal */}
