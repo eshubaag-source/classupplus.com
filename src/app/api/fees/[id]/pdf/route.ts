@@ -22,7 +22,7 @@ export async function GET(
     await dbConnect();
 
     // Fetch the single fee record scoped by admin
-    const fee = await Fees.findOne({ _id: id, adminId }).populate('studentId').lean().exec();
+    const fee = await Fees.findOne({ _id: id, adminId }).populate({ path: 'studentId', model: Student }).lean().exec();
     if (!fee) {
       return NextResponse.json({ message: 'Fee record not found' }, { status: 404 });
     }
