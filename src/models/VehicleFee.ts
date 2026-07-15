@@ -13,6 +13,8 @@ export interface IVehicleFee extends Document {
   description?: string;
   category: 'vehicle'; // fixed value to differentiate from other fee types
   paidDate?: Date;
+  lastyear?: number; // last year outstanding fee amount
+  utr?: string; 
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +37,8 @@ const VehicleFeeSchema: Schema = new Schema(
     description: { type: String },
     category: { type: String, default: 'vehicle', immutable: true },
     paidDate: { type: Date },
+    lastyear: { type: Number },
+    utr: { type: String },
   },
   { timestamps: true }
 );
