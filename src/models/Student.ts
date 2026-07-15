@@ -24,11 +24,6 @@ const StudentSchema = new mongoose.Schema({
 // e.g. roll 14 can exist in Class 11 AND Class 12 simultaneously.
 StudentSchema.index({ adminId: 1, grade: 1, section: 1, rollNumber: 1 }, { unique: true });
 
-delete mongoose.models.Student;
-const Student = mongoose.model('Student', StudentSchema);
-
-// One-time migration: drop the old school-wide unique index if it still exists.
-// This runs once after the model is registered and is safe to call on every startup.
- 
+const Student = mongoose.models.Student || mongoose.model('Student', StudentSchema);
 
 export default Student;
