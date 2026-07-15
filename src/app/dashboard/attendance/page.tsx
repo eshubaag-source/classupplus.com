@@ -31,9 +31,9 @@ export default function AttendancePage() {
     setFetchError(null);
     try {
       const [studentsRes, attendanceRes, profileRes] = await Promise.all([
-        fetch('/api/students'),
-        fetch(`/api/attendance?date=${date}`),
-        fetch('/api/profile')
+        fetch('/api/students', { headers: { 'Accept': 'application/json' } }),
+        fetch(`/api/attendance?date=${date}`, { headers: { 'Accept': 'application/json' } }),
+        fetch('/api/profile', { headers: { 'Accept': 'application/json' } })
       ]);
 
       // Validate HTTP status for students
@@ -42,9 +42,15 @@ export default function AttendancePage() {
         throw new Error(errData.message || `Failed to fetch students (${studentsRes.status})`);
       }
 
+      // Guard against non-JSON responses (e.g. PDF served instead of JSON)
+      const studentsContentType = studentsRes.headers.get('content-type') || '';
+      if (!studentsContentType.includes('application/json')) {
+        throw new Error(`Unexpected response from /api/students (${studentsContentType}). Try refreshing the page.`);
+      }
+
       const studentsData = await studentsRes.json();
-      const attendanceData = attendanceRes.ok ? await attendanceRes.json() : [];
-      const profile = profileRes.ok ? await profileRes.json() : {};
+      const attendanceData = attendanceRes.ok ? await attendanceRes.json().catch(() => []) : [];
+      const profile = profileRes.ok ? await profileRes.json().catch(() => ({})) : {};
 
       if (profile.schoolName) setSchoolName(profile.schoolName);
 
