@@ -182,13 +182,29 @@ export default function FeesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Client-side validation
+    if (!newFee.studentId) {
+      alert('Please select a student.');
+      return;
+    }
+    const parsedAmount = Number(newFee.amount);
+    if (!newFee.amount || isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert('Please enter a valid amount greater than 0.');
+      return;
+    }
+    if (!newFee.month) {
+      alert('Please enter a month.');
+      return;
+    }
+
     const url = editingFeeId ? `/api/fees/${editingFeeId}` : '/api/fees';
     const method = editingFeeId ? 'PUT' : 'POST';
 
     try {
       const res = await fetch(url, {
         method,
-        body: JSON.stringify(newFee),
+        body: JSON.stringify({ ...newFee, amount: parsedAmount }),
         headers: { 'Content-Type': 'application/json' },
       });
       if (res.ok) {
@@ -499,7 +515,8 @@ export default function FeesPage() {
                   const sId = e.target.value;
                   const student = students.find(s => s._id === sId);
                   const cFee = student ? findClassFee(student) : null;
-                  setNewFee({ ...newFee, studentId: sId, amount: cFee });
+                  // Set amount to the class fee amount (number), not the whole object
+                  setNewFee({ ...newFee, studentId: sId, amount: cFee?.amount != null ? String(cFee.amount) : '' });
                 }}
                 required
               >
@@ -573,8 +590,8 @@ export default function FeesPage() {
               <input type="text" value={newFee.month} onChange={e => setNewFee({ ...newFee, month: e.target.value })} required />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label>UTR</label>
-              <input type="text" placeholder="Enter UTR" value={newFee.utr} onChange={e => setNewFee({ ...newFee, utr: e.target.value })} required />
+              <label>UTR <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '0.8rem' }}>(optional)</span></label>
+              <input type="text" placeholder="Enter UTR or 'N/A'" value={newFee.utr} onChange={e => setNewFee({ ...newFee, utr: e.target.value })} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
