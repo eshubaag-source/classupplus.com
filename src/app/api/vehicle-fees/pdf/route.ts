@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       const selectedIds = idsParam.split(',').filter(Boolean);
       query._id = { $in: selectedIds };
     }
-    
+
     if (payload.role === 'teacher') {
       const classFilter = await getTeacherClassFilter(payload);
       if (!classFilter) {
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
 
       let y = height - 90;
       const lineHeight = 16;
-      
+
       const header = ['Receipt No', 'Student', 'Father Name', 'Class/Sec', 'Bus No', 'City', 'Utr', 'Month', 'Paid Amt', 'Last Year', 'Status'];
       const colWidths = [90, 100, 100, 70, 70, 80, 100, 90, 80, 80, 70];
       let x = 30;
@@ -108,12 +108,12 @@ export async function GET(request: Request) {
           `Rs. ${fee.lastyear || 0}`,
           (fee.status || 'Pending')
         ];
-        
+
         row.forEach((cell, i) => {
           page.drawText(cell, { x, y, size: 11, font: fontRegular, color: rgb(0, 0, 0) });
           x += colWidths[i];
         });
-        
+
         y -= lineHeight;
         if (y < 40) {
           page = pdfDoc.addPage([1050, 800]);
@@ -158,7 +158,7 @@ export async function GET(request: Request) {
     // Draw one receipt on a specific page
     const drawReceipt = async (page: any, fee: any, ox: number, oy: number, w: number, h: number) => {
       const student = fee.studentId || {};
-      
+
       // Determine if the current record is a vehicle fee
       const isVehicleFee = fee.category === 'vehicle';
       let schoolFeeRecord: any = null;
@@ -187,19 +187,19 @@ export async function GET(request: Request) {
       if (student.grade) {
         const gradeNorm = normalizeGrade(student.grade);
         const subjectNorm = (student.subject || '').trim().toLowerCase();
-        
-        let match = classFees.find((cf: any) => 
-          normalizeGrade(cf.grade) === gradeNorm && 
+
+        let match = classFees.find((cf: any) =>
+          normalizeGrade(cf.grade) === gradeNorm &&
           (cf.subject || '').trim().toLowerCase() === subjectNorm
         );
-        
+
         if (!match) {
-          match = classFees.find((cf: any) => 
-            normalizeGrade(cf.grade) === gradeNorm && 
+          match = classFees.find((cf: any) =>
+            normalizeGrade(cf.grade) === gradeNorm &&
             (cf.subject || '') === ''
           );
         }
-        
+
         if (match) {
           classAmount = match.amount;
         }
@@ -219,13 +219,13 @@ export async function GET(request: Request) {
       const receiptNo = `#${fee._id.toString().substring(18).toUpperCase()}`;
 
       const indigo = rgb(99 / 255, 102 / 255, 241 / 255);
-      const white  = rgb(1, 1, 1);
-      const gray1  = rgb(75 / 255, 85 / 255, 99 / 255);
-      const gray2  = rgb(107 / 255, 114 / 255, 128 / 255);
-      const gray3  = rgb(229 / 255, 231 / 255, 235 / 255);
-      const gray4  = rgb(249 / 255, 250 / 255, 251 / 255);
-      const dark   = rgb(17 / 255, 24 / 255, 39 / 255);
-      const red    = rgb(220 / 255, 38 / 255, 38 / 255);
+      const white = rgb(1, 1, 1);
+      const gray1 = rgb(75 / 255, 85 / 255, 99 / 255);
+      const gray2 = rgb(107 / 255, 114 / 255, 128 / 255);
+      const gray3 = rgb(229 / 255, 231 / 255, 235 / 255);
+      const gray4 = rgb(249 / 255, 250 / 255, 251 / 255);
+      const dark = rgb(17 / 255, 24 / 255, 39 / 255);
+      const red = rgb(220 / 255, 38 / 255, 38 / 255);
 
       const s = Math.min(w / 450, h / 600);
       const sc = (v: number) => v * s;
@@ -249,8 +249,8 @@ export async function GET(request: Request) {
       };
 
       const hdrTop = oy + h - hdrH;
-      centered(schoolName.toUpperCase(),       hdrTop + sc(55), sc(14), fontBold, white);
-      centered('VEHICLE TRANSPORT RECEIPT',   hdrTop + sc(36), sc(9),  fontBold, rgb(0.85, 0.88, 1));
+      centered(schoolName.toUpperCase(), hdrTop + sc(55), sc(14), fontBold, white);
+      centered('VEHICLE TRANSPORT RECEIPT', hdrTop + sc(36), sc(9), fontBold, rgb(0.85, 0.88, 1));
 
       // Receipt No & Date
       const metaY = oy + h - hdrH - sc(22);
@@ -273,7 +273,7 @@ export async function GET(request: Request) {
 
       const sf = (label: string, val: string, fx: number, fy: number) => {
         page.drawText(label, { x: ox + fx, y: fy, size: sc(8), font: fontBold, color: gray2 });
-        page.drawText(val,   { x: ox + fx + sc(75), y: fy, size: sc(8), font: fontRegular, color: dark });
+        page.drawText(val, { x: ox + fx + sc(75), y: fy, size: sc(8), font: fontRegular, color: dark });
       };
 
       const row1Y = cardY + cardH - sc(17);
@@ -281,16 +281,16 @@ export async function GET(request: Request) {
       const row3Y = row2Y - sc(18);
       const row4Y = row3Y - sc(18);
 
-      sf('Student Name:', student.name || '—',                                    sc(28), row1Y);
+      sf('Student Name:', student.name || '—', sc(28), row1Y);
       sf('Father Name:', fee.fatherName || student.fatherName || student.fatheName || '—', sc(28), row2Y);
-      sf('Roll Number:',  student.rollNumber || '—',                               sc(28), row3Y);
-      sf('Class:', `${student.grade || '—'} (${student.section || '—'})`,          sc(28), row4Y);
-      
-      sf('Vehicle/Bus:', fee.busNumber || '—',                                     sc(200), row1Y);
-      sf('City:',  fee.city || '—',                                                sc(200), row2Y);
-      
+      sf('Roll Number:', student.rollNumber || '—', sc(28), row3Y);
+      sf('Class:', `${student.grade || '—'} (${student.section || '—'})`, sc(28), row4Y);
+
+      sf('Vehicle/Bus:', fee.busNumber || '—', sc(200), row1Y);
+      sf('City:', fee.city || '—', sc(200), row2Y);
+
       const utrStr = (schoolFeeRecord?.utr || vehicleFeeRecord?.utr || '—');
-      sf('UTR:',  utrStr,                                                          sc(200), row3Y);
+      sf('UTR:', utrStr, sc(200), row3Y);
 
       // Separator
       const sep2Y = cardY - sc(10);
@@ -351,7 +351,7 @@ export async function GET(request: Request) {
       const totalY = rowDataY - sc(15);
       const totalLabel = 'Total Paid:';
       const totalLabelW = fontBold.widthOfTextAtSize(totalLabel, sc(8.5));
-      page.drawText(totalLabel,        { x: ox + w - sc(18) - totalLabelW - sc(40), y: totalY, size: sc(8.5), font: fontBold, color: gray1 });
+      page.drawText(totalLabel, { x: ox + w - sc(18) - totalLabelW - sc(40), y: totalY, size: sc(8.5), font: fontBold, color: gray1 });
       page.drawText(`Rs. ${grandPaid}`, { x: ox + w - sc(18) - sc(38), y: totalY, size: sc(8.5), font: fontBold, color: indigo });
 
       // Stamp
