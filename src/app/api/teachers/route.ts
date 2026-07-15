@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
     await dbConnect();
     const payload = await request.json();
-    
+
     // Simple validation
     if (!payload.name || !payload.email || !payload.phone || !payload.grade || !payload.section || !payload.schoolName) {
       return NextResponse.json({ message: 'All fields are required.' }, { status: 400 });
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     const newTeacher = new Teacher({ ...payload, adminId, ...(hashedPassword && { password: hashedPassword }) });
     await newTeacher.save();
-    
+
     return NextResponse.json(newTeacher, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message || 'Failed to create teacher' }, { status: 500 });
