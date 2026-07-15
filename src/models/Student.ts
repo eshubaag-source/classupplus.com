@@ -16,6 +16,7 @@ const StudentSchema = new mongoose.Schema({
     subject: { type: String, default: '' },
     totalNumber: { type: String, default: '' },
     subjectPaperNumber: { type: String, default: '' },
+    date: { type: String, default: '' },
   }],
   createdAt: { type: Date, default: Date.now },
 });
