@@ -94,8 +94,8 @@ export async function GET(
     drawTextCentered('VEHICLE TRANSPORT RECEIPT', 522, 11, fontBold, rgb(0.85, 0.88, 1));
 
     // 3. Receipt details meta
-    const dateStr = fee.paidDate 
-      ? new Date(fee.paidDate).toLocaleDateString(undefined, { dateStyle: 'medium' }) 
+    const dateStr = fee.paidDate
+      ? new Date(fee.paidDate).toLocaleDateString(undefined, { dateStyle: 'medium' })
       : new Date(fee.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' });
 
     page.drawText(`Receipt No: #${fee._id.toString().substring(18).toUpperCase()}`, {
@@ -152,7 +152,7 @@ export async function GET(
     drawStudentField('Father Name:', fee.fatherName || student.fatherName || student.fatheName || '—', 45, 385);
     drawStudentField('Roll Number:', student.rollNumber || '—', 45, 365);
     drawStudentField('Class/Grade:', `${student.grade || '—'} (Sec: ${student.section || '—'})`, 45, 345);
-    
+
     drawStudentField('Vehicle/Bus:', fee.busNumber || '—', 240, 405);
     drawStudentField('City/Route:', fee.city || '—', 240, 385);
     drawStudentField('UTR:', fee.utr || '—', 240, 365);
@@ -198,7 +198,7 @@ export async function GET(
     const lastYearVal = (fee as any).lastyear;
     const hasLastYear = lastYearVal != null && String(lastYearVal).trim() !== '' && String(lastYearVal).trim() !== '—';
     const lastYearAmt = hasLastYear ? (parseFloat(String(lastYearVal)) || 0) : 0;
-    const totalPaid = fee.amount 
+    const totalPaid = fee.amount
 
     // Table rows
     let rowY = 240;
