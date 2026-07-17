@@ -17,6 +17,18 @@ export default function DashboardClient({ children }: { children: React.ReactNod
       });
   }, []);
 
+  const getTitle = () => {
+    if (role === 'admin') return 'Admin Portal';
+    if (role === 'teacher') return 'Teacher Portal';
+    return 'Dashboard';
+  };
+
+  const getSubtitle = () => {
+    if (role === 'admin') return 'Manage your institution';
+    if (role === 'teacher') return 'Manage your classes';
+    return 'Welcome back';
+  };
+
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
     try {
@@ -61,11 +73,13 @@ export default function DashboardClient({ children }: { children: React.ReactNod
           id="navigation__popup"
           className={`sidebar glass${sidebarOpen ? ' sidebar--open' : ''}`}
         >
-          <div style={{ padding: '10px', marginBottom: '10px' }}>
-            <h2 style={{ fontSize: '1.5rem', color: 'var(--primary)' }}>classupplus</h2>
-            <hr className="horizontalBar" />
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+              <img src="/classupplus.png" alt="ClassUpPlus Logo" style={{ height: '150px', objectFit: 'contain' }} />
+            </div>
+            <h1 style={{ marginBottom: '0.5rem', fontSize: '2rem' }}>{getTitle()}</h1>
+            <p style={{ color: 'var(--text-muted)' }}>{getSubtitle()}</p>
           </div>
-
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
             <NavLink href="/dashboard" label="Overview" icon="📊" onNav={() => setSidebarOpen(false)} />
 
