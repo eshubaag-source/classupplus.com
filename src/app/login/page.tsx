@@ -280,7 +280,7 @@ export default function LoginPage() {
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-              <img src="/classupplus.png" alt="ClassUpPlus Logo" style={{ height: '80px', objectFit: 'contain' }} />
+              <img src="/classupplus.png" alt="ClassUpPlus Logo" style={{ height: '200px', objectFit: 'contain' }} />
             </div>
             <h1 style={{ marginBottom: '0.5rem', fontSize: '2rem' }}>{getTitle()}</h1>
             <p style={{ color: 'var(--text-muted)' }}>{getSubtitle()}</p>
