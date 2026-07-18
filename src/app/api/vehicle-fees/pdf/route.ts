@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import { VehicleFee } from '@/models/VehicleFee';
 import Student from '@/models/Student';
@@ -7,6 +6,9 @@ import Admin from '@/models/Admin';
 import Fees from '@/models/Fees';
 import { ClassFee } from '@/models/ClassFee';
 import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
+
+const normalizeGrade = (g: string) =>
+  g.trim().toLowerCase().replace(/^class\s+/i, '').replace(/(th|st|nd|rd)$/i, '').trim();
 
 export async function GET(request: Request) {
   try {
@@ -21,7 +23,6 @@ export async function GET(request: Request) {
     const adminId = payload.adminId;
     await dbConnect();
 
-    // 1. Resolve query based on user role (teacher vs admin) and selected IDs
     let query: any = { category: 'vehicle', adminId };
     if (idsParam) {
       const selectedIds = idsParam.split(',').filter(Boolean);
@@ -33,13 +34,11 @@ export async function GET(request: Request) {
       if (!classFilter) {
         return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
       }
-
       const students = await Student.find({ adminId, ...classFilter }).select('_id');
-      const studentIds = students.map(s => s._id);
+      const studentIds = students.map((s: any) => s._id);
       query.studentId = { $in: studentIds };
     }
 
-    // 2. Fetch vehicle fee records, and admin/school profile
     const fees = await VehicleFee.find(query)
       .populate('studentId')
       .sort({ createdAt: -1 })
@@ -47,377 +46,258 @@ export async function GET(request: Request) {
       .exec();
 
     const admin = await Admin.findById(adminId).select('schoolName').lean().exec();
-    const schoolName = admin?.schoolName || "Classupplis";
+    const schoolName = (admin?.schoolName || 'Classupplus').toUpperCase();
     const classFees = await ClassFee.find({ adminId }).lean().exec();
 
-    // Filter out records where student population failed/missing
     const validFees = fees.filter((f: any) => f.studentId);
 
+    const e = (s: any) => String(s ?? '—').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // ── NO ids: tabular list HTML ─────────────────────────────────────────
     if (!idsParam) {
-      // GENERATE TABULAR LIST
-      const pdfDoc = await PDFDocument.create();
-      let page = pdfDoc.addPage([1050, 800]);
-      const { height } = page.getSize();
-      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-      // School Name Header
-      page.drawText(schoolName.toUpperCase(), {
-        x: 30,
-        y: height - 38,
-        size: 20,
-        font: fontBold,
-        color: rgb(0.09, 0.05, 0.4),
-      });
-
-      // Report subtitle
-      page.drawText('All Vehicle Fees Record', {
-        x: 30,
-        y: height - 62,
-        size: 13,
-        font: fontRegular,
-        color: rgb(0.35, 0.35, 0.45),
-      });
-
-      let y = height - 90;
-      const lineHeight = 16;
-
-      const header = ['Receipt No', 'Student', 'Father Name', 'Class/Sec', 'Bus No', 'City', 'Utr', 'Month', 'Paid Amt', 'Last Year', 'Status'];
-      const colWidths = [90, 100, 100, 70, 70, 80, 100, 90, 80, 80, 70];
-      let x = 30;
-      header.forEach((text, i) => {
-        page.drawText(text, { x, y, size: 12, font: fontBold, color: rgb(0, 0, 0) });
-        x += colWidths[i];
-      });
-
-      y -= lineHeight;
-      validFees.forEach((fee: any) => {
-        x = 30;
+      const rows = validFees.map((fee: any) => {
         const student = fee.studentId || {};
         const receiptNo = fee._id ? `#${fee._id.toString().substring(18).toUpperCase()}` : '-';
-        const row = [
-          receiptNo,
-          (student.name || '-').substring(0, 18),
-          (student.fatherName || fee.fatherName || '-').substring(0, 18),
-          `${student.grade || '-'} ${student.section || ''}`.substring(0, 10),
-          (fee.busNumber || '-').substring(0, 10),
-          (fee.city || '-').substring(0, 12),
-          (fee.utr || '-').substring(0, 18),
-          (fee.month || '-').substring(0, 15),
-          `Rs. ${fee.amount || 0}`,
-          `Rs. ${fee.lastyear || 0}`,
-          (fee.status || 'Pending')
-        ];
+        const dateStr = fee.paidDate
+          ? new Date(fee.paidDate).toLocaleDateString('en-IN')
+          : fee.createdAt ? new Date(fee.createdAt).toLocaleDateString('en-IN') : '—';
+        return `<tr>
+          <td>${e(receiptNo)}</td>
+          <td class="hindi">${e(student.name)}</td>
+          <td class="hindi">${e(student.fatherName || fee.fatherName)}</td>
+          <td>${e(student.grade)}${student.section ? ` (${e(student.section)})` : ''}</td>
+          <td>${e(fee.busNumber)}</td>
+          <td>${e(fee.city)}</td>
+          <td>${e(fee.utr)}</td>
+          <td>${e(fee.month)}</td>
+          <td><strong>Rs. ${e(fee.amount)}</strong></td>
+          <td>${fee.lastyear ? `Rs. ${e(fee.lastyear)}` : '—'}</td>
+          <td><span class="badge ${fee.status === 'Paid' ? 'paid' : 'pend'}">${e(fee.status)}</span></td>
+          <td>${e(dateStr)}</td>
+        </tr>`;
+      }).join('');
 
-        row.forEach((cell, i) => {
-          page.drawText(cell, { x, y, size: 11, font: fontRegular, color: rgb(0, 0, 0) });
-          x += colWidths[i];
-        });
+      const html = `<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8"/>
+  <title>All Vehicle Fees — ${e(schoolName)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#f3f4f6;padding:24px}
+    .card{background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden}
+    .top{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:20px 28px}
+    .top h1{font-size:1.4rem;font-weight:700;letter-spacing:1px}
+    .top p{font-size:0.82rem;opacity:0.85;margin-top:4px}
+    table{width:100%;border-collapse:collapse;font-size:0.82rem}
+    thead{background:#f9fafb}
+    th{padding:10px 12px;text-align:left;font-weight:700;color:#4b5563;border-bottom:2px solid #e5e7eb;white-space:nowrap}
+    td{padding:9px 12px;color:#111827;border-bottom:1px solid #f3f4f6;vertical-align:middle}
+    tr:hover td{background:#fffbeb}
+    .hindi{font-family:'Noto Sans Devanagari','Inter',sans-serif}
+    .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:0.72rem;font-weight:700}
+    .paid{background:#ecfdf5;color:#059669}
+    .pend{background:#fffbeb;color:#d97706}
+    .print-btn{display:block;margin:20px auto;padding:10px 32px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit}
+    @media print{body{background:#fff;padding:0}.print-btn{display:none!important}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="top">
+      <h1>${e(schoolName)}</h1>
+      <p>All Vehicle Fees Record &nbsp;|&nbsp; ${new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Receipt No</th><th>Student</th><th>Father Name</th><th>Class/Sec</th>
+          <th>Bus No</th><th>City</th><th>UTR</th><th>Month</th>
+          <th>Paid Amt</th><th>Last Year</th><th>Status</th><th>Date</th>
+        </tr>
+      </thead>
+      <tbody>${rows || '<tr><td colspan="12" style="text-align:center;padding:32px;color:#6b7280">No records found.</td></tr>'}</tbody>
+    </table>
+  </div>
+  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+</body>
+</html>`;
 
-        y -= lineHeight;
-        if (y < 40) {
-          page = pdfDoc.addPage([1050, 800]);
-          y = height - 40;
-        }
-      });
-
-      const pdfBytes = await pdfDoc.save();
-      return new NextResponse(new Uint8Array(pdfBytes), {
+      return new NextResponse(html, {
         status: 200,
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': 'attachment; filename="all-vehicle-fees-list.pdf"',
-        },
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
       });
     }
 
-    // 3. Setup A4 multi-page document settings
-    const PAGE_W = 595;
-    const PAGE_H = 842;
-    const COLS = 2;
-    const ROWS = 2;
-    const GAP = 6;
-    const MARGIN = 12;
-
-    const cellW = (PAGE_W - MARGIN * 2 - GAP * (COLS - 1)) / COLS;
-    const cellH = (PAGE_H - MARGIN * 2 - GAP * (ROWS - 1)) / ROWS;
-
-    const pdfDoc = await PDFDocument.create();
-    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const fontOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-
-    const totalRecords = validFees.length;
-    const recordsPerPage = 4;
-    const totalPages = Math.max(1, Math.ceil(totalRecords / recordsPerPage));
-
-    // Helper to find class fee for a student grade
-    const normalizeGrade = (g: string) =>
-      g.trim().toLowerCase().replace(/^class\s+/i, '').replace(/(th|st|nd|rd)$/i, '').trim();
-
-    // Draw one receipt on a specific page
-    const drawReceipt = async (page: any, fee: any, ox: number, oy: number, w: number, h: number) => {
+    // ── With ids: 4-up receipt HTML ────────────────────────────────────────
+    const receiptCards = await Promise.all(validFees.map(async (fee: any) => {
       const student = fee.studentId || {};
-
-      // Determine if the current record is a vehicle fee
       const isVehicleFee = fee.category === 'vehicle';
+
       let schoolFeeRecord: any = null;
       let vehicleFeeRecord: any = null;
 
       if (isVehicleFee) {
         vehicleFeeRecord = fee;
-        // Look up companion school fee
-        schoolFeeRecord = await Fees.findOne({
-          adminId,
-          studentId: student._id,
-          month: fee.month,
-        }).lean().exec();
+        schoolFeeRecord = await Fees.findOne({ adminId, studentId: student._id, month: fee.month }).lean().exec();
       } else {
         schoolFeeRecord = fee;
-        // Look up companion vehicle fee
-        vehicleFeeRecord = await VehicleFee.findOne({
-          adminId,
-          studentId: student._id,
-          month: fee.month,
-        }).lean().exec();
+        vehicleFeeRecord = await VehicleFee.findOne({ adminId, studentId: student._id, month: fee.month }).lean().exec();
       }
 
-      // Calculate school fee details
+      // Calculate class fee
       let classAmount = 0;
       if (student.grade) {
         const gradeNorm = normalizeGrade(student.grade);
         const subjectNorm = (student.subject || '').trim().toLowerCase();
-
         let match = classFees.find((cf: any) =>
-          normalizeGrade(cf.grade) === gradeNorm &&
-          (cf.subject || '').trim().toLowerCase() === subjectNorm
+          normalizeGrade(cf.grade) === gradeNorm && (cf.subject || '').trim().toLowerCase() === subjectNorm
         );
-
         if (!match) {
           match = classFees.find((cf: any) =>
-            normalizeGrade(cf.grade) === gradeNorm &&
-            (cf.subject || '') === ''
+            normalizeGrade(cf.grade) === gradeNorm && (cf.subject || '') === ''
           );
         }
-
-        if (match) {
-          classAmount = match.amount;
-        }
+        if (match) classAmount = (match as any).amount;
       }
-      if (classAmount === 0 && schoolFeeRecord && schoolFeeRecord.classFee) {
+      if (classAmount === 0 && schoolFeeRecord?.classFee) {
         classAmount = Number(schoolFeeRecord.classFee) || 0;
       }
 
-      // Calculate transport details
       const transportAmount = vehicleFeeRecord ? vehicleFeeRecord.amount : 0;
       const transportTotal = vehicleFeeRecord ? (vehicleFeeRecord.totalFees ?? 0) : 0;
+      const grandPaid = (schoolFeeRecord ? schoolFeeRecord.amount : 0) + (vehicleFeeRecord ? vehicleFeeRecord.amount : 0);
+      const isPaid = (schoolFeeRecord ? schoolFeeRecord.status === 'Paid' : true) && (vehicleFeeRecord ? vehicleFeeRecord.status === 'Paid' : true);
 
       const dateStr = fee.paidDate
-        ? new Date(fee.paidDate).toLocaleDateString(undefined, { dateStyle: 'medium' })
-        : new Date(fee.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' });
-
+        ? new Date(fee.paidDate).toLocaleDateString('en-IN', { dateStyle: 'medium' })
+        : fee.createdAt ? new Date(fee.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' }) : '—';
       const receiptNo = `#${fee._id.toString().substring(18).toUpperCase()}`;
+      const utrStr = schoolFeeRecord?.utr || vehicleFeeRecord?.utr || '—';
+      const fatherName = fee.fatherName || student.fatherName || student.fatheName || '—';
 
-      const indigo = rgb(99 / 255, 102 / 255, 241 / 255);
-      const white = rgb(1, 1, 1);
-      const gray1 = rgb(75 / 255, 85 / 255, 99 / 255);
-      const gray2 = rgb(107 / 255, 114 / 255, 128 / 255);
-      const gray3 = rgb(229 / 255, 231 / 255, 235 / 255);
-      const gray4 = rgb(249 / 255, 250 / 255, 251 / 255);
-      const dark = rgb(17 / 255, 24 / 255, 39 / 255);
-      const red = rgb(220 / 255, 38 / 255, 38 / 255);
+      const schoolRow = schoolFeeRecord ? `<tr>
+        <td>School Fees</td>
+        <td>${e(schoolFeeRecord.month)}</td>
+        <td>${classAmount > 0 ? `Rs. ${classAmount}` : '—'}</td>
+        <td><strong>Rs. ${e(schoolFeeRecord.amount)}</strong></td>
+        <td class="red">Rs. ${Math.max(0, classAmount - schoolFeeRecord.amount)}</td>
+      </tr>` : '';
 
-      const s = Math.min(w / 450, h / 600);
-      const sc = (v: number) => v * s;
+      const vehicleRow = vehicleFeeRecord ? `<tr>
+        <td>Transport Fee</td>
+        <td>${e(vehicleFeeRecord.month)}</td>
+        <td>${transportTotal > 0 ? `Rs. ${transportTotal}` : '—'}</td>
+        <td><strong>Rs. ${e(vehicleFeeRecord.amount)}</strong></td>
+        <td class="red">Rs. ${Math.max(0, transportTotal - vehicleFeeRecord.amount)}</td>
+      </tr>` : '';
 
-      // Outer border
-      page.drawRectangle({
-        x: ox, y: oy, width: w, height: h,
-        borderWidth: 1.2,
-        borderColor: indigo,
-        color: rgb(253 / 255, 254 / 255, 255 / 255),
-      });
+      return `<div class="receipt">
+  <div class="r-header">
+    <div class="r-school">${e(schoolName)}</div>
+    <div class="r-sub">VEHICLE TRANSPORT RECEIPT</div>
+  </div>
+  <div class="r-meta">
+    <span>Receipt: ${e(receiptNo)}</span>
+    <span>Date: ${e(dateStr)}</span>
+  </div>
+  <div class="r-sep"></div>
+  <div class="r-section-title">STUDENT &amp; VEHICLE INFORMATION</div>
+  <div class="r-card">
+    <div class="r-grid">
+      <div class="r-field"><label>Student Name</label><span class="hindi">${e(student.name)}</span></div>
+      <div class="r-field"><label>Vehicle / Bus No.</label><span>${e(fee.busNumber)}</span></div>
+      <div class="r-field"><label>Father's Name</label><span class="hindi">${e(fatherName)}</span></div>
+      <div class="r-field"><label>City / Route</label><span>${e(fee.city)}</span></div>
+      <div class="r-field"><label>Class / Grade</label><span>${e(student.grade || '—')}${student.section ? ` (${e(student.section)})` : ''}</span></div>
+      <div class="r-field"><label>UTR</label><span>${e(utrStr)}</span></div>
+    </div>
+  </div>
+  <div class="r-sep"></div>
+  <div class="r-section-title">PAYMENT PARTICULARS</div>
+  <table class="r-table">
+    <thead><tr><th>Description</th><th>Month</th><th>Total Fee</th><th>Paid Amt</th><th>Balance</th></tr></thead>
+    <tbody>
+      ${schoolRow}
+      ${vehicleRow}
+    </tbody>
+  </table>
+  <div class="r-total">
+    <span>Total Paid:</span>
+    <strong>Rs. ${grandPaid}</strong>
+  </div>
+  <div class="r-bottom">
+    <div class="r-sig"><div class="r-line"></div><p>Authorized Signature</p></div>
+    <div class="stamp ${isPaid ? 'stamp-paid' : 'stamp-pend'}">${isPaid ? 'PAID' : 'PENDING'}</div>
+  </div>
+  <div class="r-footer">Computer generated receipt. Thank you!</div>
+</div>`;
+    }));
 
-      // Header band
-      const hdrH = sc(80);
-      page.drawRectangle({ x: ox, y: oy + h - hdrH, width: w, height: hdrH, color: indigo });
-
-      // Centered header text helper
-      const centered = (text: string, yAbs: number, size: number, font: any, color: any) => {
-        const tw = font.widthOfTextAtSize(text, size);
-        page.drawText(text, { x: ox + (w - tw) / 2, y: yAbs, size, font, color });
-      };
-
-      const hdrTop = oy + h - hdrH;
-      centered(schoolName.toUpperCase(), hdrTop + sc(55), sc(14), fontBold, white);
-      centered('VEHICLE TRANSPORT RECEIPT', hdrTop + sc(36), sc(9), fontBold, rgb(0.85, 0.88, 1));
-
-      // Receipt No & Date
-      const metaY = oy + h - hdrH - sc(22);
-      page.drawText(`Receipt No: ${receiptNo}`, { x: ox + sc(18), y: metaY, size: sc(8), font: fontBold, color: gray1 });
-      const dateText = `Date: ${dateStr}`;
-      const dtW = fontBold.widthOfTextAtSize(dateText, sc(8));
-      page.drawText(dateText, { x: ox + w - sc(18) - dtW, y: metaY, size: sc(8), font: fontBold, color: gray1 });
-
-      // Separator
-      page.drawLine({ start: { x: ox + sc(15), y: metaY - sc(8) }, end: { x: ox + w - sc(15), y: metaY - sc(8) }, thickness: 0.5, color: gray3 });
-
-      // Student & Vehicle Info label
-      const siLabelY = metaY - sc(22);
-      page.drawText('STUDENT & VEHICLE INFORMATION', { x: ox + sc(18), y: siLabelY, size: sc(8.5), font: fontBold, color: indigo });
-
-      // Student/Route Info card bg
-      const cardH = sc(95);
-      const cardY = siLabelY - sc(12) - cardH;
-      page.drawRectangle({ x: ox + sc(15), y: cardY, width: w - sc(30), height: cardH, color: gray4, borderWidth: 0.4, borderColor: gray3 });
-
-      const sf = (label: string, val: string, fx: number, fy: number) => {
-        page.drawText(label, { x: ox + fx, y: fy, size: sc(8), font: fontBold, color: gray2 });
-        page.drawText(val, { x: ox + fx + sc(75), y: fy, size: sc(8), font: fontRegular, color: dark });
-      };
-
-      const row1Y = cardY + cardH - sc(17);
-      const row2Y = row1Y - sc(18);
-      const row3Y = row2Y - sc(18);
-      const row4Y = row3Y - sc(18);
-
-      sf('Student Name:', student.name || '—', sc(28), row1Y);
-      sf('Father Name:', fee.fatherName || student.fatherName || student.fatheName || '—', sc(28), row2Y);
-      sf('Roll Number:', student.rollNumber || '—', sc(28), row3Y);
-      sf('Class:', `${student.grade || '—'} (${student.section || '—'})`, sc(28), row4Y);
-
-      sf('Vehicle/Bus:', fee.busNumber || '—', sc(200), row1Y);
-      sf('City:', fee.city || '—', sc(200), row2Y);
-
-      const utrStr = (schoolFeeRecord?.utr || vehicleFeeRecord?.utr || '—');
-      sf('UTR:', utrStr, sc(200), row3Y);
-
-      // Separator
-      const sep2Y = cardY - sc(10);
-      page.drawLine({ start: { x: ox + sc(15), y: sep2Y }, end: { x: ox + w - sc(15), y: sep2Y }, thickness: 0.5, color: gray3 });
-
-      // Payment Particulars
-      const ppY = sep2Y - sc(16);
-      page.drawText('PAYMENT PARTICULARS', { x: ox + sc(18), y: ppY, size: sc(8.5), font: fontBold, color: indigo });
-
-      // Table headers
-      const thY = ppY - sc(18);
-      const cols = [sc(20), sc(110), sc(180), sc(245), sc(310)];
-      const headers = ['Description', 'Month', 'Total Fee', 'Paid Amt', 'Balance'];
-      headers.forEach((h2, i) => page.drawText(h2, { x: ox + cols[i], y: thY, size: sc(7.5), font: fontBold, color: gray1 }));
-
-      page.drawLine({ start: { x: ox + sc(15), y: thY - sc(7) }, end: { x: ox + w - sc(15), y: thY - sc(7) }, thickness: 0.6, color: rgb(156 / 255, 163 / 255, 175 / 255) });
-
-      let rowDataY = thY - sc(18);
-
-      // School Fees Row (Duty)
-      if (schoolFeeRecord) {
-        const schoolBalance = Math.max(0, classAmount - schoolFeeRecord.amount);
-        const schoolVals = [
-          'School Fees',
-          schoolFeeRecord.month,
-          classAmount > 0 ? `Rs. ${classAmount}` : '—',
-          `Rs. ${schoolFeeRecord.amount}`,
-          `Rs. ${schoolBalance}`,
-        ];
-        schoolVals.forEach((v, i) => {
-          const isAmt = i >= 3;
-          page.drawText(v, { x: ox + cols[i], y: rowDataY, size: sc(7.5), font: isAmt ? fontBold : fontRegular, color: i === 4 ? red : dark });
-        });
-        rowDataY -= sc(15);
-      }
-
-      // Transport Fee Row (Vehicle charges)
-      if (vehicleFeeRecord) {
-        const vehicleBalance = Math.max(0, transportTotal - vehicleFeeRecord.amount);
-        const vehicleVals = [
-          'Transport Fee',
-          vehicleFeeRecord.month,
-          transportTotal > 0 ? `Rs. ${transportTotal}` : '—',
-          `Rs. ${vehicleFeeRecord.amount}`,
-          `Rs. ${vehicleBalance}`,
-        ];
-        vehicleVals.forEach((v, i) => {
-          const isAmt = i >= 3;
-          page.drawText(v, { x: ox + cols[i], y: rowDataY, size: sc(7.5), font: isAmt ? fontBold : fontRegular, color: i === 4 ? red : dark });
-        });
-        rowDataY -= sc(15);
-      }
-
-      page.drawLine({ start: { x: ox + sc(15), y: rowDataY }, end: { x: ox + w - sc(15), y: rowDataY }, thickness: 0.5, color: gray3 });
-
-      // Total row
-      const grandPaid = (schoolFeeRecord ? schoolFeeRecord.amount : 0) + (vehicleFeeRecord ? vehicleFeeRecord.amount : 0);
-      const totalY = rowDataY - sc(15);
-      const totalLabel = 'Total Paid:';
-      const totalLabelW = fontBold.widthOfTextAtSize(totalLabel, sc(8.5));
-      page.drawText(totalLabel, { x: ox + w - sc(18) - totalLabelW - sc(40), y: totalY, size: sc(8.5), font: fontBold, color: gray1 });
-      page.drawText(`Rs. ${grandPaid}`, { x: ox + w - sc(18) - sc(38), y: totalY, size: sc(8.5), font: fontBold, color: indigo });
-
-      // Stamp
-      const stampX = ox + w - sc(90);
-      const stampY2 = oy + sc(50);
-      const isPaid = (schoolFeeRecord ? schoolFeeRecord.status === 'Paid' : true) && (vehicleFeeRecord ? vehicleFeeRecord.status === 'Paid' : true);
-      if (isPaid) {
-        page.drawRectangle({ x: stampX, y: stampY2, width: sc(65), height: sc(26), borderWidth: 1.5, borderColor: rgb(16 / 255, 185 / 255, 129 / 255), color: rgb(240 / 255, 253 / 255, 250 / 255), rotate: degrees(-12) });
-        page.drawText('PAID', { x: stampX + sc(14), y: stampY2 + sc(6), size: sc(13), font: fontBold, color: rgb(16 / 255, 185 / 255, 129 / 255), rotate: degrees(-12) });
-      } else {
-        page.drawRectangle({ x: stampX, y: stampY2, width: sc(75), height: sc(26), borderWidth: 1.5, borderColor: rgb(245 / 255, 158 / 255, 11 / 255), color: rgb(254 / 255, 243 / 255, 199 / 255), rotate: degrees(-12) });
-        page.drawText('PENDING', { x: stampX + sc(6), y: stampY2 + sc(7), size: sc(10), font: fontBold, color: rgb(245 / 255, 158 / 255, 11 / 255), rotate: degrees(-12) });
-      }
-
-      // Signature line
-      page.drawLine({ start: { x: ox + sc(28), y: oy + sc(52) }, end: { x: ox + sc(115), y: oy + sc(52) }, thickness: 0.5, color: gray2 });
-      page.drawText('Authorized Signature', { x: ox + sc(35), y: oy + sc(40), size: sc(7), font: fontRegular, color: gray2 });
-
-      // Footer
-      const footer = 'Computer generated receipt. Thank you!';
-      const ftW = fontOblique.widthOfTextAtSize(footer, sc(6.5));
-      page.drawText(footer, { x: ox + (w - ftW) / 2, y: oy + sc(24), size: sc(6.5), font: fontOblique, color: gray3 });
-    };
-
-    // 4. Generate pages with 4-up different receipts
-    for (let p = 0; p < totalPages; p++) {
-      const page = pdfDoc.addPage([PAGE_W, PAGE_H]);
-
-      // Draw dashed cut guides
-      const dashColor = rgb(180 / 255, 180 / 255, 180 / 255);
-      const cutX = MARGIN + cellW + GAP / 2;
-      for (let y = 0; y < PAGE_H; y += 10) {
-        page.drawLine({ start: { x: cutX, y }, end: { x: cutX, y: y + 5 }, thickness: 0.5, color: dashColor });
-      }
-      const cutY = MARGIN + cellH + GAP / 2;
-      for (let x = 0; x < PAGE_W; x += 10) {
-        page.drawLine({ start: { x, y: cutY }, end: { x: x + 5, y: cutY }, thickness: 0.5, color: dashColor });
-      }
-
-      // Draw receipts for the 4 slots on this page
-      for (let slot = 0; slot < recordsPerPage; slot++) {
-        const recordIndex = p * recordsPerPage + slot;
-        if (recordIndex >= totalRecords) break;
-
-        const fee = validFees[recordIndex];
-
-        const col = slot % 2;
-        const row = 1 - Math.floor(slot / 2);
-
-        const ox = MARGIN + col * (cellW + GAP);
-        const oy = MARGIN + row * (cellH + GAP);
-
-        await drawReceipt(page, fee, ox, oy, cellW, cellH);
-      }
+    const html = `<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Vehicle Receipts — ${e(schoolName)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#e5e7eb;padding:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:1100px;margin:0 auto}
+    .receipt{background:#fff;border:1.5px solid #f59e0b;border-radius:12px;overflow:hidden;font-size:0.78rem;display:flex;flex-direction:column}
+    .r-header{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;text-align:center;padding:14px 10px 10px}
+    .r-school{font-size:1rem;font-weight:800;letter-spacing:1px}
+    .r-sub{font-size:0.7rem;opacity:0.88;margin-top:3px;letter-spacing:0.5px}
+    .r-meta{display:flex;justify-content:space-between;padding:8px 14px;font-size:0.73rem;font-weight:600;color:#4b5563;background:#f9fafb;border-bottom:1px solid #e5e7eb}
+    .r-sep{height:1px;background:#e5e7eb;margin:0 14px}
+    .r-section-title{font-size:0.65rem;font-weight:800;color:#d97706;text-transform:uppercase;letter-spacing:0.08em;padding:8px 14px 4px}
+    .r-card{background:#f9fafb;border:0.5px solid #e5e7eb;border-radius:8px;margin:0 10px 6px;padding:8px 10px}
+    .r-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px}
+    .r-field label{font-size:0.65rem;font-weight:600;color:#6b7280;display:block;margin-bottom:1px}
+    .r-field span{font-size:0.8rem;color:#111827;font-family:'Inter','Noto Sans Devanagari',sans-serif}
+    .hindi{font-family:'Noto Sans Devanagari','Inter',sans-serif!important}
+    .r-table{width:calc(100% - 20px);margin:0 10px 4px;border-collapse:collapse;font-size:0.72rem}
+    .r-table thead tr{border-bottom:1.5px solid #9ca3af}
+    .r-table th{padding:5px 4px;text-align:left;font-weight:700;color:#4b5563}
+    .r-table td{padding:5px 4px;color:#111827;border-bottom:1px solid #f3f4f6}
+    .red{color:#dc2626;font-weight:700}
+    .r-total{display:flex;justify-content:space-between;align-items:center;margin:4px 10px 6px;background:#fffbeb;border:0.5px solid #fde68a;border-radius:6px;padding:6px 10px;font-size:0.73rem}
+    .r-total span{font-weight:600;color:#4b5563}
+    .r-total strong{font-weight:800;color:#d97706;font-size:0.85rem}
+    .r-bottom{display:flex;justify-content:space-between;align-items:flex-end;padding:6px 14px 8px}
+    .r-sig{text-align:center}
+    .r-line{width:90px;height:1px;background:#9ca3af;margin:0 auto 3px}
+    .r-sig p{font-size:0.62rem;color:#6b7280}
+    .stamp{border:2px solid;font-weight:800;font-size:0.85rem;padding:4px 10px;border-radius:5px;letter-spacing:2px;transform:rotate(-12deg);display:inline-block}
+    .stamp-paid{border-color:#10b981;background:#ecfdf5;color:#10b981}
+    .stamp-pend{border-color:#f59e0b;background:#fffbeb;color:#f59e0b}
+    .r-footer{text-align:center;font-size:0.6rem;color:#9ca3af;font-style:italic;padding:0 10px 8px}
+    .print-btn{display:block;margin:16px auto 0;padding:10px 32px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit}
+    @media print{
+      body{background:#fff;padding:0}
+      .print-btn{display:none!important}
+      .grid{gap:0;page-break-inside:avoid}
+      .receipt{border-radius:0;border:1px solid #f59e0b}
     }
+  </style>
+</head>
+<body>
+  <div class="grid">
+    ${receiptCards.join('') || '<div style="padding:40px;text-align:center;color:#6b7280;grid-column:span 2">No receipts found.</div>'}
+  </div>
+  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+</body>
+</html>`;
 
-    const pdfBytes = await pdfDoc.save();
-
-    return new NextResponse(new Uint8Array(pdfBytes), {
+    return new NextResponse(html, {
       status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename="all-vehicle-receipts.pdf"',
-      },
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
+
   } catch (error: any) {
-    return NextResponse.json({ message: error.message || 'Failed to generate PDF' }, { status: 500 });
+    return NextResponse.json({ message: error.message || 'Failed to generate receipts' }, { status: 500 });
   }
 }
