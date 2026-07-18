@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import { VehicleFee } from '@/models/VehicleFee';
 import Admin from '@/models/Admin';
@@ -20,7 +19,6 @@ export async function GET(
     const { id } = await params;
     await dbConnect();
 
-    // Fetch the single vehicle fee record scoped by admin
     const fee = await VehicleFee.findOne({ _id: id, adminId }).populate('studentId').lean().exec();
     if (!fee) {
       return NextResponse.json({ message: 'Vehicle fee record not found' }, { status: 404 });
@@ -34,285 +32,291 @@ export async function GET(
     if (payload.role === 'teacher') {
       const classFilter = await getTeacherClassFilter(payload);
       if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
       if (!classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
         return NextResponse.json({ message: 'Unauthorized to view this vehicle fee record' }, { status: 403 });
       }
     }
 
-    // Get school name from admin details
     const admin = await Admin.findById(adminId).lean().exec();
-    const schoolName = admin?.schoolName || 'Classupplus';
+    const schoolName = (admin?.schoolName || 'Classupplus').toUpperCase();
 
-    // Calculate balance
     const totalFees = fee.totalFees || 0;
     const balance = Math.max(0, totalFees - fee.amount);
 
-    // Create a compact PDF receipt
-    const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([450, 600]);
-    const { width, height } = page.getSize();
-
-    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const fontOblique = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-
-    // 1. Draw border
-    page.drawRectangle({
-      x: 15,
-      y: 15,
-      width: width - 30,
-      height: height - 30,
-      borderWidth: 1.5,
-      borderColor: rgb(99 / 255, 102 / 255, 241 / 255), // Indigo
-      color: rgb(253 / 255, 254 / 255, 255 / 255), // Light tint bg
-    });
-
-    // 2. Draw top header block
-    page.drawRectangle({
-      x: 15,
-      y: 505,
-      width: width - 30,
-      height: 80,
-      color: rgb(99 / 255, 102 / 255, 241 / 255),
-    });
-
-    // Helper: draw centered text
-    const drawTextCentered = (text: string, y: number, size: number, font: any, color: any) => {
-      const textWidth = font.widthOfTextAtSize(text, size);
-      page.drawText(text, {
-        x: (width - textWidth) / 2,
-        y: y,
-        size: size,
-        font: font,
-        color: color,
-      });
-    };
-
-    // School Name & Subtitle
-    drawTextCentered(schoolName.toUpperCase(), 545, 18, fontBold, rgb(1, 1, 1));
-    drawTextCentered('VEHICLE TRANSPORT RECEIPT', 522, 11, fontBold, rgb(0.85, 0.88, 1));
-
-    // 3. Receipt details meta
     const dateStr = fee.paidDate
-      ? new Date(fee.paidDate).toLocaleDateString(undefined, { dateStyle: 'medium' })
-      : new Date(fee.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' });
+      ? new Date(fee.paidDate).toLocaleDateString('en-IN', { dateStyle: 'medium' })
+      : new Date((fee as any).createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' });
 
-    page.drawText(`Receipt No: #${fee._id.toString().substring(18).toUpperCase()}`, {
-      x: 35,
-      y: 475,
-      size: 9.5,
-      font: fontBold,
-      color: rgb(75 / 255, 85 / 255, 99 / 255),
-    });
+    const receiptNo = `#${id.toString().substring(18).toUpperCase()}`;
+    const isPaid = fee.status === 'Paid';
 
-    page.drawText(`Date: ${dateStr}`, {
-      x: width - 150,
-      y: 475,
-      size: 9.5,
-      font: fontBold,
-      color: rgb(75 / 255, 85 / 255, 99 / 255),
-    });
-
-    // Separator line
-    page.drawLine({
-      start: { x: 30, y: 460 },
-      end: { x: width - 30, y: 460 },
-      thickness: 1,
-      color: rgb(229 / 255, 231 / 255, 235 / 255),
-    });
-
-    // 4. Student & Route Information Block
-    page.drawText('STUDENT & VEHICLE INFORMATION', {
-      x: 35,
-      y: 440,
-      size: 10.5,
-      font: fontBold,
-      color: rgb(99 / 255, 102 / 255, 241 / 255),
-    });
-
-    // Gray card background for Student/Route Info
-    page.drawRectangle({
-      x: 30,
-      y: 330,
-      width: width - 60,
-      height: 95,
-      color: rgb(249 / 255, 250 / 255, 251 / 255),
-      borderWidth: 0.5,
-      borderColor: rgb(229 / 255, 231 / 255, 235 / 255),
-    });
-
-    // Draw Student fields
-    const drawStudentField = (label: string, val: string, x: number, y: number) => {
-      page.drawText(label, { x, y, size: 9.5, font: fontBold, color: rgb(107 / 255, 114 / 255, 128 / 255) });
-      page.drawText(val, { x: x + 90, y, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-    };
-
-    drawStudentField('Student Name:', student.name, 45, 405);
-    drawStudentField('Father Name:', fee.fatherName || student.fatherName || student.fatheName || '—', 45, 385);
-    drawStudentField('Roll Number:', student.rollNumber || '—', 45, 365);
-    drawStudentField('Class/Grade:', `${student.grade || '—'} (Sec: ${student.section || '—'})`, 45, 345);
-
-    drawStudentField('Vehicle/Bus:', fee.busNumber || '—', 240, 405);
-    drawStudentField('City/Route:', fee.city || '—', 240, 385);
-    drawStudentField('UTR:', fee.utr || '—', 240, 365);
-
-    // Separator line
-    page.drawLine({
-      start: { x: 30, y: 315 },
-      end: { x: width - 30, y: 315 },
-      thickness: 1,
-      color: rgb(229 / 255, 231 / 255, 235 / 255),
-    });
-
-    // 5. Payment details table
-    page.drawText('PAYMENT PARTICULARS', {
-      x: 35,
-      y: 295,
-      size: 10.5,
-      font: fontBold,
-      color: rgb(99 / 255, 102 / 255, 241 / 255),
-    });
-
-    // Table headers
-    const drawTableHeader = (text: string, x: number, y: number) => {
-      page.drawText(text, { x, y, size: 9.5, font: fontBold, color: rgb(75 / 255, 85 / 255, 99 / 255) });
-    };
-
-    const headerY = 270;
-    drawTableHeader('Description', 40, headerY);
-    drawTableHeader('Month', 170, headerY);
-    drawTableHeader('Route Fee', 250, headerY);
-    drawTableHeader('Paid Amt', 315, headerY);
-    drawTableHeader('Balance', 380, headerY);
-
-    // Header line
-    page.drawLine({
-      start: { x: 30, y: 260 },
-      end: { x: width - 30, y: 260 },
-      thickness: 1,
-      color: rgb(156 / 255, 163 / 255, 175 / 255),
-    });
-
-    // Last year fees calculation
     const lastYearVal = (fee as any).lastyear;
-    const hasLastYear = lastYearVal != null && String(lastYearVal).trim() !== '' && String(lastYearVal).trim() !== '—';
-    const lastYearAmt = hasLastYear ? (parseFloat(String(lastYearVal)) || 0) : 0;
-    const totalPaid = fee.amount
+    const hasLastYear = lastYearVal != null && String(lastYearVal).trim() !== '' && String(lastYearVal).trim() !== '—' && String(lastYearVal).trim() !== '0';
 
-    // Table rows
-    let rowY = 240;
-    page.drawText('Vehicle Transport', { x: 40, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-    page.drawText(fee.month, { x: 170, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-    page.drawText(totalFees > 0 ? `Rs. ${totalFees}` : '—', { x: 250, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-    page.drawText(`Rs. ${fee.amount}`, { x: 315, y: rowY, size: 9.5, font: fontBold, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-    page.drawText(`Rs. ${balance}`, { x: 380, y: rowY, size: 9.5, font: fontBold, color: rgb(220 / 255, 38 / 255, 38 / 255) });
+    const fatherName = (fee as any).fatherName || student.fatherName || student.fatheName || '—';
 
-    if (hasLastYear) {
-      rowY -= 20;
-      page.drawText('Last Year Fees', { x: 40, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-      page.drawText('—', { x: 170, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-      page.drawText('Pending', { x: 250, y: rowY, size: 9.5, font: fontRegular, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-      page.drawText('—', { x: 315, y: rowY, size: 9.5, font: fontBold, color: rgb(17 / 255, 24 / 255, 39 / 255) });
-      page.drawText(`Rs. ${lastYearVal}`, { x: 380, y: rowY, size: 9.5, font: fontBold, color: rgb(17 / 255, 24 / 255, 39 / 255) });
+    const e = (s: any) => String(s ?? '—').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    const html = `<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vehicle Receipt - ${e(receiptNo)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+      background: #f3f4f6;
+      display: flex;
+      justify-content: center;
+      padding: 32px 16px;
+      min-height: 100vh;
     }
-
-    const tableBottomY = rowY - 15;
-    // Table bottom border
-    page.drawLine({
-      start: { x: 30, y: tableBottomY },
-      end: { x: width - 30, y: tableBottomY },
-      thickness: 1,
-      color: rgb(229 / 255, 231 / 255, 235 / 255),
-    });
-
-    const totalRowY = tableBottomY - 25;
-    // Draw total row
-    page.drawText('Total Paid Amount:', {
-      x: width - 200,
-      y: totalRowY,
-      size: 10.5,
-      font: fontBold,
-      color: rgb(75 / 255, 85 / 255, 99 / 255),
-    });
-    page.drawText(`Rs. ${totalPaid}`, {
-      x: width - 75,
-      y: totalRowY,
-      size: 11,
-      font: fontBold,
-      color: rgb(99 / 255, 102 / 255, 241 / 255),
-    });
-
-    // 6. Draw stamp
-    if (fee.status === 'Paid') {
-      page.drawRectangle({
-        x: 300,
-        y: 100,
-        width: 100,
-        height: 40,
-        borderWidth: 2,
-        borderColor: rgb(16 / 255, 185 / 255, 129 / 255), // Emerald Green
-        color: rgb(240 / 255, 253 / 255, 250 / 255),
-        rotate: degrees(-12),
-      });
-      page.drawText('PAID', {
-        x: 328,
-        y: 112,
-        size: 18,
-        font: fontBold,
-        color: rgb(16 / 255, 185 / 255, 129 / 255),
-        rotate: degrees(-12),
-      });
-    } else {
-      page.drawRectangle({
-        x: 300,
-        y: 100,
-        width: 100,
-        height: 40,
-        borderWidth: 2,
-        borderColor: rgb(245 / 255, 158 / 255, 11 / 255), // Amber
-        color: rgb(254 / 255, 243 / 255, 199 / 255),
-        rotate: degrees(-12),
-      });
-      page.drawText('PENDING', {
-        x: 312,
-        y: 114,
-        size: 14,
-        font: fontBold,
-        color: rgb(245 / 255, 158 / 255, 11 / 255),
-        rotate: degrees(-12),
-      });
+    .wrap { display: flex; flex-direction: column; align-items: center; }
+    .receipt {
+      background: #fff;
+      border-radius: 16px;
+      border: 1.5px solid #f59e0b;
+      width: 490px;
+      max-width: 100%;
+      box-shadow: 0 8px 40px rgba(245,158,11,0.1);
+      overflow: hidden;
     }
+    .header {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      padding: 28px 24px 22px;
+      text-align: center;
+      color: #fff;
+    }
+    .header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; }
+    .header p  { font-size: 0.78rem; opacity: 0.88; margin-top: 4px; letter-spacing: 0.5px; }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      padding: 11px 24px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #4b5563;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .section-title {
+      font-size: 0.73rem;
+      font-weight: 700;
+      color: #d97706;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 13px 24px 7px;
+    }
+    .info-card {
+      margin: 0 20px 12px;
+      background: #f9fafb;
+      border: 0.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 16px;
+    }
+    .info-row label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #6b7280;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .info-row span {
+      font-size: 0.87rem;
+      color: #111827;
+      font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+    }
+    .divider { height: 1px; background: #e5e7eb; margin: 2px 24px; }
+    table {
+      width: calc(100% - 40px);
+      margin: 0 20px 8px;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    thead tr { border-bottom: 1.5px solid #9ca3af; }
+    thead th {
+      padding: 7px 6px;
+      text-align: left;
+      font-weight: 700;
+      color: #4b5563;
+      font-size: 0.78rem;
+    }
+    tbody tr { border-bottom: 1px solid #f3f4f6; }
+    tbody td { padding: 7px 6px; color: #111827; }
+    tbody td.amt { font-weight: 700; }
+    tbody td.red { color: #dc2626; font-weight: 700; }
+    .total-row {
+      margin: 4px 20px 16px;
+      background: #fffbeb;
+      border: 0.5px solid #fde68a;
+      border-radius: 8px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .total-row span { font-size: 0.82rem; font-weight: 600; color: #4b5563; }
+    .total-row strong { font-size: 1rem; font-weight: 700; color: #d97706; }
+    .bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 12px 24px 20px;
+    }
+    .signature { text-align: center; }
+    .signature .line { width: 130px; height: 1px; background: #9ca3af; margin: 0 auto 4px; }
+    .signature p { font-size: 0.73rem; color: #6b7280; }
+    .stamp {
+      font-weight: 800;
+      font-size: 1.1rem;
+      padding: 6px 14px;
+      border-radius: 6px;
+      letter-spacing: 2px;
+      transform: rotate(-12deg);
+      display: inline-block;
+      border: 2.5px solid;
+    }
+    .stamp-paid { border-color: #10b981; background: #ecfdf5; color: #10b981; }
+    .stamp-pend { border-color: #f59e0b; background: #fffbeb; color: #f59e0b; }
+    .footer {
+      text-align: center;
+      font-size: 0.7rem;
+      color: #9ca3af;
+      font-style: italic;
+      padding: 0 24px 14px;
+    }
+    .print-btn {
+      margin-top: 20px;
+      padding: 10px 32px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .receipt { box-shadow: none; border-radius: 0; }
+      .print-btn { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="receipt">
+      <div class="header">
+        <h1>${e(schoolName)}</h1>
+        <p>VEHICLE TRANSPORT RECEIPT</p>
+      </div>
 
-    // 7. Signature area
-    page.drawLine({
-      start: { x: 45, y: 105 },
-      end: { x: 175, y: 105 },
-      thickness: 0.75,
-      color: rgb(156 / 255, 163 / 255, 175 / 255),
-    });
-    page.drawText('Authorized Signature', {
-      x: 60,
-      y: 90,
-      size: 8.5,
-      font: fontRegular,
-      color: rgb(107 / 255, 114 / 255, 128 / 255),
-    });
+      <div class="meta">
+        <span>Receipt No: ${e(receiptNo)}</span>
+        <span>Date: ${e(dateStr)}</span>
+      </div>
 
-    // 8. Footer note
-    drawTextCentered('This is a computer generated receipt. Thank you for your payment.', 45, 8.5, fontOblique, rgb(156 / 255, 163 / 255, 175 / 255));
+      <div class="section-title">Student &amp; Vehicle Information</div>
+      <div class="info-card">
+        <div class="info-grid">
+          <div class="info-row">
+            <label>Student Name</label>
+            <span>${e(student.name)}</span>
+          </div>
+          <div class="info-row">
+            <label>Vehicle / Bus No.</label>
+            <span>${e((fee as any).busNumber)}</span>
+          </div>
+          <div class="info-row">
+            <label>Father's Name</label>
+            <span>${e(fatherName)}</span>
+          </div>
+          <div class="info-row">
+            <label>City / Route</label>
+            <span>${e((fee as any).city)}</span>
+          </div>
+          <div class="info-row">
+            <label>Roll Number</label>
+            <span>${e(student.rollNumber)}</span>
+          </div>
+          <div class="info-row">
+            <label>UTR</label>
+            <span>${e((fee as any).utr)}</span>
+          </div>
+          <div class="info-row">
+            <label>Class / Grade</label>
+            <span>${e(student.grade || '—')}${student.section ? ` (Sec: ${e(student.section)})` : ''}</span>
+          </div>
+        </div>
+      </div>
 
-    const pdfBytes = await pdfDoc.save();
-    const pdfBlob = new Uint8Array(pdfBytes);
+      <div class="divider"></div>
 
-    return new NextResponse(pdfBlob, {
+      <div class="section-title">Payment Particulars</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Month</th>
+            <th>Route Fee</th>
+            <th>Paid Amt</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Vehicle Transport</td>
+            <td>${e((fee as any).month)}</td>
+            <td>${totalFees > 0 ? `Rs. ${totalFees}` : '—'}</td>
+            <td class="amt">Rs. ${e(fee.amount)}</td>
+            <td class="red">Rs. ${balance}</td>
+          </tr>
+          ${hasLastYear ? `<tr>
+            <td>Last Year Fees</td>
+            <td>—</td>
+            <td>Pending</td>
+            <td class="amt">—</td>
+            <td class="amt">Rs. ${e(lastYearVal)}</td>
+          </tr>` : ''}
+        </tbody>
+      </table>
+
+      <div class="total-row">
+        <span>Total Paid:</span>
+        <strong>Rs. ${e(fee.amount)}</strong>
+      </div>
+
+      <div class="bottom">
+        <div class="signature">
+          <div class="line"></div>
+          <p>Authorized Signature</p>
+        </div>
+        <div class="stamp ${isPaid ? 'stamp-paid' : 'stamp-pend'}">${isPaid ? 'PAID' : 'PENDING'}</div>
+      </div>
+
+      <div class="footer">This is a computer generated receipt. Thank you for your payment.</div>
+    </div>
+
+    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </div>
+</body>
+</html>`;
+
+    return new NextResponse(html, {
       status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'inline; filename="receipt-' + fee._id + '.pdf"',
-      },
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message || 'Failed to generate PDF' }, { status: 500 });
+    return NextResponse.json({ message: error.message || 'Failed to generate receipt' }, { status: 500 });
   }
 }
