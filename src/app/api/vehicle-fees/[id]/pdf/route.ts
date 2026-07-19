@@ -67,7 +67,7 @@ export async function GET(
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     body {
       font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
       background: #f3f4f6;
@@ -87,10 +87,10 @@ export async function GET(
       overflow: hidden;
     }
     .header {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
+      background: #f59e0b linear-gradient(135deg, #f59e0b, #d97706) !important;
       padding: 28px 24px 22px;
       text-align: center;
-      color: #fff;
+      color: #fff !important;
     }
     .header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; }
     .header p  { font-size: 0.78rem; opacity: 0.88; margin-top: 4px; letter-spacing: 0.5px; }
@@ -185,8 +185,8 @@ export async function GET(
       display: inline-block;
       border: 2.5px solid;
     }
-    .stamp-paid { border-color: #10b981; background: #ecfdf5; color: #10b981; }
-    .stamp-pend { border-color: #f59e0b; background: #fffbeb; color: #f59e0b; }
+    .stamp-paid { border-color: #10b981 !important; background: #ecfdf5 !important; color: #10b981 !important; }
+    .stamp-pend { border-color: #f59e0b !important; background: #fffbeb !important; color: #f59e0b !important; }
     .footer {
       text-align: center;
       font-size: 0.7rem;
@@ -207,8 +207,11 @@ export async function GET(
       font-family: inherit;
     }
     @media print {
-      body { background: #fff; padding: 0; }
-      .receipt { box-shadow: none; border-radius: 0; }
+      body { background: #fff; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .header { box-shadow: inset 0 0 0 1000px #f59e0b !important; color: #fff !important; }
+      .stamp-paid { box-shadow: inset 0 0 0 1000px #ecfdf5 !important; color: #10b981 !important; }
+      .stamp-pend { box-shadow: inset 0 0 0 1000px #fffbeb !important; color: #f59e0b !important; }
+      .receipt { box-shadow: none; border-radius: 0; border: 1px solid #f59e0b; }
       .print-btn { display: none !important; }
     }
   </style>
