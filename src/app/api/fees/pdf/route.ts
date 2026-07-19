@@ -57,7 +57,7 @@ export async function GET(request: Request) {
 
     const classFees = await ClassFee.find({ adminId }).lean().exec();
     const admin = await Admin.findById(adminId).select('schoolName').lean().exec();
-    const schoolName = (admin?.schoolName || 'E\'School').toUpperCase();
+    const schoolName = (admin?.schoolName || 'Classupplus').toUpperCase();
 
     const validFees = allFees.filter((f: any) => f.studentId);
 
@@ -111,10 +111,10 @@ export async function GET(request: Request) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
     body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#f3f4f6;padding:24px}
     .card{background:#fff;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden}
-    .top{background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;padding:20px 28px}
+    .top{background:#6366f1 linear-gradient(135deg,#6366f1,#818cf8) !important;color:#fff !important;padding:20px 28px}
     .top h1{font-size:1.4rem;font-weight:700;letter-spacing:1px}
     .top p{font-size:0.82rem;opacity:0.85;margin-top:4px}
     table{width:100%;border-collapse:collapse;font-size:0.82rem}
@@ -124,10 +124,16 @@ export async function GET(request: Request) {
     tr:hover td{background:#f9fafb}
     .hindi{font-family:'Noto Sans Devanagari','Inter',sans-serif}
     .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:0.72rem;font-weight:700}
-    .paid{background:#ecfdf5;color:#059669}
-    .pend{background:#fffbeb;color:#d97706}
+    .paid{background:#ecfdf5 !important;color:#059669 !important}
+    .pend{background:#fffbeb !important;color:#d97706 !important}
     .print-btn{display:block;margin:20px auto;padding:10px 32px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit}
-    @media print{body{background:#fff;padding:0}.print-btn{display:none!important}}
+    @media print{
+      body{background:#fff;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+      .top { box-shadow: inset 0 0 0 1000px #6366f1 !important; color: #fff !important; }
+      .stamp-paid, .paid { box-shadow: inset 0 0 0 1000px #ecfdf5 !important; color: #10b981 !important; }
+      .stamp-pend, .pend { box-shadow: inset 0 0 0 1000px #fffbeb !important; color: #f59e0b !important; }
+      .print-btn{display:none!important}
+    }
   </style>
 </head>
 <body>
@@ -227,11 +233,11 @@ export async function GET(request: Request) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
     body{font-family:'Inter','Noto Sans Devanagari',sans-serif;background:#e5e7eb;padding:16px}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:1100px;margin:0 auto}
     .receipt{background:#fff;border:1.5px solid #6366f1;border-radius:12px;overflow:hidden;font-size:0.78rem;display:flex;flex-direction:column}
-    .r-header{background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;text-align:center;padding:14px 10px 10px}
+    .r-header{background:#6366f1 linear-gradient(135deg,#6366f1,#818cf8) !important;color:#fff !important;text-align:center;padding:14px 10px 10px}
     .r-school{font-size:1rem;font-weight:800;letter-spacing:1px}
     .r-sub{font-size:0.7rem;opacity:0.88;margin-top:3px;letter-spacing:0.5px}
     .r-meta{display:flex;justify-content:space-between;padding:8px 14px;font-size:0.73rem;font-weight:600;color:#4b5563;background:#f9fafb;border-bottom:1px solid #e5e7eb}
@@ -261,7 +267,10 @@ export async function GET(request: Request) {
     .cut-h{border-top:1px dashed #9ca3af;margin:0}
     .print-btn{display:block;margin:16px auto 0;padding:10px 32px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit}
     @media print{
-      body{background:#fff;padding:0}
+      body{background:#fff;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+      .top, .r-header { box-shadow: inset 0 0 0 1000px #6366f1 !important; color: #fff !important; }
+      .stamp-paid, .paid { box-shadow: inset 0 0 0 1000px #ecfdf5 !important; color: #10b981 !important; }
+      .stamp-pend, .pend { box-shadow: inset 0 0 0 1000px #fffbeb !important; color: #f59e0b !important; }
       .print-btn{display:none!important}
       .grid{gap:0;page-break-inside:avoid}
       .receipt{border-radius:0;border:1px solid #6366f1}
