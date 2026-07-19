@@ -42,7 +42,7 @@ export async function GET(
 
     // Get school name from admin details
     const admin = await Admin.findById(adminId).lean().exec();
-    const schoolName = (admin?.schoolName || "E'School").toUpperCase();
+    const schoolName = (admin?.schoolName || "Classupplus").toUpperCase();
 
     // Calculate class fee and balance
     let classAmount = 0;
@@ -100,7 +100,7 @@ export async function GET(
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     body {
       font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
       background: #f3f4f6;
@@ -119,10 +119,10 @@ export async function GET(
       overflow: hidden;
     }
     .header {
-      background: linear-gradient(135deg, #6366f1, #818cf8);
+      background: #6366f1 linear-gradient(135deg, #6366f1, #818cf8) !important;
       padding: 28px 24px 22px;
       text-align: center;
-      color: #fff;
+      color: #fff !important;
     }
     .header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: 1px; }
     .header p { font-size: 0.8rem; opacity: 0.85; margin-top: 4px; letter-spacing: 0.5px; }
@@ -208,9 +208,9 @@ export async function GET(
     .signature .line { width: 130px; height: 1px; background: #9ca3af; margin: 0 auto 4px; }
     .signature p { font-size: 0.73rem; color: #6b7280; }
     .stamp {
-      border: 2.5px solid ${stampBorder};
-      background: ${statusBg};
-      color: ${statusColor};
+      border: 2.5px solid ${stampBorder} !important;
+      background: ${statusBg} !important;
+      color: ${statusColor} !important;
       font-weight: 800;
       font-size: 1.1rem;
       padding: 6px 14px;
@@ -240,7 +240,9 @@ export async function GET(
       font-family: inherit;
     }
     @media print {
-      body { background: #fff; padding: 0; }
+      body { background: #fff; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .header { box-shadow: inset 0 0 0 1000px #6366f1 !important; color: #fff !important; }
+      .stamp { box-shadow: inset 0 0 0 1000px ${statusBg} !important; color: ${statusColor} !important; }
       .receipt { box-shadow: none; border-radius: 0; border: 1.5px solid #6366f1; }
       .print-btn { display: none !important; }
     }
