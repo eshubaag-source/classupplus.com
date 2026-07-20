@@ -334,7 +334,15 @@ export async function GET(
       <div class="footer">This is a computer generated receipt. Thank you for your payment.</div>
     </div>
 
-    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+    <button class="print-btn" onclick="printPdf()">🖨️ Print / Save as PDF</button>
+    <script>
+      function printPdf() {
+        const u = window.location.href;
+        window.history.replaceState({}, '', '/');
+        window.print();
+        window.history.replaceState({}, '', u);
+      }
+    </script>
   </div>
 </body>
 </html>`;
