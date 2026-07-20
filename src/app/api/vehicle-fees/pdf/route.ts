@@ -127,7 +127,15 @@ export async function GET(request: Request) {
       <tbody>${rows || '<tr><td colspan="12" style="text-align:center;padding:32px;color:#6b7280">No records found.</td></tr>'}</tbody>
     </table>
   </div>
-  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <button class="print-btn" onclick="printPdf()">🖨️ Print / Save as PDF</button>
+  <script>
+    function printPdf() {
+      const u = window.location.href;
+      window.history.replaceState({}, '', '/');
+      window.print();
+      window.history.replaceState({}, '', u);
+    }
+  </script>
 </body>
 </html>`;
 
@@ -297,7 +305,15 @@ export async function GET(request: Request) {
   <div class="grid">
     ${receiptCards.join('') || '<div style="padding:40px;text-align:center;color:#6b7280;grid-column:span 2">No receipts found.</div>'}
   </div>
-  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <button class="print-btn" onclick="printPdf()">🖨️ Print / Save as PDF</button>
+  <script>
+    function printPdf() {
+      const u = window.location.href;
+      window.history.replaceState({}, '', '/');
+      window.print();
+      window.history.replaceState({}, '', u);
+    }
+  </script>
 </body>
 </html>`;
 
