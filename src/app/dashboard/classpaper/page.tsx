@@ -198,14 +198,14 @@ export default function ClassPaperPage() {
         </div>
       </div>
 
-      <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
         <input
           type="text"
           placeholder="Search by name or roll number"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           style={{
-            flex: 1,
+            flex: '1 1 200px',
             padding: '8px 12px',
             borderRadius: '8px',
             border: '1px solid #ccc',
@@ -216,6 +216,7 @@ export default function ClassPaperPage() {
           value={selectedClass}
           onChange={e => setSelectedClass(e.target.value)}
           style={{
+            flex: '1 1 120px',
             padding: '8px 12px',
             borderRadius: '8px',
             border: '1px solid #ccc',
@@ -232,6 +233,7 @@ export default function ClassPaperPage() {
           value={selectedSection}
           onChange={e => setSelectedSection(e.target.value)}
           style={{
+            flex: '1 1 120px',
             padding: '8px 12px',
             borderRadius: '8px',
             border: '1px solid #ccc',
