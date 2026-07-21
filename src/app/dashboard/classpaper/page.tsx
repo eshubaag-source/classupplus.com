@@ -12,6 +12,8 @@ export default function ClassPaperPage() {
   const [students, setStudents] = useState<any[]>([]);
   const [isMounted, setIsMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedSection, setSelectedSection] = useState('');
   const [schoolName, setSchoolName] = useState('');
 
   // Bulk Message Modal State
@@ -140,11 +142,16 @@ export default function ClassPaperPage() {
 
   if (!isMounted) return null;
 
-  const filteredStudents = students.filter(
-    s =>
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.rollNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const uniqueClasses = Array.from(new Set(students.map(s => s.grade))).filter(Boolean).sort();
+  const uniqueSections = Array.from(new Set(students.map(s => s.section))).filter(Boolean).sort();
+
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          s.rollNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesClass = selectedClass ? s.grade === selectedClass : true;
+    const matchesSection = selectedSection ? s.section === selectedSection : true;
+    return matchesSearch && matchesClass && matchesSection;
+  });
 
   const inputStyle: React.CSSProperties = {
     padding: '6px 10px',
@@ -205,6 +212,38 @@ export default function ClassPaperPage() {
             fontSize: '0.95rem',
           }}
         />
+        <select
+          value={selectedClass}
+          onChange={e => setSelectedClass(e.target.value)}
+          style={{
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            fontSize: '0.95rem',
+            background: 'white',
+          }}
+        >
+          <option value="">All Classes</option>
+          {uniqueClasses.map(cls => (
+            <option key={cls as string} value={cls as string}>{cls as string}</option>
+          ))}
+        </select>
+        <select
+          value={selectedSection}
+          onChange={e => setSelectedSection(e.target.value)}
+          style={{
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            fontSize: '0.95rem',
+            background: 'white',
+          }}
+        >
+          <option value="">All Sections</option>
+          {uniqueSections.map(sec => (
+            <option key={sec as string} value={sec as string}>{sec as string}</option>
+          ))}
+        </select>
       </div>
 
       <div className="glass table-wrapper">
