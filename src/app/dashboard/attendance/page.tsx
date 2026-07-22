@@ -9,6 +9,8 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterClass, setFilterClass] = useState('');
+  const [filterSection, setFilterSection] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -117,10 +119,17 @@ export default function AttendancePage() {
   };
 
   if (!isMounted) return null;
-  const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.Fathername?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const uniqueClasses = Array.from(new Set(students.map(s => s.grade))).filter(Boolean).sort();
+  const uniqueSections = Array.from(new Set(students.map(s => s.section))).filter(Boolean).sort();
+
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          s.Fathername?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          s.fatherName?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesClass = filterClass ? s.grade === filterClass : true;
+    const matchesSection = filterSection ? s.section === filterSection : true;
+    return matchesSearch && matchesClass && matchesSection;
+  });
 
   return (
     <div>
@@ -181,20 +190,55 @@ export default function AttendancePage() {
       </div>
       {/* Search Bar & Actions */}
       <div style={{ marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-        <input
-          type="text"
-          placeholder="Search by name or father name"
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          style={{
-            flex: 1,
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #ccc',
-            fontSize: '0.95rem',
-            maxWidth: '400px'
-          }}
-        />
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', flex: 1 }}>
+          <input
+            type="text"
+            placeholder="Search by name or father name"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid #ccc',
+              fontSize: '0.95rem',
+              minWidth: '200px',
+              maxWidth: '400px'
+            }}
+          />
+          <select
+            value={filterClass}
+            onChange={e => setFilterClass(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid #ccc',
+              fontSize: '0.95rem',
+              background: 'white',
+            }}
+          >
+            <option value="">All Classes</option>
+            {uniqueClasses.map(c => (
+              <option key={c as string} value={c as string}>{c as string}</option>
+            ))}
+          </select>
+          <select
+            value={filterSection}
+            onChange={e => setFilterSection(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid #ccc',
+              fontSize: '0.95rem',
+              background: 'white',
+            }}
+          >
+            <option value="">All Sections</option>
+            {uniqueSections.map(s => (
+              <option key={s as string} value={s as string}>{s as string}</option>
+            ))}
+          </select>
+        </div>
         <button
           onClick={markAllPresent}
           className="btn-primary"
@@ -224,22 +268,23 @@ export default function AttendancePage() {
               <th style={{ padding: '16px' }}>Father Name</th>
               <th style={{ padding: '16px' }}>Roll No</th>
               <th style={{ padding: '16px' }}>Class</th>
+              <th style={{ padding: '16px' }}>Section</th>
               <th style={{ padding: '16px' }}>Note</th>
               <th style={{ padding: '16px', textAlign: 'center' }}>Status</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center' }}>Loading...</td></tr>
+              <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}>Loading...</td></tr>
             ) : fetchError ? (
-              <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#ef4444' }}>
+              <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: '#ef4444' }}>
                 ⚠️ {fetchError}
               </td></tr>
             ) : students.length === 0 ? (
-              <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center' }}>No students found. Please add students first.</td></tr>
+              <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}>No students found. Please add students first.</td></tr>
             ) :
               filteredStudents.length === 0 ? (
-                <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center' }}>No students found matching your search.</td></tr>
+                <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}>No students found matching your search.</td></tr>
               ) : (
                 filteredStudents.map((student) => (
                   <tr key={student._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
@@ -247,6 +292,7 @@ export default function AttendancePage() {
                     <td style={{ padding: '16px', fontWeight: 600 }}>{student.fatherName}</td>
                     <td style={{ padding: '16px' }}>{student.rollNumber}</td>
                     <td style={{ padding: '16px' }}>{student.grade}</td>
+                    <td style={{ padding: '16px' }}>{student.section}</td>
                     <td style={{ padding: '16px' }}>{student.note}</td>
                     <td style={{ padding: '16px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
