@@ -15,6 +15,8 @@ export default function ClassPaperPage() {
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [schoolName, setSchoolName] = useState('');
+  const [userRole, setUserRole] = useState<string>('admin');
+  const isTeacher = userRole === 'teacher';
 
   // Bulk Message Modal State
   const [showModal, setShowModal] = useState(false);
@@ -41,6 +43,7 @@ export default function ClassPaperPage() {
     const data = await res.json();
     const profile = await profileRes.json();
     if (profile.schoolName) setSchoolName(profile.schoolName);
+    if (profile.role) setUserRole(profile.role);
     
     const list = Array.isArray(data) ? data : [];
     setStudents(list);
@@ -212,40 +215,44 @@ export default function ClassPaperPage() {
             fontSize: '0.95rem',
           }}
         />
-        <select
-          value={selectedClass}
-          onChange={e => setSelectedClass(e.target.value)}
-          style={{
-            flex: '1 1 120px',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #ccc',
-            fontSize: '0.95rem',
-            background: 'white',
-          }}
-        >
-          <option value="">All Classes</option>
-          {uniqueClasses.map(cls => (
-            <option key={cls as string} value={cls as string}>{cls as string}</option>
-          ))}
-        </select>
-        <select
-          value={selectedSection}
-          onChange={e => setSelectedSection(e.target.value)}
-          style={{
-            flex: '1 1 120px',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #ccc',
-            fontSize: '0.95rem',
-            background: 'white',
-          }}
-        >
-          <option value="">All Sections</option>
-          {uniqueSections.map(sec => (
-            <option key={sec as string} value={sec as string}>{sec as string}</option>
-          ))}
-        </select>
+        {!isTeacher && (
+          <>
+            <select
+              value={selectedClass}
+              onChange={e => setSelectedClass(e.target.value)}
+              style={{
+                flex: '1 1 120px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #ccc',
+                fontSize: '0.95rem',
+                background: 'white',
+              }}
+            >
+              <option value="">All Classes</option>
+              {uniqueClasses.map(cls => (
+                <option key={cls as string} value={cls as string}>{cls as string}</option>
+              ))}
+            </select>
+            <select
+              value={selectedSection}
+              onChange={e => setSelectedSection(e.target.value)}
+              style={{
+                flex: '1 1 120px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #ccc',
+                fontSize: '0.95rem',
+                background: 'white',
+              }}
+            >
+              <option value="">All Sections</option>
+              {uniqueSections.map(sec => (
+                <option key={sec as string} value={sec as string}>{sec as string}</option>
+              ))}
+            </select>
+          </>
+        )}
       </div>
 
       <div className="glass table-wrapper">
@@ -254,8 +261,8 @@ export default function ClassPaperPage() {
             <tr>
               <th style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>Roll No</th>
               <th style={{ padding: '14px 16px' }}>Name</th>
-              <th style={{ padding: '14px 16px' }}>Class</th>
-              <th style={{ padding: '14px 16px' }}>Section</th>
+              {!isTeacher && <th style={{ padding: '14px 16px' }}>Class</th>}
+              {!isTeacher && <th style={{ padding: '14px 16px' }}>Section</th>}
               <th style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>Parent Contact</th>
               <th style={{ padding: '14px 16px' }}>Marks Recorded</th>
               <th style={{ padding: '14px 16px' }}>Action</th>
@@ -264,7 +271,7 @@ export default function ClassPaperPage() {
           <tbody>
             {filteredStudents.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <td colSpan={isTeacher ? 5 : 7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   No students found.
                 </td>
               </tr>
@@ -286,8 +293,8 @@ export default function ClassPaperPage() {
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px', fontWeight: 600 }}>{student.name}</td>
-                    <td style={{ padding: '12px 16px' }}>{student.grade}</td>
-                    <td style={{ padding: '12px 16px' }}>{student.section}</td>
+                    {!isTeacher && <td style={{ padding: '12px 16px' }}>{student.grade}</td>}
+                    {!isTeacher && <td style={{ padding: '12px 16px' }}>{student.section}</td>}
                     <td style={{ padding: '12px 16px' }}>
                       {student.parentContact ? (
                         <a
