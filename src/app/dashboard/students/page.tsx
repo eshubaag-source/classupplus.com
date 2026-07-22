@@ -8,6 +8,8 @@ export default function StudentsPage() {
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState<'add' | 'edit' | 'changeClass'>('add');
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterClass, setFilterClass] = useState('');
+  const [filterSection, setFilterSection] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [userRole, setUserRole] = useState<string>('admin');
   const isTeacher = userRole === 'teacher';
@@ -154,10 +156,16 @@ export default function StudentsPage() {
   };
 
   if (!isMounted) return null;
-  const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.fatherName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const uniqueClasses = Array.from(new Set(students.map(s => s.grade))).filter(Boolean).sort();
+  const uniqueSections = Array.from(new Set(students.map(s => s.section))).filter(Boolean).sort();
+
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          s.fatherName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesClass = filterClass ? s.grade === filterClass : true;
+    const matchesSection = filterSection ? s.section === filterSection : true;
+    return matchesSearch && matchesClass && matchesSection;
+  });
 
   return (
     <div>
@@ -194,7 +202,7 @@ export default function StudentsPage() {
           </button>
         </div>
       </div>
-      <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <input
           type="text"
           placeholder="Search by name or father name"
@@ -202,12 +210,45 @@ export default function StudentsPage() {
           onChange={e => setSearchTerm(e.target.value)}
           style={{
             flex: 1,
+            minWidth: '200px',
             padding: '8px 12px',
             borderRadius: '8px',
             border: '1px solid #ccc',
             fontSize: '0.95rem',
           }}
         />
+        <select
+          value={filterClass}
+          onChange={e => setFilterClass(e.target.value)}
+          style={{
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            fontSize: '0.95rem',
+            background: 'white',
+          }}
+        >
+          <option value="">All Classes</option>
+          {uniqueClasses.map(c => (
+            <option key={c as string} value={c as string}>{c as string}</option>
+          ))}
+        </select>
+        <select
+          value={filterSection}
+          onChange={e => setFilterSection(e.target.value)}
+          style={{
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid #ccc',
+            fontSize: '0.95rem',
+            background: 'white',
+          }}
+        >
+          <option value="">All Sections</option>
+          {uniqueSections.map(s => (
+            <option key={s as string} value={s as string}>{s as string}</option>
+          ))}
+        </select>
       </div>
 
       {showAddForm && (
