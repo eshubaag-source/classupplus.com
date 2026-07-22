@@ -217,38 +217,42 @@ export default function StudentsPage() {
             fontSize: '0.95rem',
           }}
         />
-        <select
-          value={filterClass}
-          onChange={e => setFilterClass(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #ccc',
-            fontSize: '0.95rem',
-            background: 'white',
-          }}
-        >
-          <option value="">All Classes</option>
-          {uniqueClasses.map(c => (
-            <option key={c as string} value={c as string}>{c as string}</option>
-          ))}
-        </select>
-        <select
-          value={filterSection}
-          onChange={e => setFilterSection(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #ccc',
-            fontSize: '0.95rem',
-            background: 'white',
-          }}
-        >
-          <option value="">All Sections</option>
-          {uniqueSections.map(s => (
-            <option key={s as string} value={s as string}>{s as string}</option>
-          ))}
-        </select>
+        {!isTeacher && (
+          <>
+            <select
+              value={filterClass}
+              onChange={e => setFilterClass(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #ccc',
+                fontSize: '0.95rem',
+                background: 'white',
+              }}
+            >
+              <option value="">All Classes</option>
+              {uniqueClasses.map(c => (
+                <option key={c as string} value={c as string}>{c as string}</option>
+              ))}
+            </select>
+            <select
+              value={filterSection}
+              onChange={e => setFilterSection(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #ccc',
+                fontSize: '0.95rem',
+                background: 'white',
+              }}
+            >
+              <option value="">All Sections</option>
+              {uniqueSections.map(s => (
+                <option key={s as string} value={s as string}>{s as string}</option>
+              ))}
+            </select>
+          </>
+        )}
       </div>
 
       {showAddForm && (
@@ -490,8 +494,8 @@ export default function StudentsPage() {
               <th style={{ padding: '16px' }}>Name</th>
               <th style={{ padding: '16px' }}>Father Name</th>
               <th style={{ padding: '16px' }}>Roll No</th>
-              <th style={{ padding: '16px' }}>Class</th>
-              <th style={{ padding: '16px' }}>Section</th>
+              {!isTeacher && <th style={{ padding: '16px' }}>Class</th>}
+              {!isTeacher && <th style={{ padding: '16px' }}>Section</th>}
               <th style={{ padding: '16px' }}>Contact</th>
               <th style={{ padding: '16px' }}>Note</th>
             </tr>
@@ -518,8 +522,8 @@ export default function StudentsPage() {
                       {student.rollNumber}
                     </span>
                   </td>
-                  <td style={{ padding: '16px' }}>{student.grade}</td>
-                  <td style={{ padding: '16px' }}>{student.section}</td>
+                  {!isTeacher && <td style={{ padding: '16px' }}>{student.grade}</td>}
+                  {!isTeacher && <td style={{ padding: '16px' }}>{student.section}</td>}
                   <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{student.parentContact || 'N/A'}</td>
                   <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>{student.note || '—'}</td>
                   <td style={{ padding: '16px', textAlign: 'right' }}>
