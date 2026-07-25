@@ -46,8 +46,14 @@ export async function POST(request: Request) {
     if (!body.studentId) {
       return NextResponse.json({ message: 'Student is required.' }, { status: 400 });
     }
-    if (body.amount == null || isNaN(Number(body.amount)) || Number(body.amount) <= 0) {
-      return NextResponse.json({ message: 'A valid fee amount is required.' }, { status: 400 });
+    const amountNum = Number(body.amount || 0);
+    const lastYearAmountNum = Number(body.lasyearamount || 0);
+
+    if (isNaN(amountNum) || amountNum < 0 || isNaN(lastYearAmountNum) || lastYearAmountNum < 0) {
+      return NextResponse.json({ message: 'Amounts must be valid non-negative numbers.' }, { status: 400 });
+    }
+    if (amountNum === 0 && lastYearAmountNum === 0) {
+      return NextResponse.json({ message: 'A valid fee amount or last year fees amount greater than 0 is required.' }, { status: 400 });
     }
     if (!body.month) {
       return NextResponse.json({ message: 'Month is required.' }, { status: 400 });
