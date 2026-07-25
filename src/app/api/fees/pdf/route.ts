@@ -97,7 +97,8 @@ export async function GET(request: Request) {
           <td>${e(fee.utr)}</td>
           <td>${e(fee.month)}</td>
           <td><strong>Rs. ${e(fee.amount)}</strong></td>
-          <td>${fee.lastyear ? `Rs. ${e(fee.lastyear)}` : '—'}</td>
+          <td>${fee.lastyear ? `Rs. ${e(fee.lastyear)}` : '—'}</td>\
+          <td>${fee.lastyearamount ? `Rs. ${e(fee.lastyearamount)}` : '—'}</td>
           <td><span class="badge ${fee.status === 'Paid' ? 'paid' : 'pend'}">${e(fee.status)}</span></td>
           <td>${e(dateStr)}</td>
         </tr>`;
