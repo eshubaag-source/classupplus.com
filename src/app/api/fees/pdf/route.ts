@@ -147,7 +147,7 @@ export async function GET(request: Request) {
         <tr>
           <th>Receipt No</th><th>Student</th><th>Father Name</th><th>Class/Sec</th>
           <th>Type</th><th>UTR</th><th>Month</th><th>Paid Amt</th>
-          <th>Last Year</th><th>Status</th><th>Date</th>
+          <th>Last Fees</th><th>Status</th><th>Date</th>
         </tr>
       </thead>
       <tbody>${rows || '<tr><td colspan="11" style="text-align:center;padding:32px;color:#6b7280">No records found.</td></tr>'}</tbody>
@@ -185,6 +185,11 @@ export async function GET(request: Request) {
       const isPaid = fee.status === 'Paid';
       const lastYearVal = (fee as any).lastyear || (fee as any).lastyeae;
       const hasLastYear = lastYearVal && String(lastYearVal).trim() !== '' && String(lastYearVal).trim() !== '0';
+      const lastYearNum = Number(lastYearVal) || 0;
+      const lastYearPaidVal = (fee as any).lasyearamount || (fee as any).lastyearamount;
+      const lastYearPaidNum = lastYearPaidVal != null && lastYearPaidVal !== '' ? Number(lastYearPaidVal) : (fee.status === 'Paid' ? lastYearNum : 0);
+      const lastYearBalance = Math.max(0, lastYearNum - lastYearPaidNum);
+      const totalPaidAmount = Number(fee.amount || 0) + lastYearPaidNum;
 
       return `<div class="receipt">
   <div class="r-header">
@@ -218,12 +223,18 @@ export async function GET(request: Request) {
         <td><strong>Rs. ${e(fee.amount)}</strong></td>
         <td class="red">Rs. ${balance}</td>
       </tr>
-      ${hasLastYear ? `<tr><td>Last Year Fees</td><td>—</td><td>Pending</td><td>—</td><td>Rs. ${e(lastYearVal)}</td></tr>` : ''}
+      ${hasLastYear ? `<tr>
+        <td>Last Year Fees</td>
+        <td>—</td>
+        <td>Rs. ${lastYearNum}</td>
+        <td><strong>Rs. ${lastYearPaidNum}</strong></td>
+        <td class="${lastYearBalance > 0 ? 'red' : 'green'}">Rs. ${lastYearBalance}</td>
+      </tr>` : ''}
     </tbody>
   </table>
   <div class="r-total">
     <span>Total Paid:</span>
-    <strong>Rs. ${e(fee.amount)}</strong>
+    <strong>Rs. ${totalPaidAmount}</strong>
   </div>
   <div class="r-bottom">
     <div class="r-sig"><div class="r-line"></div><p>Authorized Signature</p></div>
@@ -261,6 +272,7 @@ export async function GET(request: Request) {
     .r-table th{padding:5px 4px;text-align:left;font-weight:700;color:#4b5563}
     .r-table td{padding:5px 4px;color:#111827;border-bottom:1px solid #f3f4f6}
     .red{color:#dc2626;font-weight:700}
+    .green{color:#16a34a;font-weight:700}
     .r-total{display:flex;justify-content:space-between;align-items:center;margin:4px 10px 6px;background:#eef2ff;border:0.5px solid #c7d2fe;border-radius:6px;padding:6px 10px;font-size:0.73rem}
     .r-total span{font-weight:600;color:#4b5563}
     .r-total strong{font-weight:800;color:#6366f1;font-size:0.85rem}
