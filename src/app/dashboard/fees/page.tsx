@@ -19,6 +19,7 @@ export default function FeesPage() {
     utr: '',
     month: '',
     lastyear: '',
+    lasyearamount: '',
     status: 'Pending',
     description: '',
     paidDate: new Date().toISOString().split('T')[0]
@@ -144,9 +145,9 @@ export default function FeesPage() {
     const d = f.paidDate ? new Date(f.paidDate) : f.createdAt ? new Date(f.createdAt) : null;
     return d && d.toLocaleDateString() === todayStr;
   });
-  const todaySchoolTotal  = todayFees.filter(f => f.feeType === 'School Fee').reduce((s, f) => s + Number(f.amount || 0), 0);
+  const todaySchoolTotal = todayFees.filter(f => f.feeType === 'School Fee').reduce((s, f) => s + Number(f.amount || 0), 0);
   const todayVehicleTotal = todayFees.filter(f => f.feeType === 'Vehicle Fee').reduce((s, f) => s + Number(f.amount || 0), 0);
-  const todayGrandTotal   = todaySchoolTotal + todayVehicleTotal;
+  const todayGrandTotal = todaySchoolTotal + todayVehicleTotal;
 
   const handleOpenAddForm = () => {
     setNewFee({
@@ -154,6 +155,7 @@ export default function FeesPage() {
       amount: '',
       utr: '',
       lastyear: '',
+      lasyearamount: '',
       month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
       status: 'Paid',
       description: '',
@@ -170,6 +172,7 @@ export default function FeesPage() {
       month: fee.month,
       utr: fee.utr,
       lastyear: fee.lastyear,
+      lasyearamount: (fee.lasyearamount != null && fee.lasyearamount !== '') ? fee.lasyearamount.toString() : (fee.lastyearamount || ''),
       status: fee.status,
       description: fee.description || '',
       paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
@@ -188,9 +191,14 @@ export default function FeesPage() {
       alert('Please select a student.');
       return;
     }
-    const parsedAmount = Number(newFee.amount);
-    if (!newFee.amount || isNaN(parsedAmount) || parsedAmount <= 0) {
-      alert('Please enter a valid amount greater than 0.');
+    const parsedAmount = Number(newFee.amount || 0);
+    const parsedLastYearAmount = Number(newFee.lasyearamount || 0);
+    if (isNaN(parsedAmount) || parsedAmount < 0 || isNaN(parsedLastYearAmount) || parsedLastYearAmount < 0) {
+      alert('Please enter valid, non-negative amounts.');
+      return;
+    }
+    if (parsedAmount === 0 && parsedLastYearAmount === 0) {
+      alert('Please enter a valid amount or last year fees amount greater than 0.');
       return;
     }
     if (!newFee.month) {
@@ -215,6 +223,7 @@ export default function FeesPage() {
           status: 'Pending',
           utr: '',
           lastyear: '',
+          lasyearamount: '',
           description: '',
           paidDate: new Date().toISOString().split('T')[0]
         });
@@ -515,8 +524,17 @@ export default function FeesPage() {
                   const sId = e.target.value;
                   const student = students.find(s => s._id === sId);
                   const cFee = student ? findClassFee(student) : null;
-                  // Set amount to the class fee amount (number), not the whole object
-                  setNewFee({ ...newFee, studentId: sId, amount: cFee?.amount != null ? String(cFee.amount) : '' });
+                  const defaultAmount = student && student.lastFeesAmount > 0
+                    ? '0'
+                    : (student?.schoolFees ? String(student.schoolFees) : (cFee?.amount != null ? String(cFee.amount) : ''));
+                  const defaultLastYear = student?.lastFeesAmount ? String(student.lastFeesAmount) : '';
+                  setNewFee({
+                    ...newFee,
+                    studentId: sId,
+                    amount: defaultAmount,
+                    lastyear: defaultLastYear,
+                    lasyearamount: defaultLastYear
+                  });
                 }}
                 required
               >
@@ -594,8 +612,27 @@ export default function FeesPage() {
               <input type="text" placeholder="Enter UTR or 'N/A'" value={newFee.utr} onChange={e => setNewFee({ ...newFee, utr: e.target.value })} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                Last year fees
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                Last year fee
+                {(() => {
+                  const student = students.find(s => s._id === newFee.studentId);
+                  if (student && student.lastFeesAmount !== undefined) {
+                    return (
+                      <span style={{
+                        fontSize: '0.8rem',
+                        color: student.lastFeesAmount > 0 ? '#ef4444' : '#10b981',
+                        fontWeight: 600,
+                        background: student.lastFeesAmount > 0 ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        border: student.lastFeesAmount > 0 ? '1px solid rgba(239, 68, 68, 0.15)' : '1px solid rgba(16, 185, 129, 0.15)'
+                      }}>
+                        Last Year Amount: Rs. {student.lastFeesAmount}
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
                 {!!editingFeeId && (
                   <span style={{
                     fontSize: '0.7rem',
@@ -624,6 +661,17 @@ export default function FeesPage() {
                   } : {})
                 }}
               />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                Last year Fees Amount (₹)
+              </label>
+              <input
+                type="number"
+                placeholder="Enter amount"
+                value={newFee.lasyearamount}
+                onChange={e => setNewFee({ ...newFee, lasyearamount: e.target.value })}
+                required />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label>Status</label>
@@ -679,9 +727,10 @@ export default function FeesPage() {
               <th style={{ padding: '16px' }}>Class Fee</th>
               <th style={{ padding: '16px' }}>Paid Amount</th>
               <th style={{ padding: '16px' }}>Balance</th>
-              <th style={{ padding: '16px' }}>Status</th>
               <th style={{ padding: '16px' }}>Utr</th>
               <th style={{ padding: '16px' }}>Last Year Fees</th>
+              <th style={{ padding: '16px' }}>Last Year Fees Amount</th>
+              <th style={{ padding: '16px' }}>Status</th>
               <th style={{ padding: '16px' }}>Date</th>
               {!isTeacher && <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>}
             </tr>
@@ -708,18 +757,18 @@ export default function FeesPage() {
                       typeof fee.studentId === 'string'
                         ? (students.find((s) => s._id === fee.studentId)?.name ?? 'Unknown')
                         : fee.studentId?.name ?? 'Unknown'}
-                        </div>
+                    </div>
                     <div style={{ fontWeight: 600 }}>{
                       typeof fee.studentId === 'string'
                         ? (students.find((s) => s._id === fee.studentId)?.fatherName ?? '')
                         : fee.studentId?.fatherName ?? ''}
-                        </div>
+                    </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{
                       typeof fee.studentId === 'string'
                         ? (students.find((s) => s._id === fee.studentId)?.rollNumber ?? '')
                         : fee.studentId?.rollNumber ?? ''
                     }</div>
-                    
+
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', opacity: 0.7 }}>{(() => {
                       const st = typeof fee.studentId === 'string'
                         ? students.find(s => s._id === fee.studentId)
@@ -728,14 +777,14 @@ export default function FeesPage() {
                       return `${st.grade}${st.section ? `-${st.section}` : ''}`;
                     })()}</div>
                   </td><td style={{ padding: '16px', color: 'var(--text-muted)' }}>
-                      {(() => {
-                        const studentIdStr = typeof fee.studentId === 'string'
-                          ? fee.studentId
-                          : fee.studentId?._id;
-                        const student = students.find(s => s._id === studentIdStr);
-                        return student?.fatherName || fee.fatherName || "—";
-                      })()}
-                      </td>
+                    {(() => {
+                      const studentIdStr = typeof fee.studentId === 'string'
+                        ? fee.studentId
+                        : fee.studentId?._id;
+                      const student = students.find(s => s._id === studentIdStr);
+                      return student?.fatherName || fee.fatherName || "—";
+                    })()}
+                  </td>
                   <td style={{ padding: '16px' }}>
                     <span style={{
                       display: 'inline-block',
@@ -801,11 +850,16 @@ export default function FeesPage() {
                         : <span style={{ color: '#10b981' }}>₹0</span>;
                     })()}
                   </td>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>{fee.utr || '—'}</td>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>{fee.lastyear || fee.lastyeae || '—'}</td>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>
+                    {fee.status === 'Paid'
+                      ? (fee.lasyearamount || fee.lastyearamount || fee.lastyear || fee.lastyeae || '—')
+                      : (fee.lasyearamount || fee.lastyearamount || '—')}
+                  </td>
                   <td style={{ padding: '16px' }}>
                     <span className={`badge ${fee.status === 'Paid' ? 'badge-success' : 'badge-warning'}`}>{fee.status}</span>
                   </td>
-                  <td style={{ padding: '16px', fontWeight: 600 }}>{fee.utr || '—'}</td>
-                  <td style={{ padding: '16px', fontWeight: 600 }}>{fee.lastyear || fee.lastyeae || '—'}</td>
                   <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                     {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : fee.createdAt ? new Date(fee.createdAt).toLocaleDateString() : '—'}
                   </td>
@@ -841,6 +895,7 @@ export default function FeesPage() {
                             month: fee.month,
                             utr: fee.utr,
                             lastyear: fee.lastyear || fee.lastyeae || '',
+                            lasyearamount: (fee.lasyearamount != null && fee.lasyearamount !== '') ? fee.lasyearamount.toString() : (fee.lastyearamount || ''),
                             status: fee.status,
                             description: fee.description || '',
                             paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
