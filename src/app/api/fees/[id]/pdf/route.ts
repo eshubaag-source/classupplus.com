@@ -84,6 +84,11 @@ export async function GET(
 
     const lastYearVal = (fee as any).lastyear || (fee as any).lastyeae;
     const hasLastYear = lastYearVal && lastYearVal !== '—' && String(lastYearVal).trim() !== '' && String(lastYearVal).trim() !== '0';
+    const lastYearNum = Number(lastYearVal) || 0;
+    const lastYearPaidVal = (fee as any).lasyearamount || (fee as any).lastyearamount;
+    const lastYearPaidNum = lastYearPaidVal != null && lastYearPaidVal !== '' ? Number(lastYearPaidVal) : (fee.status === 'Paid' ? lastYearNum : 0);
+    const lastYearBalance = Math.max(0, lastYearNum - lastYearPaidNum);
+    const totalPaidAmount = Number(fee.amount || 0) + lastYearPaidNum;
 
     const statusColor = fee.status === 'Paid' ? '#10b981' : '#f59e0b';
     const statusBg = fee.status === 'Paid' ? '#ecfdf5' : '#fffbeb';
@@ -186,6 +191,7 @@ export async function GET(
     tbody td { padding: 7px 6px; color: #111827; }
     tbody td.amt { font-weight: 700; }
     tbody td.red { color: #dc2626; font-weight: 700; }
+    tbody td.green { color: #16a34a; font-weight: 700; }
     .total-row {
       margin: 4px 20px 16px;
       background: #eef2ff;
@@ -311,16 +317,16 @@ export async function GET(
           ${hasLastYear ? `<tr>
             <td>Last Year Fees</td>
             <td>—</td>
-            <td>Pending</td>
-            <td class="amt">—</td>
-            <td class="amt">Rs. ${lastYearVal}</td>
+            <td>Rs. ${lastYearNum}</td>
+            <td class="amt">Rs. ${lastYearPaidNum}</td>
+            <td class="${lastYearBalance > 0 ? 'red' : 'green'}">Rs. ${lastYearBalance}</td>
           </tr>` : ''}
         </tbody>
       </table>
 
       <div class="total-row">
         <span>Total Paid:</span>
-        <strong>Rs. ${fee.amount}</strong>
+        <strong>Rs. ${totalPaidAmount}</strong>
       </div>
 
       <div class="bottom">
