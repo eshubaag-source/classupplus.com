@@ -336,38 +336,18 @@ export default function StudentsPage() {
               </div>
             )}
 
-            {/* Roll Number - hidden in changeClass, read-only in edit */}
+            {/* Roll Number - hidden in changeClass */}
             {editMode !== 'changeClass' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   Roll Number
-                  {editMode === 'edit' && (
-                    <span style={{
-                      fontSize: '0.7rem',
-                      background: 'rgba(99, 102, 241, 0.1)',
-                      color: 'var(--primary)',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      fontWeight: 600,
-                    }}>
-                      🔒 Locked
-                    </span>
-                  )}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. R001"
+                  placeholder="e.g. Roll 01"
                   value={newStudent.rollNumber}
                   onChange={e => setNewStudent({ ...newStudent, rollNumber: e.target.value })}
                   required
-                  readOnly={editMode === 'edit'}
-                  style={{
-                    ...(editMode === 'edit' ? {
-                      opacity: 0.6,
-                      cursor: 'not-allowed',
-                      background: 'rgba(0,0,0,0.03)',
-                    } : {})
-                  }}
                 />
               </div>
             )}
