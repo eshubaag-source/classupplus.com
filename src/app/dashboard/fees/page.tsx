@@ -228,7 +228,7 @@ export default function FeesPage() {
           paidDate: new Date().toISOString().split('T')[0]
         });
         setEditingFeeId(null);
-        setShowAddForm(true);
+        setShowAddForm(false);
         fetchData();
       } else {
         const errData = await res.json().catch(() => ({ message: 'Unknown error' }));
@@ -900,7 +900,7 @@ export default function FeesPage() {
                             description: fee.description || '',
                             paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
                           });
-                          setShowAddForm(true);
+                          setShowAddForm(false);
                         }}
                         style={{
                           background: 'rgba(59, 130, 246, 0.1)',
