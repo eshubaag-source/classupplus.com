@@ -88,6 +88,14 @@ export async function GET(request: Request) {
         const dateStr = fee.paidDate
           ? new Date(fee.paidDate).toLocaleDateString('en-IN')
           : fee.createdAt ? new Date(fee.createdAt).toLocaleDateString('en-IN') : '—';
+
+        const lastYearPaidVal = fee.lasyearamount || fee.lastyearamount;
+        const lastYearVal = fee.lastyear || fee.lastyeae;
+        const rawPaid = fee.status === 'Paid' ? (lastYearPaidVal || lastYearVal) : lastYearPaidVal;
+        const lastYearPaidDisplay = (rawPaid && String(rawPaid).trim() !== '' && String(rawPaid).trim() !== '—' && String(rawPaid).trim() !== '0')
+          ? `Rs. ${e(rawPaid)}`
+          : '—';
+
         return `<tr>
           <td>${e(receiptNo)}</td>
           <td class="hindi">${e(student.name)}</td>
@@ -97,8 +105,8 @@ export async function GET(request: Request) {
           <td>${e(fee.utr)}</td>
           <td>${e(fee.month)}</td>
           <td><strong>Rs. ${e(fee.amount)}</strong></td>
-          <td>${fee.lastyear ? `Rs. ${e(fee.lastyear)}` : '—'}</td>\
-          <td>${fee.lastyearamount ? `Rs. ${e(fee.lastyearamount)}` : '—'}</td>
+          <td>${fee.lastyear ? `Rs. ${e(fee.lastyear)}` : '—'}</td>
+          <td>${lastYearPaidDisplay}</td>
           <td><span class="badge ${fee.status === 'Paid' ? 'paid' : 'pend'}">${e(fee.status)}</span></td>
           <td>${e(dateStr)}</td>
         </tr>`;
@@ -129,11 +137,14 @@ export async function GET(request: Request) {
     .pend{background:#fffbeb !important;color:#d97706 !important}
     .print-btn{display:block;margin:20px auto;padding:10px 32px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit}
     @media print{
+      @page { size: landscape; margin: 6mm; }
       body{background:#fff;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
       .top { box-shadow: inset 0 0 0 1000px #6366f1 !important; color: #fff !important; }
       .stamp-paid, .paid { box-shadow: inset 0 0 0 1000px #ecfdf5 !important; color: #10b981 !important; }
       .stamp-pend, .pend { box-shadow: inset 0 0 0 1000px #fffbeb !important; color: #f59e0b !important; }
       .print-btn{display:none!important}
+      table{font-size:0.7rem}
+      th, td{padding:6px 6px !important}
     }
   </style>
 </head>
@@ -148,10 +159,10 @@ export async function GET(request: Request) {
         <tr>
           <th>Receipt No</th><th>Student</th><th>Father Name</th><th>Class/Sec</th>
           <th>Type</th><th>UTR</th><th>Month</th><th>Paid Amt</th>
-          <th>Last Fees</th><th>Status</th><th>Date</th>
+          <th>Last Fees</th><th>Last Year Amount</th><th>Status</th><th>Date</th>
         </tr>
       </thead>
-      <tbody>${rows || '<tr><td colspan="11" style="text-align:center;padding:32px;color:#6b7280">No records found.</td></tr>'}</tbody>
+      <tbody>${rows || '<tr><td colspan="12" style="text-align:center;padding:32px;color:#6b7280">No records found.</td></tr>'}</tbody>
     </table>
   </div>
   <button class="print-btn" onclick="printPdf()">🖨️ Print / Save as PDF</button>
