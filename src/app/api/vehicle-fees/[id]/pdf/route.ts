@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
-import { VehicleFee } from '@/models/VehicleFee';
-import Admin from '@/models/Admin';
+import Fees from '@/models/Fees';
 import Student from '@/models/Student';
+import Admin from '@/models/Admin';
+import { ClassFee } from '@/models/ClassFee';
 import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
 
 export async function GET(
@@ -19,50 +20,87 @@ export async function GET(
     const { id } = await params;
     await dbConnect();
 
-    const fee = await VehicleFee.findOne({ _id: id, adminId }).populate('studentId').lean().exec();
+    // Fetch the single fee record scoped by admin
+    const fee = await Fees.findOne({ _id: id, adminId }).populate({ path: 'studentId', model: Student }).lean().exec();
     if (!fee) {
-      return NextResponse.json({ message: 'Vehicle fee record not found' }, { status: 404 });
+      return NextResponse.json({ message: 'Fee record not found' }, { status: 404 });
     }
 
     const student = fee.studentId as any;
     if (!student) {
-      return NextResponse.json({ message: 'Student record not found for this vehicle fee' }, { status: 404 });
+      return NextResponse.json({ message: 'Student record not found for this fee' }, { status: 404 });
     }
 
     if (payload.role === 'teacher') {
       const classFilter = await getTeacherClassFilter(payload);
       if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
+
       if (!classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
-        return NextResponse.json({ message: 'Unauthorized to view this vehicle fee record' }, { status: 403 });
+        return NextResponse.json({ message: 'Unauthorized to view this fee record' }, { status: 403 });
       }
     }
 
+    // Get school name from admin details
     const admin = await Admin.findById(adminId).lean().exec();
-    const schoolName = (admin?.schoolName || 'Classupplus').toUpperCase();
+    const schoolName = (admin?.schoolName || "Classupplus").toUpperCase();
 
-    const totalFees = fee.totalFees || 0;
-    const balance = Math.max(0, totalFees - fee.amount);
+    // Calculate class fee and balance
+    let classAmount = 0;
+    if (student.grade) {
+      const allClassFees = await ClassFee.find({ adminId }).lean().exec();
+      const normalizeGrade = (g: string) =>
+        g.trim().toLowerCase().replace(/^class\s+/i, '').replace(/(th|st|nd|rd)$/i, '').trim();
+
+      const gradeNorm = normalizeGrade(student.grade);
+      const subjectNorm = (student.subject || '').trim().toLowerCase();
+
+      let match = allClassFees.find(cf =>
+        normalizeGrade(cf.grade) === gradeNorm &&
+        (cf.subject || '').trim().toLowerCase() === subjectNorm
+      );
+
+      if (!match) {
+        match = allClassFees.find(cf =>
+          normalizeGrade(cf.grade) === gradeNorm &&
+          (cf.subject || '') === ''
+        );
+      }
+
+      if (match) {
+        classAmount = match.amount;
+      }
+    }
+    // Fallback: use the classFee stored on the fee record itself
+    if (classAmount === 0 && (fee as any).classFee) {
+      classAmount = Number((fee as any).classFee) || 0;
+    }
+    const balance = Math.max(0, classAmount - fee.amount);
 
     const dateStr = fee.paidDate
       ? new Date(fee.paidDate).toLocaleDateString('en-IN', { dateStyle: 'medium' })
       : new Date((fee as any).createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' });
 
     const receiptNo = `#${id.toString().substring(18).toUpperCase()}`;
-    const isPaid = fee.status === 'Paid';
 
-    const lastYearVal = (fee as any).lastyear;
-    const hasLastYear = lastYearVal != null && String(lastYearVal).trim() !== '' && String(lastYearVal).trim() !== '—' && String(lastYearVal).trim() !== '0';
+    const lastYearVal = (fee as any).lastyear || (fee as any).lastyeae;
+    const hasLastYear = lastYearVal && lastYearVal !== '—' && String(lastYearVal).trim() !== '' && String(lastYearVal).trim() !== '0';
+    const lastYearNum = Number(lastYearVal) || 0;
+    const lastYearPaidVal = (fee as any).lasyearamount || (fee as any).lastyearamount;
+    const lastYearPaidNum = lastYearPaidVal != null && lastYearPaidVal !== '' ? Number(lastYearPaidVal) : (fee.status === 'Paid' ? lastYearNum : 0);
+    const lastYearBalance = Math.max(0, lastYearNum - lastYearPaidNum);
+    const totalPaidAmount = Number(fee.amount || 0) + lastYearPaidNum;
 
-    const fatherName = (fee as any).fatherName || student.fatherName || student.fatheName || '—';
-
-    const e = (s: any) => String(s ?? '—').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const statusColor = fee.status === 'Paid' ? '#10b981' : '#f59e0b';
+    const statusBg = fee.status === 'Paid' ? '#ecfdf5' : '#fffbeb';
+    const stampBorder = fee.status === 'Paid' ? '#10b981' : '#f59e0b';
+    const stampText = fee.status === 'Paid' ? 'PAID' : 'PENDING';
 
     const html = `<!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Vehicle Receipt - ${e(receiptNo)}</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fee Receipt - ${receiptNo}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -76,40 +114,39 @@ export async function GET(
       padding: 32px 16px;
       min-height: 100vh;
     }
-    .wrap { display: flex; flex-direction: column; align-items: center; }
     .receipt {
       background: #fff;
       border-radius: 16px;
-      border: 1.5px solid #f59e0b;
-      width: 490px;
+      border: 1.5px solid #6366f1;
+      width: 480px;
       max-width: 100%;
-      box-shadow: 0 8px 40px rgba(245,158,11,0.1);
+      box-shadow: 0 8px 40px rgba(99,102,241,0.1);
       overflow: hidden;
     }
     .header {
-      background: #f59e0b linear-gradient(135deg, #f59e0b, #d97706) !important;
+      background: #6366f1 linear-gradient(135deg, #6366f1, #818cf8) !important;
       padding: 28px 24px 22px;
       text-align: center;
       color: #fff !important;
     }
-    .header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; }
-    .header p  { font-size: 0.78rem; opacity: 0.88; margin-top: 4px; letter-spacing: 0.5px; }
+    .header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: 1px; }
+    .header p { font-size: 0.8rem; opacity: 0.85; margin-top: 4px; letter-spacing: 0.5px; }
     .meta {
       display: flex;
       justify-content: space-between;
-      padding: 11px 24px;
+      padding: 12px 24px;
       font-size: 0.82rem;
       font-weight: 600;
       color: #4b5563;
       border-bottom: 1px solid #e5e7eb;
     }
     .section-title {
-      font-size: 0.73rem;
+      font-size: 0.75rem;
       font-weight: 700;
-      color: #d97706;
+      color: #6366f1;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      padding: 13px 24px 7px;
+      padding: 14px 24px 8px;
     }
     .info-card {
       margin: 0 20px 12px;
@@ -124,7 +161,7 @@ export async function GET(
       gap: 10px 16px;
     }
     .info-row label {
-      font-size: 0.72rem;
+      font-size: 0.73rem;
       font-weight: 600;
       color: #6b7280;
       display: block;
@@ -154,10 +191,11 @@ export async function GET(
     tbody td { padding: 7px 6px; color: #111827; }
     tbody td.amt { font-weight: 700; }
     tbody td.red { color: #dc2626; font-weight: 700; }
+    tbody td.green { color: #16a34a; font-weight: 700; }
     .total-row {
       margin: 4px 20px 16px;
-      background: #fffbeb;
-      border: 0.5px solid #fde68a;
+      background: #eef2ff;
+      border: 0.5px solid #c7d2fe;
       border-radius: 8px;
       padding: 10px 16px;
       display: flex;
@@ -165,7 +203,7 @@ export async function GET(
       align-items: center;
     }
     .total-row span { font-size: 0.82rem; font-weight: 600; color: #4b5563; }
-    .total-row strong { font-size: 1rem; font-weight: 700; color: #d97706; }
+    .total-row strong { font-size: 1rem; font-weight: 700; color: #6366f1; }
     .bottom {
       display: flex;
       justify-content: space-between;
@@ -176,6 +214,9 @@ export async function GET(
     .signature .line { width: 130px; height: 1px; background: #9ca3af; margin: 0 auto 4px; }
     .signature p { font-size: 0.73rem; color: #6b7280; }
     .stamp {
+      border: 2.5px solid ${stampBorder} !important;
+      background: ${statusBg} !important;
+      color: ${statusColor} !important;
       font-weight: 800;
       font-size: 1.1rem;
       padding: 6px 14px;
@@ -183,10 +224,7 @@ export async function GET(
       letter-spacing: 2px;
       transform: rotate(-12deg);
       display: inline-block;
-      border: 2.5px solid;
     }
-    .stamp-paid { border-color: #10b981 !important; background: #ecfdf5 !important; color: #10b981 !important; }
-    .stamp-pend { border-color: #f59e0b !important; background: #fffbeb !important; color: #f59e0b !important; }
     .footer {
       text-align: center;
       font-size: 0.7rem;
@@ -195,9 +233,10 @@ export async function GET(
       padding: 0 24px 14px;
     }
     .print-btn {
-      margin-top: 20px;
+      display: block;
+      margin: 20px auto 0;
       padding: 10px 32px;
-      background: linear-gradient(135deg, #f59e0b, #d97706);
+      background: linear-gradient(135deg, #6366f1, #818cf8);
       color: #fff;
       border: none;
       border-radius: 8px;
@@ -208,57 +247,48 @@ export async function GET(
     }
     @media print {
       body { background: #fff; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-      .header { box-shadow: inset 0 0 0 1000px #f59e0b !important; color: #fff !important; }
-      .stamp-paid { box-shadow: inset 0 0 0 1000px #ecfdf5 !important; color: #10b981 !important; }
-      .stamp-pend { box-shadow: inset 0 0 0 1000px #fffbeb !important; color: #f59e0b !important; }
-      .receipt { box-shadow: none; border-radius: 0; border: 1px solid #f59e0b; }
+      .header { box-shadow: inset 0 0 0 1000px #6366f1 !important; color: #fff !important; }
+      .stamp { box-shadow: inset 0 0 0 1000px ${statusBg} !important; color: ${statusColor} !important; }
+      .receipt { box-shadow: none; border-radius: 0; border: 1.5px solid #6366f1; }
       .print-btn { display: none !important; }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <div>
     <div class="receipt">
       <div class="header">
-        <h1>${e(schoolName)}</h1>
-        <p>VEHICLE TRANSPORT RECEIPT</p>
+        <h1>${schoolName}</h1>
+        <p>FEES PAYMENT RECEIPT</p>
       </div>
 
       <div class="meta">
-        <span>Receipt No: ${e(receiptNo)}</span>
-        <span>Date: ${e(dateStr)}</span>
+        <span>Receipt No: ${receiptNo}</span>
+        <span>Date: ${dateStr}</span>
       </div>
 
-      <div class="section-title">Student &amp; Vehicle Information</div>
+      <div class="section-title">Student Information</div>
       <div class="info-card">
         <div class="info-grid">
           <div class="info-row">
             <label>Student Name</label>
-            <span>${e(student.name)}</span>
-          </div>
-          <div class="info-row">
-            <label>Vehicle / Bus No.</label>
-            <span>${e((fee as any).busNumber)}</span>
-          </div>
-          <div class="info-row">
-            <label>Father's Name</label>
-            <span>${e(fatherName)}</span>
-          </div>
-          <div class="info-row">
-            <label>City / Route</label>
-            <span>${e((fee as any).city)}</span>
-          </div>
-          <div class="info-row">
-            <label>Roll Number</label>
-            <span>${e(student.rollNumber)}</span>
-          </div>
-          <div class="info-row">
-            <label>UTR</label>
-            <span>${e((fee as any).utr)}</span>
+            <span>${student.name || '—'}</span>
           </div>
           <div class="info-row">
             <label>Class / Grade</label>
-            <span>${e(student.grade || '—')}${student.section ? ` (Sec: ${e(student.section)})` : ''}</span>
+            <span>${student.grade || '—'}${student.section ? ` (Sec: ${student.section})` : ''}</span>
+          </div>
+          <div class="info-row">
+            <label>Father's Name</label>
+            <span>${student.fatherName || '—'}</span>
+          </div>
+          <div class="info-row">
+            <label>UTR</label>
+            <span>${(fee as any).utr || '—'}</span>
+          </div>
+          <div class="info-row">
+            <label>Roll Number</label>
+            <span>${student.rollNumber || '—'}</span>
           </div>
         </div>
       </div>
@@ -271,32 +301,32 @@ export async function GET(
           <tr>
             <th>Description</th>
             <th>Month</th>
-            <th>Route Fee</th>
+            <th>Class Fee</th>
             <th>Paid Amt</th>
             <th>Balance</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Vehicle Transport</td>
-            <td>${e((fee as any).month)}</td>
-            <td>${totalFees > 0 ? `Rs. ${totalFees}` : '—'}</td>
-            <td class="amt">Rs. ${e(fee.amount)}</td>
+            <td>School Fees</td>
+            <td>${(fee as any).month || '—'}</td>
+            <td>${classAmount > 0 ? `Rs. ${classAmount}` : '—'}</td>
+            <td class="amt">Rs. ${fee.amount}</td>
             <td class="red">Rs. ${balance}</td>
           </tr>
           ${hasLastYear ? `<tr>
             <td>Last Year Fees</td>
             <td>—</td>
-            <td>Pending</td>
-            <td class="amt">—</td>
-            <td class="amt">Rs. ${e(lastYearVal)}</td>
+            <td>Rs. ${lastYearNum}</td>
+            <td class="amt">Rs. ${lastYearPaidNum}</td>
+            <td class="${lastYearBalance > 0 ? 'red' : 'green'}">Rs. ${lastYearBalance}</td>
           </tr>` : ''}
         </tbody>
       </table>
 
       <div class="total-row">
         <span>Total Paid:</span>
-        <strong>Rs. ${e(fee.amount)}</strong>
+        <strong>Rs. ${totalPaidAmount}</strong>
       </div>
 
       <div class="bottom">
@@ -304,7 +334,7 @@ export async function GET(
           <div class="line"></div>
           <p>Authorized Signature</p>
         </div>
-        <div class="stamp ${isPaid ? 'stamp-paid' : 'stamp-pend'}">${isPaid ? 'PAID' : 'PENDING'}</div>
+        <div class="stamp">${stampText}</div>
       </div>
 
       <div class="footer">This is a computer generated receipt. Thank you for your payment.</div>
@@ -325,7 +355,9 @@ export async function GET(
 
     return new NextResponse(html, {
       status: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+      },
     });
   } catch (error: any) {
     return NextResponse.json({ message: error.message || 'Failed to generate receipt' }, { status: 500 });
