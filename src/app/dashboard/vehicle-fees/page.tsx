@@ -6,6 +6,7 @@ interface Student {
   name: string;
   rollNumber: string;
   fatherName?: string;
+  lastFeesAmount?: number;
 }
 
 interface VehicleFee {
@@ -18,6 +19,9 @@ interface VehicleFee {
   city?: string;
   utr: string;
   lastyear: string;
+  lasyearamount?: string | number;
+  lastyearamount?: string | number;
+  lastyeae?: string | number;
   busNumber?: string;
   totalFees?: number;
   description?: string;
@@ -65,6 +69,7 @@ export default function VehicleFeesPage() {
     city: '',
     utr: '',
     lastyear: '',
+    lasyearamount: '',
     busNumber: '',
     totalFees: '',
     description: '',
@@ -142,14 +147,35 @@ export default function VehicleFeesPage() {
 
   const handleAddFee = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!newFee.studentId) {
+      alert('Please select a student.');
+      return;
+    }
+    const parsedAmount = Number(newFee.amount || 0);
+    const parsedLastYearAmount = Number(newFee.lasyearamount || 0);
+    if (isNaN(parsedAmount) || parsedAmount < 0 || isNaN(parsedLastYearAmount) || parsedLastYearAmount < 0) {
+      alert('Please enter valid, non-negative amounts.');
+      return;
+    }
+    if (parsedAmount === 0 && parsedLastYearAmount === 0) {
+      alert('Please enter a valid amount or last year fees amount greater than 0.');
+      return;
+    }
+    if (!newFee.month) {
+      alert('Please enter a month.');
+      return;
+    }
+
     const payload = {
       studentId: newFee.studentId,
       fatherName: newFee.fatherName,
-      amount: Number(newFee.amount),
+      amount: parsedAmount,
       month: newFee.month,
       city: newFee.city,
       utr: newFee.utr,
       lastyear: newFee.lastyear,
+      lasyearamount: newFee.lasyearamount !== '' ? Number(newFee.lasyearamount) : undefined,
       busNumber: newFee.busNumber,
       totalFees: newFee.totalFees !== '' ? Number(newFee.totalFees) : undefined,
       description: newFee.description,
@@ -208,7 +234,7 @@ export default function VehicleFeesPage() {
         setFees((prev) => [...prev, createdFee]);
       }
       // Reset form
-      setNewFee({ studentId: '', fatherName: '', amount: '', utr: '', lastyear: '', month: '', status: 'Pending', city: '', busNumber: '', totalFees: '', description: '', paidDate: new Date().toISOString().split('T')[0] });
+      setNewFee({ studentId: '', fatherName: '', amount: '', utr: '', lastyear: '', lasyearamount: '', month: '', status: 'Pending', city: '', busNumber: '', totalFees: '', description: '', paidDate: new Date().toISOString().split('T')[0] });
       setShowAddForm(false);
     } catch (err: any) {
       alert('Network error: ' + err.message);
@@ -361,7 +387,14 @@ export default function VehicleFeesPage() {
                 value={newFee.studentId}
                 onChange={(e) => {
                   const selectedStudent = students.find((s) => s._id === e.target.value);
-                  setNewFee({ ...newFee, studentId: e.target.value, fatherName: selectedStudent?.fatherName || '' });
+                  const defaultLastYear = selectedStudent?.lastFeesAmount ? String(selectedStudent.lastFeesAmount) : '';
+                  setNewFee({
+                    ...newFee,
+                    studentId: e.target.value,
+                    fatherName: selectedStudent?.fatherName || '',
+                    lastyear: defaultLastYear,
+                    lasyearamount: defaultLastYear
+                  });
                 }}
                 required
               >
@@ -445,6 +478,16 @@ export default function VehicleFeesPage() {
                     background: 'rgba(0,0,0,0.03)',
                   } : {})
                 }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label>Last Year Fees Amount (₹)</label>
+              <input
+                type="number"
+                placeholder="Enter amount"
+                value={newFee.lasyearamount}
+                onChange={e => setNewFee({ ...newFee, lasyearamount: e.target.value })}
+                required
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -543,6 +586,7 @@ export default function VehicleFeesPage() {
               <th style={{ padding: '16px' }}>UTR</th>
               <th style={{ padding: '16px' }}>For Month</th>
               <th style={{ padding: '16px' }}>Last Year Fees</th>
+              <th style={{ padding: '16px' }}>Last Year Fees Paid</th>
               <th style={{ padding: '16px' }}>Total Fees</th>
               <th style={{ padding: '16px' }}>Amount Paid</th>
               <th style={{ padding: '16px' }}>Balance</th>
@@ -595,6 +639,11 @@ export default function VehicleFeesPage() {
                   <td style={{ padding: '16px', fontWeight: 700 }}>{fee.utr || '—'}</td>
                   <td style={{ padding: '16px', fontWeight: 700 }}>{fee.month || '—'}</td>
                   <td style={{ padding: '16px', fontWeight: 700 }}>{fee.lastyear || '—'}</td>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>
+                    {fee.status === 'Paid'
+                      ? (fee.lasyearamount || fee.lastyearamount || fee.lastyear || fee.lastyeae || '—')
+                      : (fee.lasyearamount || fee.lastyearamount || '—')}
+                  </td>
                   <td style={{ padding: '16px', fontWeight: 600, color: '#6366f1' }}>{`₹${fee.totalFees ?? 0}`}</td>
                   <td style={{ padding: '16px', fontWeight: 700 }}>₹{fee.amount}</td>
                   <td style={{ padding: '16px', fontWeight: 600, color: '#ef4444' }}>
@@ -643,6 +692,7 @@ export default function VehicleFeesPage() {
                             status: fee.status,
                             utr: fee.utr,
                             lastyear: fee.lastyear,
+                            lasyearamount: (fee.lasyearamount != null && fee.lasyearamount !== '') ? fee.lasyearamount.toString() : '',
                             city: fee.city || '',
                             busNumber: fee.busNumber || '',
                             totalFees: fee.totalFees != null ? fee.totalFees.toString() : '',
