@@ -178,7 +178,7 @@ export default function FeesPage() {
       paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
     });
     setEditingFeeId(fee._id);
-    setShowAddForm(true);
+    setShowAddForm(false);
     // Smooth scroll to top/form
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
