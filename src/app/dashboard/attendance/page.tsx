@@ -16,6 +16,16 @@ export default function AttendancePage() {
   const isTeacher = userRole === 'teacher';
   const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // Messaging Modal State
+  const [showMsgModal, setShowMsgModal] = useState(false);
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const [msgResult, setMsgResult] = useState<{ success?: boolean; message?: string } | null>(null);
+  const [msgForm, setMsgForm] = useState({
+    type: 'Both' as 'SMS' | 'WhatsApp' | 'Both',
+    category: 'Attendance' as 'Attendance' | 'Fee' | 'VehicleFee' | 'Custom',
+    message: '',
+  });
+
   useEffect(() => {
     setIsMounted(true);
     // Set initial date only on client
@@ -118,6 +128,39 @@ export default function AttendancePage() {
       alert('Failed to mark all present.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendBulkMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (filteredStudents.length === 0 || !msgForm.message.trim()) return;
+
+    setSendingMsg(true);
+    setMsgResult(null);
+
+    try {
+      const res = await fetch('/api/notifications/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentIds: filteredStudents.map((s) => s._id),
+          type: msgForm.type,
+          category: msgForm.category,
+          message: msgForm.message,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMsgResult({ success: true, message: `Successfully queued message for ${filteredStudents.length} student(s)!` });
+        setMsgForm({ ...msgForm, message: '' });
+      } else {
+        setMsgResult({ success: false, message: data.message || 'Failed to send bulk message.' });
+      }
+    } catch (err: any) {
+      setMsgResult({ success: false, message: err.message || 'An error occurred while sending.' });
+    } finally {
+      setSendingMsg(false);
     }
   };
 
@@ -246,25 +289,46 @@ export default function AttendancePage() {
             </>
           )}
         </div>
-        <button
-          onClick={markAllPresent}
-          className="btn-primary"
-          style={{
-            background: 'linear-gradient(135deg, #10b981, #059669)',
-            border: 'none',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            color: 'white',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-          disabled={loading || filteredStudents.length === 0}
-        >
-          ✅ Mark All Present
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={markAllPresent}
+            className="btn-primary"
+            style={{
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              color: 'white',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+            disabled={loading || filteredStudents.length === 0}
+          >
+            ✅ Mark All Present
+          </button>
+          <button
+            onClick={() => { setShowMsgModal(true); setMsgResult(null); }}
+            className="btn-primary"
+            style={{
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              color: 'white',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+            disabled={loading || filteredStudents.length === 0}
+          >
+            💬 Message All
+          </button>
+        </div>
       </div>
 
       <div className="glass table-wrapper">
@@ -335,6 +399,124 @@ export default function AttendancePage() {
           </tbody>
         </table>
       </div>
+
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(-20px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+          backdrop-filter: blur(4px); z-index: 1000;
+          display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-box {
+          background: var(--glass-bg); backdrop-filter: blur(20px);
+          border: 1px solid var(--glass-border); border-radius: 20px;
+          padding: 32px; max-width: 560px; width: 100%;
+          animation: slideIn 0.25s ease;
+          box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+        }
+      `}</style>
+
+      {/* Bulk Message Modal */}
+      {showMsgModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowMsgModal(false); }}>
+          <div className="modal-box" style={{ color: 'var(--foreground)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.4rem', marginBottom: '4px', color: 'var(--foreground)' }}>💬 Send Message to All</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+                  Draft and send a message to parents of all {filteredStudents.length} currently listed/filtered students.
+                </p>
+              </div>
+              <button onClick={() => setShowMsgModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.4rem', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSendBulkMessage} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {/* Target info */}
+              <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', fontSize: '0.9rem' }}>
+                🎯 Recipients: <strong>{filteredStudents.length} student(s)</strong> {filterClass && `in class ${filterClass}`} {filterSection && `section ${filterSection}`}
+              </div>
+
+              {/* Channel & Category */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Channel</label>
+                  <select value={msgForm.type} onChange={e => setMsgForm({ ...msgForm, type: e.target.value as any })} style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--foreground)', fontSize: '0.9rem' }}>
+                    <option value="Both">📱🟢 Both</option>
+                    <option value="SMS">📱 SMS Only</option>
+                    <option value="WhatsApp">🟢 WhatsApp Only</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Category</label>
+                  <select value={msgForm.category} onChange={e => setMsgForm({ ...msgForm, category: e.target.value as any })} style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--foreground)', fontSize: '0.9rem' }}>
+                    <option value="Attendance">📅 Attendance</option>
+                    <option value="Custom">✍️ Custom</option>
+                    <option value="Fee">💰 Fee</option>
+                    <option value="VehicleFee">🚍 Vehicle Fee</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Message */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  ✉️ Message
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={msgForm.message}
+                  onChange={e => setMsgForm({ ...msgForm, message: e.target.value })}
+                  placeholder="Type your bulk message to parents…"
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--foreground)', fontSize: '0.9rem', resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
+                />
+                <div style={{ textAlign: 'right', fontSize: '0.75rem', color: msgForm.message.length > 160 ? '#f59e0b' : 'var(--text-muted)', marginTop: '4px' }}>
+                  {msgForm.message.length} characters {msgForm.message.length > 160 ? '(may be split across multiple SMS)' : ''}
+                </div>
+              </div>
+
+              {/* Result */}
+              {msgResult && (
+                <div style={{ padding: '12px 16px', borderRadius: '10px', background: msgResult.success ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${msgResult.success ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`, color: msgResult.success ? '#10b981' : '#ef4444', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {msgResult.success ? '✅' : '⚠️'} {msgResult.message}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setShowMsgModal(false)} style={{ padding: '12px 24px', borderRadius: '12px', background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--foreground)', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
+                  Cancel
+                </button>
+                <button
+                  id="modal-send-bulk-notification-btn"
+                  type="submit"
+                  disabled={sendingMsg || filteredStudents.length === 0 || !msgForm.message.trim()}
+                  style={{ padding: '12px 28px', borderRadius: '12px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', fontWeight: 700, cursor: sendingMsg ? 'not-allowed' : 'pointer', opacity: sendingMsg || filteredStudents.length === 0 || !msgForm.message.trim() ? 0.6 : 1, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', boxShadow: '0 4px 14px rgba(99,102,241,0.3)' }}
+                >
+                  {sendingMsg ? (
+                    <>
+                      <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                      Sending…
+                    </>
+                  ) : (
+                    <>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      Send Message
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
