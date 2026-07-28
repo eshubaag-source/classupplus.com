@@ -20,7 +20,9 @@ export default function StudentsPage() {
     grade: '',
     section: '',
     parentContact: '',
-    note: ''
+    note: '',
+    schoolFees: '',
+    lastFeesAmount: ''
   });
   const [isMounted, setIsMounted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export default function StudentsPage() {
       setShowAddForm(false);
       setFormError(null);
     } else {
-      setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '', note: '' });
+      setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '', note: '', schoolFees: '', lastFeesAmount: '' });
       setEditingStudentId(null);
       setEditMode('add');
       setFormError(null);
@@ -57,7 +59,9 @@ export default function StudentsPage() {
       grade: student.grade,
       section: student.section,
       parentContact: student.parentContact || '',
-      note: student.note || ''
+      note: student.note || '',
+      schoolFees: student.schoolFees !== undefined ? student.schoolFees.toString() : '',
+      lastFeesAmount: student.lastFeesAmount !== undefined ? student.lastFeesAmount.toString() : ''
     });
     setEditingStudentId(student._id);
     setEditMode('edit');
@@ -73,7 +77,9 @@ export default function StudentsPage() {
       grade: student.grade,
       section: student.section,
       parentContact: student.parentContact || '',
-      note: student.note || ''
+      note: student.note || '',
+      schoolFees: student.schoolFees !== undefined ? student.schoolFees.toString() : '',
+      lastFeesAmount: student.lastFeesAmount !== undefined ? student.lastFeesAmount.toString() : ''
     });
     setEditingStudentId(student._id);
     setEditMode('changeClass');
@@ -104,7 +110,7 @@ export default function StudentsPage() {
         if (data?.schoolName) setSchoolName(data.schoolName);
         if (data?.role) setUserRole(data.role);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
 
@@ -116,7 +122,11 @@ export default function StudentsPage() {
     // For change class mode, only send grade and section
     const payload = editMode === 'changeClass'
       ? { grade: newStudent.grade, section: newStudent.section }
-      : newStudent;
+      : {
+          ...newStudent,
+          schoolFees: newStudent.schoolFees ? Number(newStudent.schoolFees) : 0,
+          lastFeesAmount: newStudent.lastFeesAmount ? Number(newStudent.lastFeesAmount) : 0
+        };
 
     setFormError(null);
     try {
@@ -126,7 +136,7 @@ export default function StudentsPage() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (res.ok) {
-        setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '', note: '' });
+        setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '', note: '', schoolFees: '', lastFeesAmount: '' });
         setEditingStudentId(null);
         setEditMode('add');
         setFormError(null);
@@ -146,7 +156,7 @@ export default function StudentsPage() {
     setEditingStudentId(null);
     setEditMode('add');
     setFormError(null);
-    setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '', note: '' });
+    setNewStudent({ name: '', fatherName: '', rollNumber: '', grade: '', section: '', parentContact: '', note: '', schoolFees: '', lastFeesAmount: '' });
   };
 
   const getFormTitle = () => {
@@ -160,8 +170,8 @@ export default function StudentsPage() {
   const uniqueSections = Array.from(new Set(students.map(s => s.section))).filter(Boolean).sort();
 
   const filteredStudents = students.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          s.fatherName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.fatherName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesClass = filterClass ? s.grade === filterClass : true;
     const matchesSection = filterSection ? s.section === filterSection : true;
     return matchesSearch && matchesClass && matchesSection;
@@ -251,6 +261,28 @@ export default function StudentsPage() {
                 <option key={s as string} value={s as string}>{s as string}</option>
               ))}
             </select>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08))',
+              border: '1px solid var(--glass-border)',
+              color: 'var(--foreground)',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              👥 {filterClass || filterSection ? (
+                <>
+                  Selected Class/Section: <strong style={{ color: 'var(--primary)' }}>{filteredStudents.length}</strong> of {students.length} students
+                </>
+              ) : (
+                <>
+                  Total Students: <strong style={{ color: 'var(--primary)' }}>{students.length}</strong>
+                </>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -424,10 +456,33 @@ export default function StudentsPage() {
                 <input type="text" placeholder="+91 234 567 890" value={newStudent.parentContact} onChange={e => setNewStudent({ ...newStudent, parentContact: e.target.value })} />
               </div>
             )} {/* Parent Contact - hidden in changeClass mode */}
+            {/* School Fees & Last Fees Amount - hidden in changeClass mode */}
+            {editMode !== 'changeClass' && (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label>School Fees</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 10000"
+                    value={newStudent.schoolFees}
+                    onChange={e => setNewStudent({ ...newStudent, schoolFees: e.target.value })}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label>Last Fees Amount</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 3500"
+                    value={newStudent.lastFeesAmount}
+                    onChange={e => setNewStudent({ ...newStudent, lastFeesAmount: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', gridColumn: 'span 2' }}>
-                <label>Note</label>
-                <input type="text" placeholder="Note......." value={newStudent.note} onChange={e => setNewStudent({ ...newStudent, note: e.target.value })} required />
-              </div>
+              <label>Note</label>
+              <input type="text" placeholder="Note......." value={newStudent.note} onChange={e => setNewStudent({ ...newStudent, note: e.target.value })} required />
+            </div>
 
             {/* Inline error banner */}
             {formError && (
@@ -477,13 +532,15 @@ export default function StudentsPage() {
               {!isTeacher && <th style={{ padding: '16px' }}>Class</th>}
               {!isTeacher && <th style={{ padding: '16px' }}>Section</th>}
               <th style={{ padding: '16px' }}>Contact</th>
+              <th style={{ padding: '16px' }}>School Fee</th>
+              <th style={{ padding: '16px' }}>Last Fee</th>
               <th style={{ padding: '16px' }}>Note</th>
             </tr>
           </thead>
           <tbody>
             {filteredStudents.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No students found. Add your first student!</td>
+                <td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No students found. Add your first student!</td>
               </tr>
             ) : (
               filteredStudents.map((student) => (
@@ -505,6 +562,8 @@ export default function StudentsPage() {
                   {!isTeacher && <td style={{ padding: '16px' }}>{student.grade}</td>}
                   {!isTeacher && <td style={{ padding: '16px' }}>{student.section}</td>}
                   <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{student.parentContact || 'N/A'}</td>
+                  <td style={{ padding: '16px', color: 'var(--foreground)', fontWeight: 600 }}>{student.schoolFees !== undefined ? `Rs. ${student.schoolFees}` : '—'}</td>
+                  <td style={{ padding: '16px', color: 'var(--foreground)', fontWeight: 600 }}>{student.lastFeesAmount !== undefined ? `Rs. ${student.lastFeesAmount}` : '—'}</td>
                   <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>{student.note || '—'}</td>
                   <td style={{ padding: '16px', textAlign: 'right' }}>
                     <button
