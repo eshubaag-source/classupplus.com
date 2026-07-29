@@ -14,6 +14,11 @@ const TeacherSchema = new mongoose.Schema({
   post: { type: String, default: '' },
   monthlySalary: { type: Number, default: 0 },
   password: { type: String },
+  assignedClasses: [{
+    grade: String,
+    section: String,
+    subject: String
+  }],
   createdAt: { type: Date, default: Date.now },
 });
 
