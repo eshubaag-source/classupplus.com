@@ -286,7 +286,7 @@ export default function StudentsPage() {
           </>
         )}
       </div>
-
+ 
       {showAddForm && (
         <div className="glass card" style={{ marginBottom: '2rem', animation: 'slideDown 0.3s ease' }}>
           {/* Form Header */}
@@ -455,29 +455,6 @@ export default function StudentsPage() {
                 <label>Parent Contact</label>
                 <input type="text" placeholder="+91 234 567 890" value={newStudent.parentContact} onChange={e => setNewStudent({ ...newStudent, parentContact: e.target.value })} />
               </div>
-            )} {/* Parent Contact - hidden in changeClass mode */}
-            {/* School Fees & Last Fees Amount - hidden in changeClass mode */}
-            {editMode !== 'changeClass' && (
-              <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label>School Fees</label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 10000"
-                    value={newStudent.schoolFees}
-                    onChange={e => setNewStudent({ ...newStudent, schoolFees: e.target.value })}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label>Last Fees Amount</label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 3500"
-                    value={newStudent.lastFeesAmount}
-                    onChange={e => setNewStudent({ ...newStudent, lastFeesAmount: e.target.value })}
-                  />
-                </div>
-              </>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', gridColumn: 'span 2' }}>
               <label>Note</label>
@@ -532,8 +509,6 @@ export default function StudentsPage() {
               {!isTeacher && <th style={{ padding: '16px' }}>Class</th>}
               {!isTeacher && <th style={{ padding: '16px' }}>Section</th>}
               <th style={{ padding: '16px' }}>Contact</th>
-              <th style={{ padding: '16px' }}>School Fee</th>
-              <th style={{ padding: '16px' }}>Last Fee</th>
               <th style={{ padding: '16px' }}>Note</th>
             </tr>
           </thead>
@@ -562,8 +537,6 @@ export default function StudentsPage() {
                   {!isTeacher && <td style={{ padding: '16px' }}>{student.grade}</td>}
                   {!isTeacher && <td style={{ padding: '16px' }}>{student.section}</td>}
                   <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{student.parentContact || 'N/A'}</td>
-                  <td style={{ padding: '16px', color: 'var(--foreground)', fontWeight: 600 }}>{student.schoolFees !== undefined ? `Rs. ${student.schoolFees}` : '—'}</td>
-                  <td style={{ padding: '16px', color: 'var(--foreground)', fontWeight: 600 }}>{student.lastFeesAmount !== undefined ? `Rs. ${student.lastFeesAmount}` : '—'}</td>
                   <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>{student.note || '—'}</td>
                   <td style={{ padding: '16px', textAlign: 'right' }}>
                     <button
