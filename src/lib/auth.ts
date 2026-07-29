@@ -1,7 +1,7 @@
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import dbConnect from '@/lib/db';
-import { Teacher } from '@/models/Teacher';
+import { Teacher } from '@/models/Teacher'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
@@ -62,12 +62,69 @@ export async function getTeacherClassFilter(payload: TokenPayload): Promise<any>
   const teacher = await Teacher.findById(payload.id);
   if (!teacher) return null;
 
-  const gradePattern = new RegExp(`^\\s*${escapeRegExp(teacher.grade.trim())}\\s*$`, 'i');
-  const sectionPattern = new RegExp(`^\\s*${escapeRegExp(teacher.section.trim())}\\s*$`, 'i');
+  const orConditions = [];
 
-  return {
-    grade: { $regex: gradePattern },
-    section: { $regex: sectionPattern }
-  };
+  // Check legacy grade/section
+  if (teacher.grade && teacher.section) {
+    orConditions.push({
+      grade: { $regex: new RegExp(`^\\s*${escapeRegExp(teacher.grade.trim())}\\s*$`, 'i') },
+      section: { $regex: new RegExp(`^\\s*${escapeRegExp(teacher.section.trim())}\\s*$`, 'i') }
+    });
+  }
+
+  // Check assignedClasses array
+  if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
+    for (const cls of teacher.assignedClasses) {
+      if (cls.grade && cls.section) {
+        orConditions.push({
+          grade: { $regex: new RegExp(`^\\s*${escapeRegExp(cls.grade.trim())}\\s*$`, 'i') },
+          section: { $regex: new RegExp(`^\\s*${escapeRegExp(cls.section.trim())}\\s*$`, 'i') }
+        });
+      }
+    }
+  }
+
+  if (orConditions.length === 0) {
+    return { _id: null }; // No classes assigned, match no students
+  }
+
+  return { $or: orConditions };
+}
+
+/**
+ * Checks if a teacher is authorized to access/modify a specific student's data.
+ * Returns true if the user is an admin or if the student's grade/section matches the teacher's assigned classes.
+ */
+export async function isTeacherAuthorizedForStudent(payload: TokenPayload, studentGrade: string, studentSection: string): Promise<boolean> {
+  if (payload.role !== 'teacher') return true;
+
+  await dbConnect();
+  const teacher = await Teacher.findById(payload.id);
+  if (!teacher) return false;
+
+  const sGrade = studentGrade || '';
+  const sSection = studentSection || '';
+
+  if (teacher.grade && teacher.section) {
+    const gradeRegex = new RegExp(`^\\s*${escapeRegExp(teacher.grade.trim())}\\s*$`, 'i');
+    const sectionRegex = new RegExp(`^\\s*${escapeRegExp(teacher.section.trim())}\\s*$`, 'i');
+    if (gradeRegex.test(sGrade) && sectionRegex.test(sSection)) {
+      return true;
+    }
+  }
+
+  if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
+    for (const cls of teacher.assignedClasses) {
+      if (cls.grade && cls.section) {
+        const gradeRegex = new RegExp(`^\\s*${escapeRegExp(cls.grade.trim())}\\s*$`, 'i');
+        const sectionRegex = new RegExp(`^\\s*${escapeRegExp(cls.section.trim())}\\s*$`, 'i');
+        if (gradeRegex.test(sGrade) && sectionRegex.test(sSection)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
