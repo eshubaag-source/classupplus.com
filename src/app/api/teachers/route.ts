@@ -5,6 +5,8 @@ import Admin from '@/models/Admin';
 import { getAdminId } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const adminId = await getAdminId();
@@ -27,8 +29,8 @@ export async function POST(request: Request) {
     const payload = await request.json();
 
     // Simple validation
-    if (!payload.name || !payload.email || !payload.phone || !payload.grade || !payload.section || !payload.schoolName) {
-      return NextResponse.json({ message: 'All fields are required.' }, { status: 400 });
+    if (!payload.name || !payload.email || !payload.phone || !payload.schoolName) {
+      return NextResponse.json({ message: 'Name, email, phone, and school name are required.' }, { status: 400 });
     }
 
     // Check for unique email
