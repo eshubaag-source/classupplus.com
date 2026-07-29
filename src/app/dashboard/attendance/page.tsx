@@ -15,6 +15,7 @@ export default function AttendancePage() {
   const [userRole, setUserRole] = useState<string>('admin');
   const isTeacher = userRole === 'teacher';
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
 
   // Messaging Modal State
   const [showMsgModal, setShowMsgModal] = useState(false);
@@ -131,6 +132,19 @@ export default function AttendancePage() {
     }
   };
 
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudents(prev => {
+      if (prev.includes(studentId)) {
+        return prev.filter(id => id !== studentId);
+      }
+      if (prev.length >= 10) {
+        alert('You can only select up to 10 students.');
+        return prev;
+      }
+      return [...prev, studentId];
+    });
+  };
+
   const handleSendBulkMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (filteredStudents.length === 0 || !msgForm.message.trim()) return;
@@ -143,7 +157,7 @@ export default function AttendancePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          studentIds: filteredStudents.map((s) => s._id),
+          studentIds: selectedStudents.length > 0 ? selectedStudents : filteredStudents.map((s) => s._id),
           type: msgForm.type,
           category: msgForm.category,
           message: msgForm.message,
@@ -152,7 +166,8 @@ export default function AttendancePage() {
 
       const data = await res.json();
       if (res.ok) {
-        setMsgResult({ success: true, message: `Successfully queued message for ${filteredStudents.length} student(s)!` });
+        const count = selectedStudents.length > 0 ? selectedStudents.length : filteredStudents.length;
+        setMsgResult({ success: true, message: `Successfully queued message for ${count} student(s)!` });
         setMsgForm({ ...msgForm, message: '' });
       } else {
         setMsgResult({ success: false, message: data.message || 'Failed to send bulk message.' });
@@ -170,8 +185,8 @@ export default function AttendancePage() {
 
   const filteredStudents = students.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          s.Fathername?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          s.fatherName?.toLowerCase().includes(searchTerm.toLowerCase());
+      s.Fathername?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.fatherName?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesClass = filterClass ? s.grade === filterClass : true;
     const matchesSection = filterSection ? s.section === filterSection : true;
     return matchesSearch && matchesClass && matchesSection;
@@ -326,7 +341,7 @@ export default function AttendancePage() {
             }}
             disabled={loading || filteredStudents.length === 0}
           >
-            💬 Message All
+            💬 {selectedStudents.length > 0 ? `Message Selected (${selectedStudents.length})` : 'Message All'}
           </button>
         </div>
       </div>
@@ -335,6 +350,7 @@ export default function AttendancePage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
             <tr>
+              <th style={{ padding: '16px', width: '40px' }}></th>
               <th style={{ padding: '16px' }}>Student Name</th>
               <th style={{ padding: '16px' }}>Father Name</th>
               <th style={{ padding: '16px' }}>Roll No</th>
@@ -346,19 +362,28 @@ export default function AttendancePage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={isTeacher ? 5 : 7} style={{ padding: '40px', textAlign: 'center' }}>Loading...</td></tr>
+              <tr><td colSpan={isTeacher ? 6 : 8} style={{ padding: '40px', textAlign: 'center' }}>Loading...</td></tr>
             ) : fetchError ? (
-              <tr><td colSpan={isTeacher ? 5 : 7} style={{ padding: '40px', textAlign: 'center', color: '#ef4444' }}>
+              <tr><td colSpan={isTeacher ? 6 : 8} style={{ padding: '40px', textAlign: 'center', color: '#ef4444' }}>
                 ⚠️ {fetchError}
               </td></tr>
             ) : students.length === 0 ? (
-              <tr><td colSpan={isTeacher ? 5 : 7} style={{ padding: '40px', textAlign: 'center' }}>No students found. Please add students first.</td></tr>
+              <tr><td colSpan={isTeacher ? 6 : 8} style={{ padding: '40px', textAlign: 'center' }}>No students found. Please add students first.</td></tr>
             ) :
               filteredStudents.length === 0 ? (
-                <tr><td colSpan={isTeacher ? 5 : 7} style={{ padding: '40px', textAlign: 'center' }}>No students found matching your search.</td></tr>
+                <tr><td colSpan={isTeacher ? 6 : 8} style={{ padding: '40px', textAlign: 'center' }}>No students found matching your search.</td></tr>
               ) : (
                 filteredStudents.map((student) => (
-                  <tr key={student._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                  <tr key={student._id} style={{ borderBottom: '1px solid var(--glass-border)', background: selectedStudents.includes(student._id) ? 'rgba(99,102,241,0.05)' : 'transparent' }}>
+                    <td style={{ padding: '16px', textAlign: 'center' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedStudents.includes(student._id)} 
+                        onChange={() => toggleStudentSelection(student._id)}
+                        disabled={!selectedStudents.includes(student._id) && selectedStudents.length >= 10}
+                        style={{ width: '18px', height: '18px', cursor: (!selectedStudents.includes(student._id) && selectedStudents.length >= 10) ? 'not-allowed' : 'pointer' }}
+                      />
+                    </td>
                     <td style={{ padding: '16px', fontWeight: 800 }}>{student.name}</td>
                     <td style={{ padding: '16px', fontWeight: 600 }}>{student.fatherName}</td>
                     <td style={{ padding: '16px' }}>{student.rollNumber}</td>
@@ -430,9 +455,9 @@ export default function AttendancePage() {
           <div className="modal-box" style={{ color: 'var(--foreground)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <div>
-                <h2 style={{ fontSize: '1.4rem', marginBottom: '4px', color: 'var(--foreground)' }}>💬 Send Message to All</h2>
+                <h2 style={{ fontSize: '1.4rem', marginBottom: '4px', color: 'var(--foreground)' }}>💬 Send Message</h2>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-                  Draft and send a message to parents of all {filteredStudents.length} currently listed/filtered students.
+                  Draft and send a message to parents of {selectedStudents.length > 0 ? `${selectedStudents.length} selected student(s)` : `all ${filteredStudents.length} listed/filtered students`}.
                 </p>
               </div>
               <button onClick={() => setShowMsgModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.4rem', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>✕</button>
@@ -441,7 +466,7 @@ export default function AttendancePage() {
             <form onSubmit={handleSendBulkMessage} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               {/* Target info */}
               <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', fontSize: '0.9rem' }}>
-                🎯 Recipients: <strong>{filteredStudents.length} student(s)</strong> {filterClass && `in class ${filterClass}`} {filterSection && `section ${filterSection}`}
+                🎯 Recipients: <strong>{selectedStudents.length > 0 ? selectedStudents.length : filteredStudents.length} student(s)</strong> {filterClass && `in class ${filterClass}`} {filterSection && `section ${filterSection}`}
               </div>
 
               {/* Channel & Category */}
@@ -507,7 +532,7 @@ export default function AttendancePage() {
                     </>
                   ) : (
                     <>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
                       Send Message
                     </>
                   )}
