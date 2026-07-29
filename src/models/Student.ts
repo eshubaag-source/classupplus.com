@@ -9,6 +9,8 @@ const StudentSchema = new mongoose.Schema({
   section: { type: String, required: true },
   parentContact: { type: String },
   note: { type: String, required: false },
+  schoolFees: { type: Number, default: 0 },
+  lastFeesAmount: { type: Number, default: 0 },
   subjectPaperNumber: { type: String, default: '' },
   subject: { type: String, default: '' },
   totalNumber: { type: String, default: '' },
