@@ -4,7 +4,7 @@ import Student from '@/models/Student';
 import Attendance from '@/models/Attendance';
 import Fees from '@/models/Fees';
 import { Teacher } from '@/models/Teacher';
-import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
+import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 
 export async function PUT(
   req: Request,
@@ -26,11 +26,9 @@ export async function PUT(
     }
 
     if (payload.role === 'teacher') {
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
-      if (!classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
-        return NextResponse.json({ message: 'Unauthorized to modify this student' }, { status: 403 });
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      if (!isAuthorized) {
+        return NextResponse.json({ message: 'Unauthorized to update this student' }, { status: 403 });
       }
 
       const teacher = await Teacher.findById(payload.id);
@@ -98,10 +96,8 @@ export async function DELETE(
     }
 
     if (payload.role === 'teacher') {
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
-      if (!classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to delete this student' }, { status: 403 });
       }
     }
