@@ -25,6 +25,7 @@ export async function GET() {
     }
 
     const students = await Student.find(query).sort({ name: 1 });
+    require('fs').writeFileSync('debug2.json', JSON.stringify({ students }));
     return NextResponse.json(students);
   } catch (error: any) {
     return NextResponse.json({ message: error.message || 'Failed to fetch students' }, { status: 500 });
