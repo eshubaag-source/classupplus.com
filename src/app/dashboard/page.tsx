@@ -86,6 +86,7 @@ export default function DashboardPage() {
   const [schoolName, setSchoolName] = useState('');
   const [teacherName, setTeacherName] = useState('');
   const [role, setRole] = useState('');
+  const [teacherClasses, setTeacherClasses] = useState<{ grade: string, section: string, subject: string }[]>([]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -97,6 +98,7 @@ export default function DashboardPage() {
         if (data?.role) setRole(data.role);
         if (data?.schoolName) setSchoolName(data.schoolName);
         if (data?.name) setTeacherName(data.name);
+        if (data?.assignedClasses) setTeacherClasses(data.assignedClasses);
       })
       .catch(() => { });
 
@@ -104,12 +106,12 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         const [students, attendance, fees, vehicleFees, teachers, vehicles] = await Promise.all([
-          fetch('/api/students', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []),
-          fetch(`/api/attendance?date=${new Date().toISOString().split('T')[0]}`, { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []),
-          fetch('/api/fees', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []),
-          fetch('/api/vehicle-fees', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []),
-          fetch('/api/teachers', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []),
-          fetch('/api/vehicles', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []),
+          fetch('/api/students', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`/api/attendance?date=${new Date().toISOString().split('T')[0]}`, { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/api/fees', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/api/vehicle-fees', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/api/teachers', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/api/vehicles', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : []).catch(() => []),
         ]);
 
         const paidFees = Array.isArray(fees)
@@ -189,6 +191,42 @@ export default function DashboardPage() {
       </div>
 
       <div className="stats-grid" style={{ marginBottom: '40px' }}>
+        {role === 'teacher' && teacherClasses.length > 0 && (
+          <div style={{ gridColumn: '1 / -1', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1.25rem', color: 'var(--primary)', marginBottom: '1rem' }}>My Assigned Classes</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+              {teacherClasses.map((cls, idx) => (
+                <Link
+                  key={idx}
+                  href={`/dashboard/classpaper?class=${encodeURIComponent(cls.grade)}&section=${encodeURIComponent(cls.section)}&subject=${encodeURIComponent(cls.subject)}`}
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
+                  <div
+                    className="glass card"
+                    style={{
+                      padding: '16px 20px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      cursor: 'pointer',
+                      border: '1px solid var(--glass-border)',
+                      borderRadius: '12px',
+                      background: 'rgba(99, 102, 241, 0.05)',
+                      transition: 'transform 0.15s ease',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                    onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+                  >
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--foreground)' }}>
+                      {cls.grade} - {cls.section}
+                    </span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{cls.subject}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
         <StatCard title="Total Students" value={stats.totalStudents} icon="👥" color="#6366f1" href="/dashboard/students" />
         {role === 'admin' && (
           <StatCard title="Total Teachers" value={stats.totalTeachers} icon="👩‍🏫" color="#ec4899" href="/dashboard/teachers" />
