@@ -58,6 +58,7 @@ export async function GET() {
         phone: teacher.phone || '',
         grade: teacher.grade || '',
         section: teacher.section || '',
+        assignedClasses: teacher.assignedClasses || [],
         schoolName: teacher.schoolName || '',
         aadhaarNumber: teacher.aadhaarNumber || '',
         qualification: teacher.qualification || '',
