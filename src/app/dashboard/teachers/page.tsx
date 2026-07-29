@@ -19,10 +19,14 @@ export default function TeachersPage() {
     subject: '',
     post: '',
     monthlySalary: '',
-    password: ''
+    password: '',
+    assignedClasses: [] as { grade: string, section: string, subject: string }[]
   });
   const [userRole, setUserRole] = useState('admin');
   const [isMounted, setIsMounted] = useState(false);
+  const [newLinkGrade, setNewLinkGrade] = useState('');
+  const [newLinkSec, setNewLinkSec] = useState('');
+  const [newLinkSubj, setNewLinkSubj] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -54,8 +58,11 @@ export default function TeachersPage() {
     if (showAddForm && !editingTeacherId) {
       setShowAddForm(false);
     } else {
-      setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', post: '', monthlySalary: '', password: '' });
+      setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', post: '', monthlySalary: '', password: '', assignedClasses: [] });
       setEditingTeacherId(null);
+      setNewLinkGrade('');
+      setNewLinkSec('');
+      setNewLinkSubj('');
       setShowAddForm(true);
     }
   };
@@ -73,9 +80,13 @@ export default function TeachersPage() {
       subject: teacher.subject || '',
       post: teacher.post || '',
       monthlySalary: teacher.monthlySalary != null ? String(teacher.monthlySalary) : '',
-      password: ''
+      password: '',
+      assignedClasses: teacher.assignedClasses || []
     });
     setEditingTeacherId(teacher._id);
+    setNewLinkGrade('');
+    setNewLinkSec('');
+    setNewLinkSubj('');
     setShowAddForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -103,15 +114,23 @@ export default function TeachersPage() {
     const url = editingTeacherId ? `/api/teachers/${editingTeacherId}` : '/api/teachers';
     const method = editingTeacherId ? 'PUT' : 'POST';
 
+    const payload = { ...newTeacher };
+    if (newLinkGrade || newLinkSec || newLinkSubj) {
+      payload.assignedClasses = [...(payload.assignedClasses || []), { grade: newLinkGrade, section: newLinkSec, subject: newLinkSubj }];
+    }
+
     try {
       const res = await fetch(url, {
         method,
-        body: JSON.stringify(newTeacher),
+        body: JSON.stringify(payload),
         headers: { 'Content-Type': 'application/json' },
       });
       if (res.ok) {
-        setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', post: '', monthlySalary: '', password: '' });
+        setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', post: '', monthlySalary: '', password: '', assignedClasses: [] });
         setEditingTeacherId(null);
+        setNewLinkGrade('');
+        setNewLinkSec('');
+        setNewLinkSubj('');
         setShowAddForm(false);
         fetchTeachers();
       } else {
@@ -126,7 +145,7 @@ export default function TeachersPage() {
   const handleCancelForm = () => {
     setShowAddForm(false);
     setEditingTeacherId(null);
-    setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', post: '', monthlySalary: '', password: '' });
+    setNewTeacher({ name: '', email: '', phone: '', grade: '', section: '', schoolName: '', aadhaarNumber: '', qualification: '', subject: '', post: '', monthlySalary: '', password: '', assignedClasses: [] });
   };
 
   if (!isMounted) return null;
@@ -500,6 +519,68 @@ export default function TeachersPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label>Password {editingTeacherId && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>(Leave blank to keep unchanged)</span>}</label>
               <input type="password" placeholder={editingTeacherId ? "Enter new password" : "Set teacher password"} value={newTeacher.password || ''} onChange={e => setNewTeacher({ ...newTeacher, password: e.target.value })} required={!editingTeacherId} />
+            </div>
+
+            <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <h3 style={{ fontSize: '1.05rem', color: 'var(--primary)', margin: 0 }}>Class Links (Assigned Classes)</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>These classes will appear as links on the teacher's dashboard for quick access to marks entry.</p>
+              
+              {newTeacher.assignedClasses && newTeacher.assignedClasses.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {newTeacher.assignedClasses.map((cls, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.6)', padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                      <span style={{ fontWeight: 600, width: '100px' }}>{cls.grade} - {cls.section}</span>
+                      <span style={{ color: 'var(--text-muted)', flex: 1 }}>{cls.subject}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newArr = [...newTeacher.assignedClasses];
+                          newArr.splice(idx, 1);
+                          setNewTeacher({ ...newTeacher, assignedClasses: newArr });
+                        }}
+                        style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.9rem', padding: '4px' }}
+                        title="Remove Class Link"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: '10px', alignItems: 'end', background: 'rgba(99, 102, 241, 0.05)', padding: '12px', borderRadius: '10px', border: '1px dashed rgba(99, 102, 241, 0.3)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.8rem' }}>Grade</label>
+                  <input type="text" value={newLinkGrade} onChange={e => setNewLinkGrade(e.target.value)} placeholder="e.g. 10th" style={{ padding: '8px 10px', fontSize: '0.85rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.8rem' }}>Section</label>
+                  <input type="text" value={newLinkSec} onChange={e => setNewLinkSec(e.target.value)} placeholder="e.g. A" style={{ padding: '8px 10px', fontSize: '0.85rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.8rem' }}>Subject</label>
+                  <input type="text" value={newLinkSubj} onChange={e => setNewLinkSubj(e.target.value)} placeholder="e.g. Mathematics" style={{ padding: '8px 10px', fontSize: '0.85rem' }} />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newLinkGrade && newLinkSec && newLinkSubj) {
+                      setNewTeacher({
+                        ...newTeacher,
+                        assignedClasses: [...(newTeacher.assignedClasses || []), { grade: newLinkGrade, section: newLinkSec, subject: newLinkSubj }]
+                      });
+                      setNewLinkGrade('');
+                      setNewLinkSec('');
+                      setNewLinkSubj('');
+                    } else {
+                      alert('Please fill grade, section, and subject to add a class link.');
+                    }
+                  }}
+                  style={{ background: 'var(--primary)', color: '#fff', border: 'none', padding: '9px 14px', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer', height: '36px' }}
+                >
+                  + Add Link
+                </button>
+              </div>
             </div>
 
             <button
