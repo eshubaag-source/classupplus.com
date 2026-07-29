@@ -1,524 +1,182 @@
 'use client';
-import { useState, useEffect } from 'react';
 
-type ClassPaperMark = {
-  subject: string;
-  totalNumber: string;
-  subjectPaperNumber: string;
-  date?: string;
-};
+import React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-export default function ClassPaperPage() {
-  const [students, setStudents] = useState<any[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClass, setSelectedClass] = useState('');
-  const [selectedSection, setSelectedSection] = useState('');
-  const [schoolName, setSchoolName] = useState('');
-  const [userRole, setUserRole] = useState<string>('admin');
-  const isTeacher = userRole === 'teacher';
+export default function DashboardClient({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const [role, setRole] = React.useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
-  // Bulk Message Modal State
-  const [showModal, setShowModal] = useState(false);
-  const [messageType, setMessageType] = useState<'sms' | 'whatsapp'>('sms');
-  const [messageText, setMessageText] = useState('');
-  const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState<{ success: number; total: number } | null>(null);
-
-  // Edit Marks Modal State
-  const [editingStudent, setEditingStudent] = useState<any>(null);
-  const [editingMarks, setEditingMarks] = useState<ClassPaperMark[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    fetchStudents();
+  React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        if (data.role) setRole(data.role);
+      });
   }, []);
 
-  const fetchStudents = async () => {
-    const [res, profileRes] = await Promise.all([
-      fetch('/api/students'),
-      fetch('/api/profile')
-    ]);
-    const data = await res.json();
-    const profile = await profileRes.json();
-    if (profile.schoolName) setSchoolName(profile.schoolName);
-    if (profile.role) setUserRole(profile.role);
-    
-    const list = Array.isArray(data) ? data : [];
-    setStudents(list);
+  const getTitle = () => {
+    if (role === 'admin') return 'Admin Portal';
+    if (role === 'teacher') return 'Teacher Portal';
+    return 'Dashboard';
   };
 
-  const handleEditMarks = (student: any) => {
-    setEditingStudent(student);
-    if (student.classPaperMarks && Array.isArray(student.classPaperMarks) && student.classPaperMarks.length > 0) {
-      setEditingMarks(student.classPaperMarks);
-    } else if (student.subject || student.totalNumber || student.subjectPaperNumber) {
-      // Migrate old single subject data to array structure for editing
-      setEditingMarks([{
-        subject: student.subject || '',
-        totalNumber: student.totalNumber || '',
-        subjectPaperNumber: student.subjectPaperNumber || '',
-        date: ''
-      }]);
-    } else {
-      setEditingMarks([]);
-    }
+  const getSubtitle = () => {
+    if (role === 'admin') return 'Manage your institution';
+    if (role === 'teacher') return 'Manage your classes';
+    return 'Welcome back';
   };
 
-  const handleAddSubject = () => {
-    setEditingMarks([...editingMarks, { subject: '', totalNumber: '', subjectPaperNumber: '', date: '' }]);
-  };
-
-  const handleMarkChange = (index: number, field: keyof ClassPaperMark, value: string) => {
-    const newMarks = [...editingMarks];
-    newMarks[index][field] = value;
-    setEditingMarks(newMarks);
-  };
-
-  const handleRemoveSubject = (index: number) => {
-    const newMarks = editingMarks.filter((_, i) => i !== index);
-    setEditingMarks(newMarks);
-  };
-
-  const handleSaveMarks = async () => {
-    if (!editingStudent) return;
-    setIsSaving(true);
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
     try {
-      const res = await fetch(`/api/students/${editingStudent._id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          classPaperMarks: editingMarks,
-        }),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const res = await fetch('/api/auth/logout', { method: 'POST' });
       if (res.ok) {
-        setStudents(prev =>
-          prev.map(s =>
-            s._id === editingStudent._id
-              ? { ...s, classPaperMarks: editingMarks }
-              : s
-          )
-        );
-        setEditingStudent(null);
+        router.push('/login');
+        router.refresh();
       } else {
-        const err = await res.json();
-        alert(err.message || 'Failed to save');
+        alert('Logout failed');
       }
-    } catch {
-      alert('Network error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSendBulkMessage = async () => {
-    if (!messageText.trim()) return alert('Message cannot be empty');
-    setSending(true);
-    setSendResult(null);
-    try {
-      const studentIds = filteredStudents.map(s => s._id);
-      const res = await fetch('/api/notifications/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          studentIds,
-          type: messageType,
-          category: 'other',
-          message: messageText,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSendResult({ success: data.results?.filter((r: any) => r.success).length || 0, total: studentIds.length });
-        setMessageText('');
-        setTimeout(() => setShowModal(false), 3000);
-      } else {
-        alert(data.message || 'Failed to send bulk message');
-      }
-    } catch {
-      alert('Network error');
-    } finally {
-      setSending(false);
-    }
-  };
-
-  if (!isMounted) return null;
-
-  const uniqueClasses = Array.from(new Set(students.map(s => s.grade))).filter(Boolean).sort();
-  const uniqueSections = Array.from(new Set(students.map(s => s.section))).filter(Boolean).sort();
-
-  const filteredStudents = students.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          s.rollNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClass = selectedClass ? s.grade === selectedClass : true;
-    const matchesSection = selectedSection ? s.section === selectedSection : true;
-    return matchesSearch && matchesClass && matchesSection;
-  });
-
-  const inputStyle: React.CSSProperties = {
-    padding: '6px 10px',
-    borderRadius: '6px',
-    border: '1px solid var(--glass-border, #e2e8f0)',
-    background: 'rgba(255,255,255,0.6)',
-    fontSize: '0.875rem',
-    width: '100%',
-    outline: 'none',
+    } catch (err) { }
   };
 
   return (
-    <div>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title" style={{ margin: 0 }}>Class Paper Management</h1>
-          <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Manage subject paper numbers for all subjects.</p>
-          {schoolName && (
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginTop: '8px',
-              padding: '6px 14px',
-              borderRadius: '999px',
-              background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.12))',
-              border: '1px solid rgba(99,102,241,0.25)',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              color: 'var(--primary)',
-            }}>
-              🏫 {schoolName}
-            </div>
-          )}
-        </div>
-        <div className="page-header-actions">
-          <button
-            className="btn-primary"
-            onClick={() => setShowModal(true)}
-            style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)' }}
-          >
-            💬 Send Bulk Message
-          </button>
-        </div>
-      </div>
+    <div className="mesh-bg">
+      {/* Hamburger button — visible only on mobile */}
+      <button
+        className={`navigation__button${sidebarOpen ? ' navigation__button--open' : ''}`}
+        type="button"
+        aria-expanded={sidebarOpen}
+        aria-controls="navigation__popup"
+        aria-label="Toggle navigation"
+        onClick={() => setSidebarOpen(prev => !prev)}
+      >
+        <span className="navigation__bar" />
+        <span className="navigation__bar" />
+        <span className="navigation__bar" />
+      </button>
 
-      <div style={{ marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
-        <input
-          type="text"
-          placeholder="Search by name or roll number"
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          style={{
-            flex: '1 1 200px',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #ccc',
-            fontSize: '0.95rem',
-          }}
+      {/* Overlay — closes sidebar when tapping outside on mobile */}
+      {sidebarOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
-        {!isTeacher && (
-          <>
-            <select
-              value={selectedClass}
-              onChange={e => setSelectedClass(e.target.value)}
-              style={{
-                flex: '1 1 120px',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: '1px solid #ccc',
-                fontSize: '0.95rem',
-                background: 'white',
-              }}
-            >
-              <option value="">All Classes</option>
-              {uniqueClasses.map(cls => (
-                <option key={cls as string} value={cls as string}>{cls as string}</option>
-              ))}
-            </select>
-            <select
-              value={selectedSection}
-              onChange={e => setSelectedSection(e.target.value)}
-              style={{
-                flex: '1 1 120px',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: '1px solid #ccc',
-                fontSize: '0.95rem',
-                background: 'white',
-              }}
-            >
-              <option value="">All Sections</option>
-              {uniqueSections.map(sec => (
-                <option key={sec as string} value={sec as string}>{sec as string}</option>
-              ))}
-            </select>
-          </>
-        )}
-      </div>
+      )}
 
-      <div className="glass table-wrapper">
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead style={{ background: 'rgba(0,0,0,0.03)' }}>
-            <tr>
-              <th style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>Roll No</th>
-              <th style={{ padding: '14px 16px' }}>Name</th>
-              {!isTeacher && <th style={{ padding: '14px 16px' }}>Class</th>}
-              {!isTeacher && <th style={{ padding: '14px 16px' }}>Section</th>}
-              <th style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>Parent Contact</th>
-              <th style={{ padding: '14px 16px' }}>Marks Recorded</th>
-              <th style={{ padding: '14px 16px' }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredStudents.length === 0 ? (
-              <tr>
-                <td colSpan={isTeacher ? 5 : 7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  No students found.
-                </td>
-              </tr>
-            ) : (
-              filteredStudents.map(student => {
-                const marksCount = student.classPaperMarks?.length || (student.subject ? 1 : 0);
-                return (
-                  <tr key={student._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{
-                        background: 'rgba(99, 102, 241, 0.08)',
-                        color: 'var(--primary)',
-                        padding: '3px 10px',
-                        borderRadius: '6px',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                      }}>
-                        {student.rollNumber}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px', fontWeight: 600 }}>{student.name}</td>
-                    {!isTeacher && <td style={{ padding: '12px 16px' }}>{student.grade}</td>}
-                    {!isTeacher && <td style={{ padding: '12px 16px' }}>{student.section}</td>}
-                    <td style={{ padding: '12px 16px' }}>
-                      {student.parentContact ? (
-                        <a
-                          href={`tel:${student.parentContact}`}
-                          style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}
-                        >
-                          📞 {student.parentContact}
-                        </a>
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>N/A</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{
-                        background: marksCount > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                        color: marksCount > 0 ? '#059669' : '#dc2626',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        fontSize: '0.85rem',
-                        fontWeight: 600
-                      }}>
-                        {marksCount} Subjects
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <button
-                        onClick={() => handleEditMarks(student)}
-                        style={{
-                          padding: '7px 16px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontWeight: 600,
-                          fontSize: '0.85rem',
-                          background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                          color: '#fff',
-                          transition: 'all 0.2s ease',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        📝 Edit Marks
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      <div className="dashboard-container">
+        {/* Sidebar */}
+        <aside
+          id="navigation__popup"
+          className={`sidebar glass${sidebarOpen ? ' sidebar--open' : ''}`}
+        >
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+              <img src="/classupplus.png" alt="ClassUpPlus Logo" style={{ height: '150px', objectFit: 'contain' }} />
+            </div>
+            <h1 style={{ marginBottom: '0.5rem', fontSize: '2rem' }}>{getTitle()}</h1>
+            <p style={{ color: 'var(--text-muted)' }}>{getSubtitle()}</p>
+          </div>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+            <NavLink href="/dashboard" label="Overview" icon="📊" onNav={() => setSidebarOpen(false)} />
 
-      {/* Edit Marks Modal */}
-      {editingStudent && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-        }}>
-          <div className="glass" style={{ width: '90%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', borderRadius: '16px', background: '#fff' }}>
-            <h2 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Edit Marks</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-              Student: <strong>{editingStudent.name}</strong> (Roll No: {editingStudent.rollNumber})
-            </p>
-
-            {editingMarks.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', textAlign: 'center', margin: '2rem 0' }}>No marks added yet.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr auto', gap: '10px', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                  <div>Subject</div>
-                  <div>Date</div>
-                  <div>Total Marks</div>
-                  <div>Obtained</div>
-                  <div></div>
-                </div>
-                {editingMarks.map((mark, index) => (
-                  <div key={index} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr auto', gap: '10px', alignItems: 'center' }}>
-                    <input
-                      type="text"
-                      placeholder="e.g. Mathematics"
-                      value={mark.subject}
-                      onChange={e => handleMarkChange(index, 'subject', e.target.value)}
-                      style={inputStyle}
-                    />
-                    <input
-                      type="date"
-                      value={mark.date || ''}
-                      onChange={e => handleMarkChange(index, 'date', e.target.value)}
-                      style={inputStyle}
-                    />
-                    <input
-                      type="number"
-                      placeholder="e.g. 100"
-                      value={mark.totalNumber}
-                      onChange={e => handleMarkChange(index, 'totalNumber', e.target.value)}
-                      style={inputStyle}
-                    />
-                    <input
-                      type="number"
-                      placeholder="e.g. 85"
-                      value={mark.subjectPaperNumber}
-                      onChange={e => handleMarkChange(index, 'subjectPaperNumber', e.target.value)}
-                      style={inputStyle}
-                    />
-                    <button
-                      onClick={() => handleRemoveSubject(index)}
-                      style={{
-                        padding: '6px 10px',
-                        background: '#fee2e2',
-                        color: '#ef4444',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold'
-                      }}
-                      title="Remove Subject"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
+            {role === 'admin' && (
+              <>
+                <NavLink href="/dashboard/teachers" label="Teachers" icon="👨‍🏫" onNav={() => setSidebarOpen(false)} />
+                <NavLink href="/dashboard/salary" label="Salary" icon="💸" onNav={() => setSidebarOpen(false)} />
+              </>
             )}
 
+            <NavLink href="/dashboard/students" label="Students" icon="👥" onNav={() => setSidebarOpen(false)} />
+            <NavLink href="/dashboard/attendance" label="Attendance" icon="📅" onNav={() => setSidebarOpen(false)} />
+            <NavLink href="/dashboard/classpaper" label="Class Paper" icon="📄" onNav={() => setSidebarOpen(false)} />
+
+            {role === 'admin' && (
+              <NavLink href="/dashboard/class-fees" label="Class Fees" icon="🏫" onNav={() => setSidebarOpen(false)} />
+            )}
+
+            <NavLink href="/dashboard/fees" label="Fees" icon="💰" onNav={() => setSidebarOpen(false)} />
+            <NavLink href="/dashboard/vehicle-fees" label="Vehicle Fees" icon="🚍" onNav={() => setSidebarOpen(false)} />
+            <NavLink href="/dashboard/notifications" label="Notifications" icon="💬" onNav={() => setSidebarOpen(false)} />
+            <NavLink href="/dashboard/timetable" label="Timetable" icon="⏰" onNav={() => setSidebarOpen(false)} />
+
+            {role === 'admin' && (
+              <NavLink href="/dashboard/vehicles" label="Vehicles" icon="🚌" onNav={() => setSidebarOpen(false)} />
+            )}
+
+            <NavLink
+              href="/dashboard/settings"
+              label={role === 'teacher' ? 'My Profile' : 'Settings'}
+              icon="⚙️"
+              onNav={() => setSidebarOpen(false)}
+            />
+          </nav>
+
+          <footer style={{ marginTop: 'auto', borderTop: '1px solid var(--glass-border)', paddingTop: '20px' }}>
             <button
-              onClick={handleAddSubject}
+              onClick={handleLogout}
               style={{
-                display: 'block',
-                width: '100%',
-                padding: '10px',
-                background: 'rgba(99, 102, 241, 0.1)',
-                color: 'var(--primary)',
-                border: '1px dashed var(--primary)',
-                borderRadius: '8px',
-                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px',
+                color: 'var(--foreground)',
                 fontWeight: 600,
-                marginBottom: '1.5rem'
+                borderRadius: '8px',
+                background: 'transparent',
+                border: 'none',
+                width: '100%',
+                cursor: 'pointer',
+                textAlign: 'left',
               }}
             >
-              + Add Subject
+              <span>🚪</span> Logout
             </button>
+          </footer>
+        </aside>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button
-                onClick={() => setEditingStudent(null)}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#e5e7eb', cursor: 'pointer' }}
-                disabled={isSaving}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveMarks}
-                disabled={isSaving}
-                className="btn-primary"
-                style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
-              >
-                {isSaving ? 'Saving...' : 'Save Marks'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Message Modal */}
-      {showModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-        }}>
-          <div className="glass" style={{ width: '90%', maxWidth: '500px', padding: '2rem', borderRadius: '16px', background: '#fff' }}>
-            <h2 style={{ marginTop: 0, marginBottom: '1rem' }}>Send Message to All</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-              This will send a message to all <strong>{filteredStudents.length}</strong> students currently visible in the table.
-            </p>
-
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Message Type</label>
-              <select
-                value={messageType}
-                onChange={e => setMessageType(e.target.value as 'sms' | 'whatsapp')}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}
-              >
-                <option value="sms">SMS</option>
-                <option value="whatsapp">WhatsApp</option>
-              </select>
-            </div>
-
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Message</label>
-              <textarea
-                value={messageText}
-                onChange={e => setMessageText(e.target.value)}
-                placeholder="Type your message here..."
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', minHeight: '100px' }}
-              />
-            </div>
-
-            {sendResult && (
-              <div style={{
-                padding: '10px', marginBottom: '1rem', borderRadius: '8px',
-                background: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', fontWeight: 500,
-              }}>
-                ✅ Successfully sent {sendResult.success} out of {sendResult.total} messages!
-              </div>
-            )}
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button
-                onClick={() => setShowModal(false)}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#e5e7eb', cursor: 'pointer' }}
-                disabled={sending}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSendBulkMessage}
-                disabled={sending || filteredStudents.length === 0}
-                className="btn-primary"
-              >
-                {sending ? 'Sending...' : 'Send Now'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        {/* Main Content */}
+        <main className="main-content">
+          {children}
+        </main>
+      </div>
     </div>
+  );
+}
+
+function NavLink({
+  href,
+  label,
+  icon,
+  onNav,
+}: {
+  href: string;
+  label: string;
+  icon: string;
+  onNav?: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      className="nav-item"
+      onClick={onNav}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '12px 16px',
+        borderRadius: '12px',
+        transition: 'all 0.2s ease',
+        color: 'var(--foreground)',
+        fontWeight: '500',
+        textDecoration: 'none',
+      }}
+    >
+      <span style={{ fontSize: '1.2rem' }}>{icon}</span>
+      {label}
+    </Link>
   );
 }
