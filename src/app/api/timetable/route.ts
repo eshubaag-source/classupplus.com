@@ -14,7 +14,7 @@ const DAYS_ORDER: Record<string, number> = {
 };
 
 export async function GET(request: Request) {
-  try {
+  try { 
     const payload = await getTokenPayload();
     if (!payload) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
