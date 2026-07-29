@@ -16,7 +16,6 @@ export async function GET() {
     let query: any = { adminId };
     console.log('STUDENT QUERY payload:', payload);
     console.log('STUDENT QUERY adminId:', adminId);
-    require('fs').writeFileSync('debug.json', JSON.stringify({ payload, adminId, query }));
 
     if (payload.role === 'teacher') {
       const classFilter = await getTeacherClassFilter(payload);
@@ -25,7 +24,6 @@ export async function GET() {
     }
 
     const students = await Student.find(query).sort({ name: 1 });
-    require('fs').writeFileSync('debug2.json', JSON.stringify({ students }));
     return NextResponse.json(students);
   } catch (error: any) {
     return NextResponse.json({ message: error.message || 'Failed to fetch students' }, { status: 500 });
