@@ -4,6 +4,8 @@ import Student from '@/models/Student';
 import { Teacher } from '@/models/Teacher';
 import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const payload = await getTokenPayload();
@@ -12,6 +14,9 @@ export async function GET() {
     await dbConnect();
     const adminId = payload.adminId;
     let query: any = { adminId };
+    console.log('STUDENT QUERY payload:', payload);
+    console.log('STUDENT QUERY adminId:', adminId);
+    require('fs').writeFileSync('debug.json', JSON.stringify({ payload, adminId, query }));
 
     if (payload.role === 'teacher') {
       const classFilter = await getTeacherClassFilter(payload);
@@ -66,5 +71,3 @@ export async function POST(req: Request) {
 }
 
 // NOTE: DELETE endpoint for individual student is handled in src/app/api/students/[id]/route.ts. This file now only provides GET and POST.
-
-
