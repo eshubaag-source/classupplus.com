@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db';
 import { VehicleFee } from '@/models/VehicleFee';
 import Student from '@/models/Student';
 import { Types } from 'mongoose';
-import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
+import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 import { sendNotification } from '@/lib/notifications';
 
 export async function GET() {
@@ -46,10 +46,8 @@ export async function POST(request: Request) {
     if (!student) return NextResponse.json({ message: 'Student not found' }, { status: 404 });
 
     if (payload.role === 'teacher') {
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
-      if (!classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to add vehicle fee for this student' }, { status: 403 });
       }
     }
@@ -63,11 +61,11 @@ export async function POST(request: Request) {
           ? new Types.ObjectId(body.studentId)
           : body.studentId,
     });
-    
+
     if (body.status === 'Paid' && !body.paidDate) {
       newFee.paidDate = new Date();
     }
-    
+
     await newFee.save();
 
     // Trigger notification
@@ -113,11 +111,12 @@ export async function DELETE(request: Request) {
     if (!fee) return NextResponse.json({ message: 'Vehicle fee record not found' }, { status: 404 });
 
     if (payload.role === 'teacher') {
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
       const student = await Student.findOne({ _id: fee.studentId, adminId });
-      if (!student || !classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
+      if (!student) {
+        return NextResponse.json({ message: 'Unauthorized to delete this vehicle fee record' }, { status: 403 });
+      }
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to delete this vehicle fee record' }, { status: 403 });
       }
     }
@@ -146,23 +145,24 @@ export async function PUT(request: Request) {
     if (!fee) return NextResponse.json({ message: 'Vehicle fee record not found' }, { status: 404 });
 
     if (payload.role === 'teacher') {
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
       const student = await Student.findOne({ _id: fee.studentId, adminId });
-      if (!student || !classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
+      if (!student) {
+        return NextResponse.json({ message: 'Unauthorized to update this vehicle fee record' }, { status: 403 });
+      }
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to update this vehicle fee record' }, { status: 403 });
       }
     }
 
     const body = await request.json();
-    
+
     if (body.status === 'Paid' && !body.paidDate) {
       body.paidDate = new Date();
     } else if (body.status === 'Pending') {
       body.paidDate = null;
     }
-    
+
     const updated = await VehicleFee.findOneAndUpdate({ _id: id, adminId }, body, { new: true }).populate('studentId');
     if (updated) {
       const student = await Student.findById(updated.studentId?._id || updated.studentId);
