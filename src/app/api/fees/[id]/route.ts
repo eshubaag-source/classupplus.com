@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Fees from '@/models/Fees';
 import Student from '@/models/Student';
-import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
+import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 
 export async function PUT(
   request: Request,
@@ -24,10 +24,8 @@ export async function PUT(
       const student = await Student.findOne({ _id: fee.studentId, adminId });
       if (!student) return NextResponse.json({ message: 'Student not found' }, { status: 404 });
 
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
-      if (!classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to modify fee for this student' }, { status: 403 });
       }
     }
@@ -63,10 +61,8 @@ export async function DELETE(
       const student = await Student.findOne({ _id: fee.studentId, adminId });
       if (!student) return NextResponse.json({ message: 'Student not found' }, { status: 404 });
 
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
-      if (!classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to delete fee for this student' }, { status: 403 });
       }
     }
