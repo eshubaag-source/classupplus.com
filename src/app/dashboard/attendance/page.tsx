@@ -23,9 +23,18 @@ export default function AttendancePage() {
   const [msgResult, setMsgResult] = useState<{ success?: boolean; message?: string } | null>(null);
   const [msgForm, setMsgForm] = useState({
     type: 'Both' as 'SMS' | 'WhatsApp' | 'Both',
-    category: 'Attendance' as 'Attendance' | 'Fee' | 'VehicleFee' | 'Custom',
+    category: 'Attendance' as 'Attendance' | 'Fee' | 'VehicleFee' | 'Custom' | 'ClassPaper',
     message: '',
   });
+
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.Fathername?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.fatherName?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesClass = filterClass ? s.grade === filterClass : true;
+    const matchesSection = filterSection ? s.section === filterSection : true;
+    return matchesSearch && matchesClass && matchesSection;
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   useEffect(() => {
     setIsMounted(true);
@@ -34,6 +43,49 @@ export default function AttendancePage() {
       setDate(new Date().toISOString().split('T')[0]);
     }
   }, []);
+
+  // Auto-generate message when modal opens or category changes
+  useEffect(() => {
+    if (!showMsgModal) return;
+
+    let studentNamesText = '[Student Name]';
+    const targetStudents = selectedStudents.length > 0 
+      ? selectedStudents.map(id => students.find(s => s._id === id)).filter(Boolean)
+      : filteredStudents;
+
+    if (targetStudents.length === 1 && targetStudents[0]) {
+      studentNamesText = targetStudents[0].name;
+    } else if (targetStudents.length > 1 && targetStudents.length <= 3) {
+      // If 2 or 3 students, we could list them, but bulk sends individual messages.
+      // So we must use [Student Name] placeholder to ensure each parent gets the right name.
+      studentNamesText = '[Student Name]';
+    }
+
+    let defaultMsg = '';
+    switch (msgForm.category) {
+      case 'Attendance':
+        defaultMsg = `Dear Parent, this is to inform you that your child ${studentNamesText} is marked absent today.`;
+        break;
+      case 'Fee':
+        defaultMsg = `Dear Parent, this is a reminder regarding the pending fee for your child ${studentNamesText}. Please do the needful.`;
+        break;
+      case 'VehicleFee':
+        defaultMsg = `Dear Parent, this is a reminder regarding the pending vehicle fee for your child ${studentNamesText}. Please do the needful.`;
+        break;
+      case 'ClassPaper':
+        defaultMsg = `Dear Parent, please note that class papers have been distributed to your child ${studentNamesText}. Please check with your child.`;
+        break;
+      case 'Custom':
+      default:
+        defaultMsg = `Dear Parent, this is a message regarding your child ${studentNamesText}. \n\n`;
+        break;
+    }
+
+    // Only overwrite if it's empty or matches a previous default template
+    if (!msgForm.message || msgForm.message.includes('[Student Name]') || msgForm.message.includes('Dear Parent')) {
+      setMsgForm(prev => ({ ...prev, message: defaultMsg }));
+    }
+  }, [showMsgModal, msgForm.category, selectedStudents, filteredStudents, students]);
 
   useEffect(() => {
     if (date) {
@@ -182,15 +234,6 @@ export default function AttendancePage() {
   if (!isMounted) return null;
   const uniqueClasses = Array.from(new Set(students.map(s => s.grade))).filter(Boolean).sort();
   const uniqueSections = Array.from(new Set(students.map(s => s.section))).filter(Boolean).sort();
-
-  const filteredStudents = students.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.Fathername?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.fatherName?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClass = filterClass ? s.grade === filterClass : true;
-    const matchesSection = filterSection ? s.section === filterSection : true;
-    return matchesSearch && matchesClass && matchesSection;
-  }).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div>
@@ -466,7 +509,14 @@ export default function AttendancePage() {
             <form onSubmit={handleSendBulkMessage} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               {/* Target info */}
               <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', fontSize: '0.9rem' }}>
-                🎯 Recipients: <strong>{selectedStudents.length > 0 ? selectedStudents.length : filteredStudents.length} student(s)</strong> {filterClass && `in class ${filterClass}`} {filterSection && `section ${filterSection}`}
+                <div style={{ marginBottom: '4px' }}>
+                  🎯 Recipients: <strong>{selectedStudents.length > 0 ? selectedStudents.length : filteredStudents.length} student(s)</strong> {filterClass && `in class ${filterClass}`} {filterSection && `section ${filterSection}`}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  {selectedStudents.length > 0 
+                    ? `Selected: ${selectedStudents.map(id => students.find(s => s._id === id)?.name).filter(Boolean).join(', ')}`
+                    : `All filtered students will receive this message.`}
+                </div>
               </div>
 
               {/* Channel & Category */}
@@ -486,6 +536,7 @@ export default function AttendancePage() {
                     <option value="Custom">✍️ Custom</option>
                     <option value="Fee">💰 Fee</option>
                     <option value="VehicleFee">🚍 Vehicle Fee</option>
+                    <option value="ClassPaper">📝 Class Paper</option>
                   </select>
                 </div>
               </div>
@@ -506,6 +557,11 @@ export default function AttendancePage() {
                 <div style={{ textAlign: 'right', fontSize: '0.75rem', color: msgForm.message.length > 160 ? '#f59e0b' : 'var(--text-muted)', marginTop: '4px' }}>
                   {msgForm.message.length} characters {msgForm.message.length > 160 ? '(may be split across multiple SMS)' : ''}
                 </div>
+                {msgForm.message.includes('[Student Name]') && (
+                  <div style={{ marginTop: '6px', fontSize: '0.8rem', color: '#10b981', fontWeight: 600 }}>
+                    💡 The placeholder [Student Name] will be automatically replaced with each student's name.
+                  </div>
+                )}
               </div>
 
               {/* Result */}
