@@ -2,7 +2,7 @@ import dbConnect from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import Student from '@/models/Student';
-import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
+import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -18,10 +18,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     if (payload.role === 'teacher') {
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
-      if (!classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to view this student' }, { status: 403 });
       }
     }
@@ -48,6 +46,9 @@ Roll No: ${student.rollNumber}
 Grade: ${student.grade}
 Section: ${student.section}
 Parent Contact: ${student.parentContact || 'N/A'}
+School Fees: Rs. ${student.schoolFees || 0}
+Last Fees Amount: Rs. ${student.lastFeesAmount || 0}
+Note: ${student.note || 'N/A'}
 `;
     page.drawText(content, {
       x: 30,
