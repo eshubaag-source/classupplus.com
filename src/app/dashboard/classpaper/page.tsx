@@ -250,7 +250,7 @@ export default function ClassPaperPage() {
     const matchesClass = selectedClass ? s.grade === selectedClass : true;
     const matchesSection = selectedSection ? s.section === selectedSection : true;
     return matchesSearch && matchesClass && matchesSection;
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   const inputStyle: React.CSSProperties = {
     padding: '6px 10px',
