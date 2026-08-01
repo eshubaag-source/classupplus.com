@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db';
 import Fees from '@/models/Fees';
 import Student from '@/models/Student';
 import { Types } from 'mongoose';
-import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
+import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 import { sendNotification } from '@/lib/notifications';
 
 export async function GET() {
@@ -63,10 +63,8 @@ export async function POST(request: Request) {
     if (!student) return NextResponse.json({ message: 'Student not found' }, { status: 404 });
 
     if (payload.role === 'teacher') {
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
-      if (!classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to add fee for this student' }, { status: 403 });
       }
     }
