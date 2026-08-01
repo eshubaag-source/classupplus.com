@@ -190,7 +190,7 @@ export default function AttendancePage() {
     const matchesClass = filterClass ? s.grade === filterClass : true;
     const matchesSection = filterSection ? s.section === filterSection : true;
     return matchesSearch && matchesClass && matchesSection;
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div>
