@@ -5,7 +5,7 @@ const NotificationLogSchema = new Schema({
   studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true, index: true },
   recipient: { type: String, required: true },
   type: { type: String, enum: ['SMS', 'WhatsApp', 'Both'], required: true },
-  category: { type: String, enum: ['Attendance', 'Fee', 'VehicleFee', 'Custom'], required: true },
+  category: { type: String, enum: ['Attendance', 'Fee', 'VehicleFee', 'Custom', 'ClassPaper', 'other'], required: true },
   message: { type: String, required: true },
   status: { type: String, enum: ['Sent', 'Simulated', 'Failed'], default: 'Simulated' },
   error: { type: String },
