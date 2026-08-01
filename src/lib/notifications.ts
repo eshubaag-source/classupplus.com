@@ -60,6 +60,9 @@ export async function sendNotification({
       throw new Error('Student not found');
     }
 
+    // Replace placeholders like [Student Name] with the actual student's name
+    message = message.replace(/\[Student Name\]/gi, student.name || 'your child');
+
     const rawContact = student.parentContact;
     if (!rawContact) {
       console.log(`[Notification Alert] No parent contact found for student: ${student.name}`);
