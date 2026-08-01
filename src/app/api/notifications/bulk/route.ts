@@ -30,20 +30,15 @@ export async function POST(req: Request) {
       }
     }
 
-    // Verify all students exist and belong to this admin
-    const students = await Student.find({ _id: { $in: studentIds }, adminId });
-    if (students.length !== studentIds.length) {
-      return NextResponse.json({ message: 'Some students not found or unauthorized' }, { status: 404 });
+    const query: any = { _id: { $in: studentIds }, adminId };
+    if (payload.role === 'teacher' && classFilter) {
+      query.$and = [classFilter];
     }
 
-    // If teacher, check if all students are in teacher's class
-    if (payload.role === 'teacher' && classFilter) {
-      const isAuthorized = students.every(
-        (student) => classFilter.grade.$regex.test(student.grade) && classFilter.section.$regex.test(student.section)
-      );
-      if (!isAuthorized) {
-        return NextResponse.json({ message: 'Unauthorized to notify some of these students' }, { status: 403 });
-      }
+    // Verify all students exist and belong to this admin
+    const students = await Student.find(query);
+    if (students.length !== studentIds.length) {
+      return NextResponse.json({ message: 'Some students not found or unauthorized' }, { status: 404 });
     }
 
     const results = [];
