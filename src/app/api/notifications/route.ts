@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import { NotificationLog } from '@/models/NotificationLog';
 import Student from '@/models/Student';
-import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
+import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 import { sendNotification } from '@/lib/notifications';
 
 export async function GET(req: Request) {
@@ -59,11 +59,7 @@ export async function POST(req: Request) {
 
     // If teacher, check if student is in teacher's class
     if (payload.role === 'teacher') {
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) {
-        return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-      }
-      const isAuthorized = classFilter.grade.$regex.test(student.grade) && classFilter.section.$regex.test(student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
       if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to notify this student' }, { status: 403 });
       }
