@@ -14,8 +14,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { studentIds, type, category, message } = body;
 
-    if (!studentIds || !Array.isArray(studentIds) || !type || !category || !message) {
+    if (!studentIds || !Array.isArray(studentIds) || !type || !category) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
+    }
+    if (!message) {
+      return NextResponse.json({ message: 'Message content is required' }, { status: 400 });
     }
 
     if (studentIds.length === 0) {
@@ -43,12 +46,18 @@ export async function POST(req: Request) {
 
     const results = [];
     for (const student of students) {
+      const studentMessage = typeof message === 'string' ? message : (message[student._id.toString()] || '');
+      if (!studentMessage) {
+        results.push({ studentId: student._id, success: false, error: 'No message provided for this student' });
+        continue;
+      }
+
       const result = await sendNotification({
         adminId,
         studentId: student._id.toString(),
         type,
         category,
-        message
+        message: studentMessage
       });
       results.push({ studentId: student._id, success: result.success, error: result.error });
     }
