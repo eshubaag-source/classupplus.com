@@ -29,7 +29,7 @@ export default function ClassPaperPage() {
 
   // Bulk Message Modal State
   const [showModal, setShowModal] = useState(false);
-  const [messageType, setMessageType] = useState<'sms' | 'whatsapp'>('sms');
+  const [messageType, setMessageType] = useState<'SMS' | 'WhatsApp'>('SMS');
   const [messageText, setMessageText] = useState('');
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success: number; total: number } | null>(null);
@@ -131,25 +131,38 @@ export default function ClassPaperPage() {
   };
 
   const handleSendBulkMessage = async () => {
-    if (!messageText.trim()) return alert('Message cannot be empty');
     setSending(true);
     setSendResult(null);
     try {
       const studentIds = filteredStudents.map(s => s._id);
+      
+      const messages: Record<string, string> = {};
+      filteredStudents.forEach(s => {
+        const marks = s.classPaperMarks || [];
+        if (marks.length === 0) {
+          const subject = s.subject || 'N/A';
+          const obtained = s.subjectPaperNumber || '0';
+          const total = s.totalNumber || '0';
+          messages[s._id] = `Student Name: ${s.name}\nSubject: ${subject}\nMarks: ${obtained}/${total}`;
+        } else {
+          const subjectsText = marks.map((m: any) => `${m.subject}: ${m.subjectPaperNumber}/${m.totalNumber}`).join('\n');
+          messages[s._id] = `Student Name: ${s.name}\n${subjectsText}`;
+        }
+      });
+
       const res = await fetch('/api/notifications/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           studentIds,
           type: messageType,
-          category: 'other',
-          message: messageText,
+          category: 'ClassPaper',
+          message: messages,
         }),
       });
       const data = await res.json();
       if (res.ok) {
         setSendResult({ success: data.results?.filter((r: any) => r.success).length || 0, total: studentIds.length });
-        setMessageText('');
         setTimeout(() => setShowModal(false), 3000);
       } else {
         alert(data.message || 'Failed to send bulk message');
@@ -605,22 +618,16 @@ export default function ClassPaperPage() {
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Message Type</label>
               <select
                 value={messageType}
-                onChange={e => setMessageType(e.target.value as 'sms' | 'whatsapp')}
+                onChange={e => setMessageType(e.target.value as 'SMS' | 'WhatsApp')}
                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}
               >
-                <option value="sms">SMS</option>
-                <option value="whatsapp">WhatsApp</option>
+                <option value="SMS">SMS</option>
+                <option value="WhatsApp">WhatsApp</option>
               </select>
             </div>
 
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Message</label>
-              <textarea
-                value={messageText}
-                onChange={e => setMessageText(e.target.value)}
-                placeholder="Type your message here..."
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc', minHeight: '100px' }}
-              />
+            <div style={{ marginBottom: '1rem', padding: '10px', background: '#f3f4f6', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              <strong>Note:</strong> Messages will be automatically generated with the student's name, subjects, and marks obtained.
             </div>
 
             {sendResult && (
