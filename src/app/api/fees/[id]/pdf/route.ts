@@ -4,7 +4,7 @@ import Fees from '@/models/Fees';
 import Student from '@/models/Student';
 import Admin from '@/models/Admin';
 import { ClassFee } from '@/models/ClassFee';
-import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
+import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 
 export async function GET(
   request: Request,
@@ -32,10 +32,8 @@ export async function GET(
     }
 
     if (payload.role === 'teacher') {
-      const classFilter = await getTeacherClassFilter(payload);
-      if (!classFilter) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
-      if (!classFilter.grade.$regex.test(student.grade) || !classFilter.section.$regex.test(student.section)) {
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to view this fee record' }, { status: 403 });
       }
     }
