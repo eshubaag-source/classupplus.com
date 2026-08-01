@@ -7,7 +7,7 @@ interface SendNotificationArgs {
   adminId: string;
   studentId: string;
   type: 'SMS' | 'WhatsApp' | 'Both';
-  category: 'Attendance' | 'Fee' | 'VehicleFee' | 'Custom';
+  category: 'Attendance' | 'Fee' | 'VehicleFee' | 'Custom' | 'ClassPaper' | 'other';
   message: string;
 }
 
