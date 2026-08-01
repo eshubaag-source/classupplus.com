@@ -7,7 +7,7 @@ interface NotifLog {
   studentId?: { _id: string; name: string; rollNumber: string; grade: string; section: string } | null;
   recipient: string;
   type: 'SMS' | 'WhatsApp' | 'Both';
-  category: 'Attendance' | 'Fee' | 'VehicleFee' | 'Custom';
+  category: 'Attendance' | 'Fee' | 'VehicleFee' | 'Custom' | 'ClassPaper';
   message: string;
   status: 'Sent' | 'Simulated' | 'Failed';
   error?: string;
@@ -28,6 +28,7 @@ const categoryColors: Record<string, { bg: string; color: string; icon: string }
   Fee: { bg: 'rgba(16,185,129,0.12)', color: '#10b981', icon: '💰' },
   VehicleFee: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b', icon: '🚍' },
   Custom: { bg: 'rgba(236,72,153,0.12)', color: '#ec4899', icon: '✍️' },
+  ClassPaper: { bg: 'rgba(59,130,246,0.12)', color: '#3b82f6', icon: '📝' },
 };
 const statusColors: Record<string, { bg: string; color: string }> = {
   Sent: { bg: 'rgba(16,185,129,0.12)', color: '#10b981' },
@@ -52,7 +53,7 @@ export default function NotificationsPage() {
   const [form, setForm] = useState({
     studentId: '',
     type: 'Both' as 'SMS' | 'WhatsApp' | 'Both',
-    category: 'Custom' as 'Attendance' | 'Fee' | 'VehicleFee' | 'Custom',
+    category: 'Custom' as 'Attendance' | 'Fee' | 'VehicleFee' | 'Custom' | 'ClassPaper',
     message: '',
   });
 
@@ -75,6 +76,40 @@ export default function NotificationsPage() {
       .then(d => setStudents(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, [fetchLogs]);
+
+  const selectedStudent = students.find(s => s._id === form.studentId);
+
+  // Auto-generate message when modal opens, student changes, or category changes
+  useEffect(() => {
+    if (!showModal) return;
+
+    const studentNameText = selectedStudent ? selectedStudent.name : '[Student Name]';
+    let defaultMsg = '';
+
+    switch (form.category) {
+      case 'Attendance':
+        defaultMsg = `Dear Parent, this is to inform you that your child ${studentNameText} is marked absent today.`;
+        break;
+      case 'Fee':
+        defaultMsg = `Dear Parent, this is a reminder regarding the pending fee for your child ${studentNameText}. Please do the needful.`;
+        break;
+      case 'VehicleFee':
+        defaultMsg = `Dear Parent, this is a reminder regarding the pending vehicle fee for your child ${studentNameText}. Please do the needful.`;
+        break;
+      case 'ClassPaper':
+        defaultMsg = `Dear Parent, please note that class papers have been distributed to your child ${studentNameText}. Please check with your child.`;
+        break;
+      case 'Custom':
+      default:
+        defaultMsg = `Dear Parent, this is a message regarding your child ${studentNameText}. \n\n`;
+        break;
+    }
+
+    // Only overwrite if empty or matches a previous template
+    if (!form.message || form.message.includes('[Student Name]') || form.message.includes('Dear Parent')) {
+      setForm(prev => ({ ...prev, message: defaultMsg }));
+    }
+  }, [showModal, form.category, form.studentId, selectedStudent]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,8 +152,6 @@ export default function NotificationsPage() {
     simulated: logs.filter(l => l.status === 'Simulated').length,
     failed: logs.filter(l => l.status === 'Failed').length,
   };
-
-  const selectedStudent = students.find(s => s._id === form.studentId);
 
   return (
     <div>
@@ -208,6 +241,7 @@ export default function NotificationsPage() {
           <option value="Fee">Fee</option>
           <option value="VehicleFee">Vehicle Fee</option>
           <option value="Custom">Custom</option>
+          <option value="ClassPaper">Class Paper</option>
         </select>
         <select value={filterType} onChange={e => setFilterType(e.target.value)} style={{ padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--foreground)', fontSize: '0.9rem' }}>
           <option value="">All Channels</option>
@@ -275,7 +309,7 @@ export default function NotificationsPage() {
                   </td>
                   <td style={{ padding: '14px 16px' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '999px', background: cat.bg, color: cat.color, fontSize: '0.8rem', fontWeight: 600 }}>
-                      {cat.icon} {log.category === 'VehicleFee' ? 'Vehicle Fee' : log.category}
+                      {cat.icon} {log.category === 'VehicleFee' ? 'Vehicle Fee' : log.category === 'ClassPaper' ? 'Class Paper' : log.category}
                     </span>
                   </td>
                   <td style={{ padding: '14px 16px', maxWidth: '280px' }}>
@@ -364,6 +398,7 @@ export default function NotificationsPage() {
                     <option value="Attendance">📅 Attendance</option>
                     <option value="Fee">💰 Fee</option>
                     <option value="VehicleFee">🚍 Vehicle Fee</option>
+                    <option value="ClassPaper">📝 Class Paper</option>
                   </select>
                 </div>
               </div>
@@ -384,6 +419,11 @@ export default function NotificationsPage() {
                 <div style={{ textAlign: 'right', fontSize: '0.75rem', color: form.message.length > 160 ? '#f59e0b' : 'var(--text-muted)', marginTop: '4px' }}>
                   {form.message.length} characters {form.message.length > 160 ? '(may be split across multiple SMS)' : ''}
                 </div>
+                {form.message.includes('[Student Name]') && (
+                  <div style={{ marginTop: '6px', fontSize: '0.8rem', color: '#10b981', fontWeight: 600 }}>
+                    💡 The placeholder [Student Name] will be automatically replaced with the student's name.
+                  </div>
+                )}
               </div>
 
               {/* Result */}
