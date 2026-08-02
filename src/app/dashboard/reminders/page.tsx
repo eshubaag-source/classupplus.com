@@ -150,6 +150,17 @@ export default function RemindersPage() {
         .tab-btn.active {
           background: var(--glass-bg); border-color: var(--glass-border); color: var(--foreground); box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
+        .reminders-layout {
+          display: grid;
+          grid-template-columns: 1fr 350px;
+          gap: 24px;
+          align-items: flex-start;
+        }
+        @media (max-width: 900px) {
+          .reminders-layout {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
 
       {/* Header */}
@@ -170,7 +181,7 @@ export default function RemindersPage() {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px', alignItems: 'flex-start' }}>
+      <div className="reminders-layout">
         {/* Left Column: Student List & Filters */}
         <div className="glass card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
