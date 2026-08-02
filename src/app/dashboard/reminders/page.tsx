@@ -130,6 +130,15 @@ export default function RemindersPage() {
     }
   };
 
+  const handleGeneratePDF = () => {
+    if (selectedStudentIds.size === 0) {
+      alert('Please select at least one student to generate a PDF.');
+      return;
+    }
+    const idsString = Array.from(selectedStudentIds).join(',');
+    window.open(`/api/reminders/pdf?ids=${idsString}`, '_blank');
+  };
+
   return (
     <div>
       <style>{`
@@ -266,19 +275,35 @@ export default function RemindersPage() {
             </div>
           )}
 
-          <button
-            onClick={handleSendBulk}
-            disabled={sending || selectedStudentIds.size === 0}
-            style={{
-              width: '100%', padding: '14px', borderRadius: '12px',
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              color: 'white', fontWeight: 700, border: 'none', cursor: (sending || selectedStudentIds.size === 0) ? 'not-allowed' : 'pointer',
-              opacity: (sending || selectedStudentIds.size === 0) ? 0.6 : 1,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-            }}
-          >
-            {sending ? 'Sending...' : `Send Reminders (${selectedStudentIds.size})`}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button
+              onClick={handleSendBulk}
+              disabled={sending || selectedStudentIds.size === 0}
+              style={{
+                width: '100%', padding: '14px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                color: 'white', fontWeight: 700, border: 'none', cursor: (sending || selectedStudentIds.size === 0) ? 'not-allowed' : 'pointer',
+                opacity: (sending || selectedStudentIds.size === 0) ? 0.6 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+              }}
+            >
+              {sending ? 'Sending...' : `Send Reminders (${selectedStudentIds.size})`}
+            </button>
+
+            <button
+              onClick={handleGeneratePDF}
+              disabled={selectedStudentIds.size === 0}
+              style={{
+                width: '100%', padding: '14px', borderRadius: '12px',
+                background: 'transparent',
+                color: 'var(--foreground)', fontWeight: 700, border: '1px solid var(--glass-border)', cursor: selectedStudentIds.size === 0 ? 'not-allowed' : 'pointer',
+                opacity: selectedStudentIds.size === 0 ? 0.6 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+              }}
+            >
+              📄 Generate PDF Reminders
+            </button>
+          </div>
         </div>
       </div>
     </div>
