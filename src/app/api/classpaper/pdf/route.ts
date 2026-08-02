@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import Student from '@/models/Student';
+import Admin from '@/models/Admin';
 import { getAdminId } from '@/lib/auth';
 
 export async function GET() {
@@ -11,6 +12,9 @@ export async function GET() {
 
     await dbConnect();
     const students = await Student.find({ adminId }).lean().exec();
+    
+    const admin = await Admin.findById(adminId).lean().exec();
+    const schoolName = admin?.schoolName || '';
 
     const pdfDoc = await PDFDocument.create();
     let currentPage = pdfDoc.addPage([842, 595]); // A4 Landscape
@@ -19,7 +23,8 @@ export async function GET() {
     const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
     // Title
-    currentPage.drawText('Class Paper Report', {
+    const titleText = schoolName ? `${schoolName} - Class Paper Report` : 'Class Paper Report';
+    currentPage.drawText(titleText, {
       x: 30,
       y: height - 40,
       size: 20,
