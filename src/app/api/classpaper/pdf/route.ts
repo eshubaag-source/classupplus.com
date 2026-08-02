@@ -3,15 +3,25 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import Student from '@/models/Student';
 import Admin from '@/models/Admin';
-import { getAdminId } from '@/lib/auth';
+import { getAdminId, getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
 
 export async function GET() {
   try {
     const adminId = await getAdminId();
-    if (!adminId) throw new Error('Unauthorized');
+    const payload = await getTokenPayload();
+    if (!adminId || !payload) throw new Error('Unauthorized');
 
     await dbConnect();
-    const students = await Student.find({ adminId }).lean().exec();
+    
+    let query: any = { adminId };
+    if (payload.role === 'teacher') {
+      const teacherFilter = await getTeacherClassFilter(payload);
+      if (teacherFilter) {
+        query = { ...query, ...teacherFilter };
+      }
+    }
+
+    const students = await Student.find(query).lean().exec();
     
     const admin = await Admin.findById(adminId).lean().exec();
     const schoolName = admin?.schoolName || '';
@@ -23,14 +33,15 @@ export async function GET() {
     const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
     // Title
-    const titleText = schoolName ? `${schoolName} - Class Paper Report` : 'Class Paper Report';
+      const titleText = schoolName ? `${schoolName} - Class Paper Report` : 'Class Paper Report';
     currentPage.drawText(titleText, {
       x: 30,
-      y: height - 30,
+      y: height - 40,
       size: 20,
       font: fontBold,
       color: rgb(0, 0, 0.8),
     });
+
 
     const dateText = `Date: ${new Date().toLocaleDateString(undefined, { dateStyle: 'medium' })}`;
     const dtW = fontBold.widthOfTextAtSize(dateText, 12);
