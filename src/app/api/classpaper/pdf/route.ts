@@ -26,7 +26,7 @@ export async function GET() {
     const titleText = schoolName ? `${schoolName} - Class Paper Report` : 'Class Paper Report';
     currentPage.drawText(titleText, {
       x: 30,
-      y: height - 40,
+      y: height - 30,
       size: 20,
       font: fontBold,
       color: rgb(0, 0, 0.8),
