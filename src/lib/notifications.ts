@@ -66,6 +66,19 @@ export async function sendNotification({
     const rawContact = student.parentContact;
     if (!rawContact) {
       console.log(`[Notification Alert] No parent contact found for student: ${student.name}`);
+      
+      const log = new NotificationLog({
+        adminId,
+        studentId,
+        recipient: 'N/A',
+        type: type === 'Both' ? 'SMS' : type,
+        category,
+        message,
+        status: 'Failed',
+        error: 'No contact number'
+      });
+      await log.save();
+      
       return { success: false, error: 'No contact number' };
     }
 
@@ -78,6 +91,19 @@ export async function sendNotification({
 
     if (!useSms && !useWhatsapp) {
       console.log(`[Notification Skips] Both SMS and WhatsApp notifications are disabled for admin`);
+      
+      const log = new NotificationLog({
+        adminId,
+        studentId,
+        recipient: formattedContact || 'N/A',
+        type: type === 'Both' ? 'SMS' : type,
+        category,
+        message,
+        status: 'Failed',
+        error: 'Notifications disabled'
+      });
+      await log.save();
+
       return { success: false, error: 'Notifications disabled' };
     }
 
