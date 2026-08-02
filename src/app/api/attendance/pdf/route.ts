@@ -31,13 +31,12 @@ export async function GET(req: Request) {
     const startDate = new Date(year, month, 1);
     const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
-    const studentQuery: any = { adminId };
+    let studentQuery: any = { adminId };
     
     if (payload.role === 'teacher') {
       const classFilter = await getTeacherClassFilter(payload);
       if (!classFilter) return new NextResponse('Teacher profile not found', { status: 404 });
-      studentQuery.grade = classFilter.grade;
-      studentQuery.section = classFilter.section;
+      studentQuery = { ...studentQuery, ...classFilter };
     }
 
     const students = await Student.find(studentQuery).lean().exec();
