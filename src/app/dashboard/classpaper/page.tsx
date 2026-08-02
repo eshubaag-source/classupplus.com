@@ -143,9 +143,13 @@ export default function ClassPaperPage() {
           const subject = s.subject || 'N/A';
           const obtained = s.subjectPaperNumber || '0';
           const total = s.totalNumber || '0';
-          messages[s._id] = `Student Name: ${s.name}\nSubject: ${subject}\nMarks: ${obtained}/${total}`;
+          const marksText = obtained === 'A' || obtained.toLowerCase() === 'absent' ? 'Absent' : `${obtained}/${total}`;
+          messages[s._id] = `Student Name: ${s.name}\nSubject: ${subject}\nMarks: ${marksText}`;
         } else {
-          const subjectsText = marks.map((m: any) => `${m.subject}: ${m.subjectPaperNumber}/${m.totalNumber}`).join('\n');
+          const subjectsText = marks.map((m: any) => {
+            const marksText = m.subjectPaperNumber === 'A' || m.subjectPaperNumber?.toLowerCase() === 'absent' ? 'Absent' : `${m.subjectPaperNumber}/${m.totalNumber}`;
+            return `${m.subject}: ${marksText}`;
+          }).join('\n');
           messages[s._id] = `Student Name: ${s.name}\n${subjectsText}`;
         }
       });
@@ -286,7 +290,16 @@ export default function ClassPaperPage() {
             </div>
           )}
         </div>
-        <div className="page-header-actions">
+        <div className="page-header-actions" style={{ display: 'flex', gap: '10px' }}>
+          <a
+            href="/api/classpaper/pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary"
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            📥 Download All Reports
+          </a>
           <button
             className="btn-primary"
             onClick={() => setShowModal(true)}
@@ -456,32 +469,76 @@ export default function ClassPaperPage() {
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px', background: 'rgba(16, 185, 129, 0.02)' }}>
-                      <input
-                        type="number"
-                        placeholder="Score"
-                        value={bulkMarks[student._id] || ''}
-                        onChange={e => handleBulkMarkChange(student._id, e.target.value)}
-                        style={{ ...inputStyle, width: '90px', borderColor: bulkMarks[student._id] ? '#10b981' : 'var(--glass-border)' }}
-                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                          type="text"
+                          placeholder="Score"
+                          value={bulkMarks[student._id] || ''}
+                          onChange={e => handleBulkMarkChange(student._id, e.target.value)}
+                          style={{ ...inputStyle, width: '90px', borderColor: bulkMarks[student._id] ? '#10b981' : 'var(--glass-border)' }}
+                        />
+                        <button
+                          onClick={() => handleBulkMarkChange(student._id, 'A')}
+                          style={{
+                            padding: '4px 8px',
+                            background: bulkMarks[student._id] === 'A' || bulkMarks[student._id] === 'Absent' ? '#ef4444' : '#fee2e2',
+                            color: bulkMarks[student._id] === 'A' || bulkMarks[student._id] === 'Absent' ? '#fff' : '#ef4444',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold',
+                            transition: 'all 0.2s',
+                          }}
+                          title="Mark Absent"
+                        >
+                          A
+                        </button>
+                      </div>
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      <button
-                        onClick={() => handleEditMarks(student)}
-                        style={{
-                          padding: '7px 16px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontWeight: 600,
-                          fontSize: '0.85rem',
-                          background: 'var(--surface-color)',
-                          color: 'var(--text-color)',
-                          transition: 'all 0.2s ease',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Past Marks
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          onClick={() => handleEditMarks(student)}
+                          style={{
+                            padding: '7px 12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem',
+                            background: 'var(--surface-color)',
+                            color: 'var(--text-color)',
+                            transition: 'all 0.2s ease',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Past Marks
+                        </button>
+                        <a
+                          href={`/api/classpaper/student-pdf/${student._id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            padding: '7px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0',
+                            textDecoration: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem',
+                            background: 'rgba(59, 130, 246, 0.05)',
+                            color: '#2563eb',
+                            transition: 'all 0.2s ease',
+                            whiteSpace: 'nowrap',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          📥 Download
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -507,7 +564,7 @@ export default function ClassPaperPage() {
               <p style={{ color: 'var(--text-muted)', textAlign: 'center', margin: '2rem 0' }}>No marks added yet.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr auto', gap: '10px', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr auto', gap: '10px', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                   <div>Subject</div>
                   <div>Date</div>
                   <div>Total Marks</div>
@@ -515,7 +572,7 @@ export default function ClassPaperPage() {
                   <div></div>
                 </div>
                 {editingMarks.map((mark, index) => (
-                  <div key={index} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr auto', gap: '10px', alignItems: 'center' }}>
+                  <div key={index} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1.5fr auto', gap: '10px', alignItems: 'center' }}>
                     <input
                       type="text"
                       placeholder="e.g. Mathematics"
@@ -536,13 +593,30 @@ export default function ClassPaperPage() {
                       onChange={e => handleMarkChange(index, 'totalNumber', e.target.value)}
                       style={inputStyle}
                     />
-                    <input
-                      type="number"
-                      placeholder="e.g. 85"
-                      value={mark.subjectPaperNumber}
-                      onChange={e => handleMarkChange(index, 'subjectPaperNumber', e.target.value)}
-                      style={inputStyle}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <input
+                        type="text"
+                        placeholder="e.g. 85"
+                        value={mark.subjectPaperNumber}
+                        onChange={e => handleMarkChange(index, 'subjectPaperNumber', e.target.value)}
+                        style={inputStyle}
+                      />
+                      <button
+                        onClick={() => handleMarkChange(index, 'subjectPaperNumber', 'A')}
+                        style={{
+                          padding: '6px 10px',
+                          background: mark.subjectPaperNumber === 'A' || mark.subjectPaperNumber === 'Absent' ? '#ef4444' : '#fee2e2',
+                          color: mark.subjectPaperNumber === 'A' || mark.subjectPaperNumber === 'Absent' ? '#fff' : '#ef4444',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: 'bold'
+                        }}
+                        title="Mark Absent"
+                      >
+                        A
+                      </button>
+                    </div>
                     <button
                       onClick={() => handleRemoveSubject(index)}
                       style={{
