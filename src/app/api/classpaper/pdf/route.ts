@@ -57,8 +57,8 @@ export async function GET() {
     const lineHeight = 16;
     let y = startY;
 
-    const header = ['Roll No', 'Name', 'Class/Sec', 'Parent Contact', 'Subject', 'Date', 'Total No', 'Paper No'];
-    const colWidths = [60, 140, 80, 100, 100, 70, 70, 70];
+    const header = ['Roll No', 'Name', 'Class/Sec', 'Subject', 'Date', 'Total No', 'Paper No'];
+    const colWidths = [60, 100, 80, 100, 70, 70, 70];
     let x = 30;
     
     header.forEach((text, i) => {
@@ -82,7 +82,6 @@ export async function GET() {
           index === 0 ? (s.rollNumber || '-').substring(0, 12) : '',
           index === 0 ? (s.name || '-').substring(0, 25) : '',
           index === 0 ? `${s.grade || '-'} ${s.section || ''}`.substring(0, 12) : '',
-          index === 0 ? (s.parentContact || '-').substring(0, 15) : '',
           (mark.subject || '-').substring(0, 18),
           (mark.date || '-').substring(0, 12),
           mark.totalNumber ? mark.totalNumber.toString() : '-',
