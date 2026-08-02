@@ -28,7 +28,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
     // Centered School Name
-    const schoolNameSize = 24;
+    const schoolNameSize = 14;
     const snWidth = fontBold.widthOfTextAtSize(schoolName, schoolNameSize);
     currentPage.drawText(schoolName, {
       x: (width - snWidth) / 2,
