@@ -633,9 +633,11 @@ export default function ClassPaperPage() {
             {sendResult && (
               <div style={{
                 padding: '10px', marginBottom: '1rem', borderRadius: '8px',
-                background: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', fontWeight: 500,
+                background: sendResult.success > 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                color: sendResult.success > 0 ? '#16a34a' : '#ef4444', 
+                fontWeight: 500,
               }}>
-                ✅ Successfully sent {sendResult.success} out of {sendResult.total} messages!
+                {sendResult.success > 0 ? '✅' : '⚠️'} Sent {sendResult.success} of {sendResult.total} messages. {sendResult.success === 0 && 'Check Notifications page for errors.'}
               </div>
             )}
 
