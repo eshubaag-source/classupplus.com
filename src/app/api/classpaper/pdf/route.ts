@@ -58,7 +58,7 @@ export async function GET() {
     let y = startY;
 
     const header = ['Roll No', 'Name', 'Class/Sec', 'Subject', 'Date', 'Total No', 'Paper No'];
-    const colWidths = [60, 100, 80, 100, 70, 70, 70];
+    const colWidths = [60, 160, 80, 100, 70, 70, 70];
     let x = 30;
     
     header.forEach((text, i) => {
