@@ -45,9 +45,13 @@ export async function POST(req: Request) {
     }
 
     const results = [];
+    console.log('[BULK API] category:', category, 'type:', type, 'studentIds count:', studentIds.length);
+    console.log('[BULK API] message type:', typeof message, 'keys:', typeof message === 'object' && message ? Object.keys(message).length : 'N/A');
+
     for (const student of students) {
       const studentMessage = typeof message === 'string' ? message : (message[student._id.toString()] || '');
       if (!studentMessage) {
+        console.log('[BULK API] Missing message for student:', student._id.toString());
         results.push({ studentId: student._id, success: false, error: 'No message provided for this student' });
         continue;
       }
