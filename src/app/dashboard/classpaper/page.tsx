@@ -292,7 +292,7 @@ export default function ClassPaperPage() {
         </div>
         <div className="page-header-actions" style={{ display: 'flex', gap: '10px' }}>
           <a
-            href="/api/classpaper/pdf"
+            href={`/api/classpaper/pdf?class=${encodeURIComponent(selectedClass)}&section=${encodeURIComponent(selectedSection)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-primary"
