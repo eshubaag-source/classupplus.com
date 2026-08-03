@@ -5,7 +5,7 @@ import Student from '@/models/Student';
 import Admin from '@/models/Admin';
 import { getAdminId, getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const adminId = await getAdminId();
     const payload = await getTokenPayload();
@@ -13,7 +13,13 @@ export async function GET() {
 
     await dbConnect();
     
+    const { searchParams } = new URL(request.url);
+    const cls = searchParams.get('class');
+    const sec = searchParams.get('section');
+
     let query: any = { adminId };
+    if (cls) query.grade = cls;
+    if (sec) query.section = sec;
     if (payload.role === 'teacher') {
       const teacherFilter = await getTeacherClassFilter(payload);
       if (teacherFilter) {
