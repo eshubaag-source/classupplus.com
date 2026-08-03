@@ -47,7 +47,7 @@ export async function GET() {
     const dtW = fontBold.widthOfTextAtSize(dateText, 12);
     currentPage.drawText(dateText, {
       x: 842 - 30 - dtW,
-      y: height - 40,
+      y: height - 50,
       size: 12,
       font: fontBold,
       color: rgb(0.3, 0.3, 0.3),
