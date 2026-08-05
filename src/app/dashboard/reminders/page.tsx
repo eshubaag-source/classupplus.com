@@ -136,7 +136,8 @@ export default function RemindersPage() {
       return;
     }
     const idsString = Array.from(selectedStudentIds).join(',');
-    window.open(`/api/reminders/pdf?ids=${idsString}`, '_blank');
+    const encodedMessage = encodeURIComponent(messageTemplate);
+    window.open(`/api/reminders/pdf?ids=${idsString}&message=${encodedMessage}`, '_blank');
   };
 
   return (
