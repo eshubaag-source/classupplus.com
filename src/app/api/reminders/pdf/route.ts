@@ -15,6 +15,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const idsParam = searchParams.get('ids');
+    const messageParam = searchParams.get('message');
 
     if (!idsParam) {
       return new NextResponse('Missing student IDs', { status: 400 });
@@ -134,8 +135,12 @@ export async function GET(request: Request) {
           </div>
 
           <div class="content">
+            ${messageParam 
+              ? `<p>${messageParam.replace(/\[Student Name\]/gi, student.name).replace(/\n/g, '<br/>')}</p>`
+              : `
             <p>Dear Parent,</p>
             <p>This is a gentle reminder regarding the outstanding fees for your ward. Please find the details below. We request you to kindly clear the dues at your earliest convenience.</p>
+            `}
           </div>
 
           <table class="fee-table">
