@@ -528,7 +528,7 @@ export default function TeachersPage() {
               {newTeacher.assignedClasses && newTeacher.assignedClasses.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {newTeacher.assignedClasses.map((cls, idx) => (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.6)', padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                    <div key={idx} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.6)', padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
                       <span style={{ fontWeight: 600, width: '100px' }}>{cls.grade} - {cls.section}</span>
                       <span style={{ color: 'var(--text-muted)', flex: 1 }}>{cls.subject}</span>
                       <button
@@ -548,7 +548,7 @@ export default function TeachersPage() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: '10px', alignItems: 'end', background: 'rgba(99, 102, 241, 0.05)', padding: '12px', borderRadius: '10px', border: '1px dashed rgba(99, 102, 241, 0.3)' }}>
+              <div className="class-link-grid">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '0.8rem' }}>Grade</label>
                   <input type="text" value={newLinkGrade} onChange={e => setNewLinkGrade(e.target.value)} placeholder="e.g. 10th" style={{ padding: '8px 10px', fontSize: '0.85rem' }} />
@@ -704,6 +704,21 @@ export default function TeachersPage() {
         @keyframes slideDown {
           from { opacity: 0; transform: translateY(-10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        .class-link-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+          align-items: end;
+          background: rgba(99, 102, 241, 0.05);
+          padding: 12px;
+          border-radius: 10px;
+          border: 1px dashed rgba(99, 102, 241, 0.3);
+        }
+        @media (min-width: 640px) {
+          .class-link-grid {
+            grid-template-columns: 1fr 1fr 2fr auto;
+          }
         }
       `}</style>
     </div>
