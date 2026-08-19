@@ -1,7 +1,8 @@
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import dbConnect from '@/lib/db';
-import { Teacher } from '@/models/Teacher'
+import { Teacher } from '@/models/Teacher';
+import { Timetable } from '@/models/Timetable';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
@@ -84,6 +85,19 @@ export async function getTeacherClassFilter(payload: TokenPayload): Promise<any>
     }
   }
 
+  // Check Timetable periods
+  const timetables = await Timetable.find({ teacherId: teacher._id });
+  if (timetables && timetables.length > 0) {
+    for (const tt of timetables) {
+      if (tt.grade && tt.section) {
+        orConditions.push({
+          grade: { $regex: new RegExp(`^\\s*${escapeRegExp(tt.grade.trim())}\\s*$`, 'i') },
+          section: { $regex: new RegExp(`^\\s*${escapeRegExp(tt.section.trim())}\\s*$`, 'i') }
+        });
+      }
+    }
+  }
+
   if (orConditions.length === 0) {
     return { _id: null }; // No classes assigned, match no students
   }
@@ -118,6 +132,19 @@ export async function isTeacherAuthorizedForStudent(payload: TokenPayload, stude
       if (cls.grade && cls.section) {
         const gradeRegex = new RegExp(`^\\s*${escapeRegExp(cls.grade.trim())}\\s*$`, 'i');
         const sectionRegex = new RegExp(`^\\s*${escapeRegExp(cls.section.trim())}\\s*$`, 'i');
+        if (gradeRegex.test(sGrade) && sectionRegex.test(sSection)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  const timetables = await Timetable.find({ teacherId: teacher._id });
+  if (timetables && timetables.length > 0) {
+    for (const tt of timetables) {
+      if (tt.grade && tt.section) {
+        const gradeRegex = new RegExp(`^\\s*${escapeRegExp(tt.grade.trim())}\\s*$`, 'i');
+        const sectionRegex = new RegExp(`^\\s*${escapeRegExp(tt.section.trim())}\\s*$`, 'i');
         if (gradeRegex.test(sGrade) && sectionRegex.test(sSection)) {
           return true;
         }
