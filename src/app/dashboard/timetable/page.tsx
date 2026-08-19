@@ -602,9 +602,7 @@ export default function TimetablePage() {
                       return (
                         <div key={index} 
                           onClick={() => {
-                            if (role === 'teacher') {
-                              router.push(`/dashboard/classpaper?class=${encodeURIComponent(period.grade)}&section=${encodeURIComponent(period.section)}&subject=${encodeURIComponent(period.subject)}`);
-                            }
+                            router.push(`/dashboard/classpaper?class=${encodeURIComponent(period.grade)}&section=${encodeURIComponent(period.section)}&subject=${encodeURIComponent(period.subject)}`);
                           }}
                           style={{
                           padding: '12px 14px',
@@ -615,7 +613,7 @@ export default function TimetablePage() {
                           display: 'flex',
                           flexDirection: 'column',
                           gap: '6px',
-                          cursor: role === 'teacher' ? 'pointer' : 'default'
+                          cursor: 'pointer'
                         }}>
                           {/* Top Row: Period Num & Delete button if Admin */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
