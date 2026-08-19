@@ -261,18 +261,32 @@ export async function GET(request: Request) {
       box-shadow: 0 4px 12px rgba(99,102,241,0.3);
     }
     @media print {
-      body { background: #fff; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      @page { margin: 0; }
+      body { background: #fff; padding: 1.5cm; margin: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       .container { max-width: 100%; gap: 0; display: block; }
-      .notice { border: none; box-shadow: none; padding: 0; margin-bottom: 40px; border-radius: 0; page-break-after: always; }
+      .notice { border: none; box-shadow: none; padding: 0; margin-bottom: 0; border-radius: 0; page-break-after: always; position: relative; }
       .notice:last-child { page-break-after: avoid; }
       .print-btn { display: none !important; }
       .header { border-bottom-color: #6366f1 !important; }
       .notice-title { box-shadow: inset 0 0 0 1000px #6366f1 !important; color: #fff !important; }
+      .custom-footer {
+        position: fixed;
+        bottom: 0.5cm;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 12px;
+        color: #9ca3af;
+      }
+    }
+    @media screen {
+      .custom-footer { display: none; }
     }
   </style>
 </head>
 <body>
   <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <div class="custom-footer">https://www.classupplus.com</div>
   <div class="container">
     ${noticesHtml}
   </div>
