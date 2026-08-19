@@ -243,8 +243,21 @@ export async function GET(
       cursor: pointer;
       font-family: inherit;
     }
+    .custom-footer {
+      position: fixed;
+      bottom: 0.5cm;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    @media screen {
+      .custom-footer { display: none; }
+    }
     @media print {
-      body { background: #fff; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      @page { margin: 0; }
+      body { background: #fff; padding: 1.5cm; margin: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
       .header { box-shadow: inset 0 0 0 1000px #6366f1 !important; color: #fff !important; }
       .stamp { box-shadow: inset 0 0 0 1000px ${statusBg} !important; color: ${statusColor} !important; }
       .receipt { box-shadow: none; border-radius: 0; border: 1.5px solid #6366f1; }
@@ -253,6 +266,7 @@ export async function GET(
   </style>
 </head>
 <body>
+  <div class="custom-footer">https://www.classupplus.com</div>
   <div>
     <div class="receipt">
       <div class="header">
