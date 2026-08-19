@@ -3,6 +3,8 @@ import dbConnect from '@/lib/db';
 import { ClassFee } from '@/models/ClassFee';
 import { getAdminId } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const adminId = await getAdminId();
