@@ -136,9 +136,21 @@ export async function GET(request: Request) {
     .paid{background:#ecfdf5 !important;color:#059669 !important}
     .pend{background:#fffbeb !important;color:#d97706 !important}
     .print-btn{display:block;margin:20px auto;padding:10px 32px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit}
+    .custom-footer {
+      position: fixed;
+      bottom: 0.5cm;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    @media screen {
+      .custom-footer { display: none; }
+    }
     @media print{
-      @page { size: landscape; margin: 6mm; }
-      body{background:#fff;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+      @page { size: landscape; margin: 0; }
+      body{background:#fff;padding:1.5cm;margin:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
       .top { box-shadow: inset 0 0 0 1000px #6366f1 !important; color: #fff !important; }
       .stamp-paid, .paid { box-shadow: inset 0 0 0 1000px #ecfdf5 !important; color: #10b981 !important; }
       .stamp-pend, .pend { box-shadow: inset 0 0 0 1000px #fffbeb !important; color: #f59e0b !important; }
@@ -149,6 +161,7 @@ export async function GET(request: Request) {
   </style>
 </head>
 <body>
+  <div class="custom-footer">https://www.classupplus.com</div>
   <div class="card">
     <div class="top">
       <h1>${e(schoolName)}</h1>
@@ -298,8 +311,21 @@ export async function GET(request: Request) {
     .r-footer{text-align:center;font-size:0.6rem;color:#9ca3af;font-style:italic;padding:0 10px 8px}
     .cut-h{border-top:1px dashed #9ca3af;margin:0}
     .print-btn{display:block;margin:16px auto 0;padding:10px 32px;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit}
+    .custom-footer {
+      position: fixed;
+      bottom: 0.5cm;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    @media screen {
+      .custom-footer { display: none; }
+    }
     @media print{
-      body{background:#fff;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+      @page { margin: 0; }
+      body{background:#fff;padding:1.5cm;margin:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
       .top, .r-header { box-shadow: inset 0 0 0 1000px #6366f1 !important; color: #fff !important; }
       .stamp-paid, .paid { box-shadow: inset 0 0 0 1000px #ecfdf5 !important; color: #10b981 !important; }
       .stamp-pend, .pend { box-shadow: inset 0 0 0 1000px #fffbeb !important; color: #f59e0b !important; }
@@ -310,6 +336,7 @@ export async function GET(request: Request) {
   </style>
 </head>
 <body>
+  <div class="custom-footer">https://www.classupplus.com</div>
   <div class="grid">
     ${receiptCards || '<div style="padding:40px;text-align:center;color:#6b7280;grid-column:span 2">No receipts found.</div>'}
   </div>
