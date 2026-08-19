@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 type ClassPaperMark = {
   subject: string;
@@ -8,13 +9,14 @@ type ClassPaperMark = {
   date?: string;
 };
 
-export default function ClassPaperPage() {
+function ClassPaperContent() {
   const [students, setStudents] = useState<any[]>([]);
   const [isMounted, setIsMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClass, setSelectedClass] = useState('');
-  const [selectedSection, setSelectedSection] = useState('');
-  const [urlSubject, setUrlSubject] = useState('');
+  const searchParams = useSearchParams();
+  const [selectedClass, setSelectedClass] = useState(searchParams?.get('class') || '');
+  const [selectedSection, setSelectedSection] = useState(searchParams?.get('section') || '');
+  const [urlSubject, setUrlSubject] = useState(searchParams?.get('subject') || '');
   
   // Global settings for bulk marks entry
   const [globalSubject, setGlobalSubject] = useState('');
@@ -42,16 +44,18 @@ export default function ClassPaperPage() {
   useEffect(() => {
     setIsMounted(true);
     fetchStudents();
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('class')) setSelectedClass(params.get('class')!);
-      if (params.get('section')) setSelectedSection(params.get('section')!);
-      if (params.get('subject')) {
-        setUrlSubject(params.get('subject')!);
-        setGlobalSubject(params.get('subject')!);
+  }, []);
+
+  useEffect(() => {
+    if (searchParams) {
+      if (searchParams.get('class')) setSelectedClass(searchParams.get('class')!);
+      if (searchParams.get('section')) setSelectedSection(searchParams.get('section')!);
+      if (searchParams.get('subject')) {
+        setUrlSubject(searchParams.get('subject')!);
+        setGlobalSubject(searchParams.get('subject')!);
       }
     }
-  }, []);
+  }, [searchParams]);
 
   const fetchStudents = async () => {
     const [res, profileRes] = await Promise.all([
@@ -735,5 +739,13 @@ export default function ClassPaperPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ClassPaperPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>}>
+      <ClassPaperContent />
+    </Suspense>
   );
 }
