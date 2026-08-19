@@ -3,6 +3,8 @@ import dbConnect from '@/lib/db';
 import { Timetable } from '@/models/Timetable';
 import { getTokenPayload } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 const DAYS_ORDER: Record<string, number> = {
   'Monday': 1,
   'Tuesday': 2,
@@ -14,7 +16,7 @@ const DAYS_ORDER: Record<string, number> = {
 };
 
 export async function GET(request: Request) {
-  try { 
+  try {
     const payload = await getTokenPayload();
     if (!payload) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
