@@ -4,6 +4,8 @@ import TeacherSalary from '@/models/TeacherSalaryModel';
 import { Teacher } from '@/models/Teacher';
 import { getTokenPayload } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     await dbConnect();
@@ -110,4 +112,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: error.message || 'Failed to update salary' }, { status: 500 });
   }
 }
- 
