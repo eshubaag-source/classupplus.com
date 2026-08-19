@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import dbConnect from '@/lib/db';
-import TeacherSalary from '@/models/TeacherSalary';
+import TeacherSalary from '@/models/TeacherSalaryModel';
 import { Teacher } from '@/models/Teacher';
 import Admin from '@/models/Admin';
 import { getTokenPayload } from '@/lib/auth';
