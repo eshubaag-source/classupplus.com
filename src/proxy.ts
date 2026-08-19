@@ -21,7 +21,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (request.nextUrl.pathname === '/login' && token) {
+  if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/') && token) {
     try {
       const secret = new TextEncoder().encode(JWT_SECRET);
       await jwtVerify(token, secret);
@@ -35,5 +35,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login'],
+  matcher: ['/dashboard/:path*', '/login', '/'],
 };
