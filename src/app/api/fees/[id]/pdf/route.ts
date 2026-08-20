@@ -6,6 +6,8 @@ import Admin from '@/models/Admin';
 import { ClassFee } from '@/models/ClassFee';
 import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -46,8 +48,8 @@ export async function GET(
     let classAmount = 0;
     if (student.grade) {
       const allClassFees = await ClassFee.find({ adminId }).lean().exec();
-      const normalizeGrade = (g: string) =>
-        g.trim().toLowerCase().replace(/^class\s+/i, '').replace(/(th|st|nd|rd)$/i, '').trim();
+      const normalizeGrade = (g: any) =>
+        String(g || '').trim().toLowerCase().replace(/^class[-_\s]*/i, '').replace(/(th|st|nd|rd)$/i, '').trim();
 
       const gradeNorm = normalizeGrade(student.grade);
       const subjectNorm = (student.subject || '').trim().toLowerCase();
