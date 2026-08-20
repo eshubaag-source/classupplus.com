@@ -460,7 +460,6 @@ export default function VehicleFeesPage() {
                     borderRadius: '4px',
                     fontWeight: 600,
                   }}>
-                    🔒 Locked
                   </span>
                 )}
               </label>
@@ -470,7 +469,6 @@ export default function VehicleFeesPage() {
                 value={newFee.lastyear}
                 onChange={e => setNewFee({ ...newFee, lastyear: e.target.value })}
                 required
-                readOnly={!!editingFeeId}
                 style={{
                   ...(editingFeeId ? {
                     opacity: 0.6,
@@ -638,11 +636,11 @@ export default function VehicleFeesPage() {
                   </td>
                   <td style={{ padding: '16px', fontWeight: 700 }}>{fee.utr || '—'}</td>
                   <td style={{ padding: '16px', fontWeight: 700 }}>{fee.month || '—'}</td>
-                  <td style={{ padding: '16px', fontWeight: 700 }}>{fee.lastyear || '—'}</td>
+                  <td style={{ padding: '16px', fontWeight: 700 }}>{fee.lastyear != null && fee.lastyear !== '' ? fee.lastyear : '—'}</td>
                   <td style={{ padding: '16px', fontWeight: 600 }}>
                     {fee.status === 'Paid'
-                      ? (fee.lasyearamount || fee.lastyearamount || fee.lastyear || fee.lastyeae || '—')
-                      : (fee.lasyearamount || fee.lastyearamount || '—')}
+                      ? ((fee.lasyearamount != null && fee.lasyearamount !== '') ? fee.lasyearamount : (fee.lastyearamount != null && fee.lastyearamount !== '' ? fee.lastyearamount : (fee.lastyear != null && fee.lastyear !== '' ? fee.lastyear : (fee.lastyeae != null && fee.lastyeae !== '' ? fee.lastyeae : '—'))))
+                      : ((fee.lasyearamount != null && fee.lasyearamount !== '') ? fee.lasyearamount : (fee.lastyearamount != null && fee.lastyearamount !== '' ? fee.lastyearamount : '—'))}
                   </td>
                   <td style={{ padding: '16px', fontWeight: 600, color: '#6366f1' }}>{`₹${fee.totalFees ?? 0}`}</td>
                   <td style={{ padding: '16px', fontWeight: 700 }}>₹{fee.amount}</td>
