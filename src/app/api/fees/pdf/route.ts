@@ -75,6 +75,10 @@ export async function GET(request: Request) {
           (cf: any) => normalizeGrade(cf.grade) === grade && (cf.subject || '') === ''
         );
       }
+      if (!match) {
+        // Ultimate fallback: just match the grade, ignore subject differences
+        match = classFees.find((cf: any) => normalizeGrade(cf.grade) === grade);
+      }
       return match ? (match as any).amount : 0;
     };
 
@@ -194,7 +198,10 @@ export async function GET(request: Request) {
 
       return new NextResponse(html, {
         status: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        headers: { 
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        },
       });
     }
 
@@ -356,7 +363,10 @@ export async function GET(request: Request) {
 
     return new NextResponse(html, {
       status: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      headers: { 
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      },
     });
 
   } catch (error: any) {
