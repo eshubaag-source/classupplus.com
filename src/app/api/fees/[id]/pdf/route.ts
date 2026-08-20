@@ -66,6 +66,13 @@ export async function GET(
         );
       }
 
+      if (!match) {
+        // Ultimate fallback: just match the grade, ignore subject differences
+        match = allClassFees.find(cf =>
+          normalizeGrade(cf.grade) === gradeNorm
+        );
+      }
+
       if (match) {
         classAmount = match.amount;
       }
@@ -371,6 +378,7 @@ export async function GET(
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
       },
     });
   } catch (error: any) {
