@@ -70,7 +70,7 @@ export async function GET(
     }
     // Fallback: use the classFee stored on the fee record itself
     if (classAmount === 0 && (fee as any).classFee) {
-      classAmount = Number((fee as any).classFee) || 0;
+      classAmount = Number((fee as any).classFee);
     }
     const balance = Math.max(0, classAmount - fee.amount);
 
