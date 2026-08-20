@@ -178,7 +178,7 @@ export default function FeesPage() {
       paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
     });
     setEditingFeeId(fee._id);
-    setShowAddForm(false);
+    setShowAddForm(true);
     // Smooth scroll to top/form
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -887,21 +887,7 @@ export default function FeesPage() {
                         </button>
                       </a>
                       <button
-                        onClick={() => {
-                          setEditingFeeId(fee._id);
-                          setNewFee({
-                            studentId: typeof fee.studentId === 'string' ? fee.studentId : fee.studentId?._id || '',
-                            amount: fee.amount.toString(),
-                            month: fee.month,
-                            utr: fee.utr,
-                            lastyear: fee.lastyear || fee.lastyeae || '',
-                            lasyearamount: (fee.lasyearamount != null && fee.lasyearamount !== '') ? fee.lasyearamount.toString() : (fee.lastyearamount || ''),
-                            status: fee.status,
-                            description: fee.description || '',
-                            paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-                          });
-                          setShowAddForm(false);
-                        }}
+                        onClick={() => handleEditClick(fee)}
                         style={{
                           background: 'rgba(59, 130, 246, 0.1)',
                           color: '#3b82f6',
