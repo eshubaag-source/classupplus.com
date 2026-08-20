@@ -7,8 +7,10 @@ import { ClassFee } from '@/models/ClassFee';
 import { VehicleFee } from '@/models/VehicleFee';
 import { getTokenPayload, getTeacherClassFilter } from '@/lib/auth';
 
-const normalizeGrade = (g: string) =>
-  g.trim().toLowerCase().replace(/^class\s+/i, '').replace(/(th|st|nd|rd)$/i, '').trim();
+export const dynamic = 'force-dynamic';
+
+const normalizeGrade = (g: any) =>
+  String(g || '').trim().toLowerCase().replace(/^class[-_\s]*/i, '').replace(/(th|st|nd|rd)$/i, '').trim();
 
 export async function GET(request: Request) {
   try {
