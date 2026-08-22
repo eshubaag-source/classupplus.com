@@ -58,86 +58,90 @@ async function getAllStudents() {
 }
 
 export async function GET() {
-  const { students, schoolName } = await getAllStudents();
+  try {
+    const { students, schoolName } = await getAllStudents();
 
-  const pdfDoc = await PDFDocument.create();
-  let page = pdfDoc.addPage([600, 800]);
-  const { height } = page.getSize();
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const pdfDoc = await PDFDocument.create();
+    let page = pdfDoc.addPage([600, 800]);
+    const { height } = page.getSize();
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-  // School Name Header
-  page.drawText(schoolName.toUpperCase(), {
-    x: 30,
-    y: height - 38,
-    size: 14,
-    font: fontBold,
-    color: rgb(0.09, 0.05, 0.4),
-  });
+    // School Name Header
+    page.drawText(schoolName.toUpperCase(), {
+      x: 30,
+      y: height - 38,
+      size: 14,
+      font: fontBold,
+      color: rgb(0.09, 0.05, 0.4),
+    });
 
-  // Report subtitle
-  page.drawText('All Students Record', {
-    x: 30,
-    y: height - 62,
-    size: 13,
-    font: fontRegular,
-    color: rgb(0.35, 0.35, 0.45),
-  });
+    // Report subtitle
+    page.drawText('All Students Record', {
+      x: 30,
+      y: height - 62,
+      size: 13,
+      font: fontRegular,
+      color: rgb(0.35, 0.35, 0.45),
+    });
 
-  const startY = height - 90;
-  const lineHeight = 14;
-  let y = startY;
+    const startY = height - 90;
+    const lineHeight = 14;
+    let y = startY;
 
-  const header = ['Name', 'Father', 'Roll', 'Class', 'Sec', 'Contact', 'Fee', 'Last Fee', 'Note'];
-  const colWidths =  [80,     80,       35,     40,      30,    80,        45,    50,         100];
-  let x = 30;
-  header.forEach((text, i) => {
-    page.drawText(text, { x, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
-    x += colWidths[i];
-  });
-
-  y -= lineHeight;
-  students.forEach((s: StudentRecord) => {
-    x = 30;
-    const row = [
-      s.name,
-      s.fatherName,
-      s.rollNumber,
-      s.grade,
-      s.section,
-      s.parentContact,
-      s.schoolFees.toString(),
-      s.lastFeesAmount.toString(),
-      s.note
-    ];
-    row.forEach((cell, i) => {
-      page.drawText(String(cell ?? ''), { x, y, size: 9, font: fontRegular, color: rgb(0, 0, 0) });
+    const header = ['Name', 'Father', 'Roll', 'Class', 'Sec', 'Contact', 'Fee', 'Last Fee', 'Note'];
+    const colWidths =  [80,     80,       35,     40,      30,    80,        45,    50,         100];
+    let x = 30;
+    header.forEach((text, i) => {
+      page.drawText(text, { x, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
       x += colWidths[i];
     });
+
     y -= lineHeight;
-    if (y < 50) {
-      // add new page if needed
-      page = pdfDoc.addPage([600, 800]);
-      y = height - 40;
-      
-      // Optionally redraw headers on new page
-      let hX = 30;
-      header.forEach((text, i) => {
-        page.drawText(text, { x: hX, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
-        hX += colWidths[i];
+    students.forEach((s: StudentRecord) => {
+      x = 30;
+      const row = [
+        s.name,
+        s.fatherName,
+        s.rollNumber,
+        s.grade,
+        s.section,
+        s.parentContact,
+        (s.schoolFees || 0).toString(),
+        (s.lastFeesAmount || 0).toString(),
+        s.note
+      ];
+      row.forEach((cell, i) => {
+        page.drawText(String(cell ?? ''), { x, y, size: 9, font: fontRegular, color: rgb(0, 0, 0) });
+        x += colWidths[i];
       });
       y -= lineHeight;
-    }
-  });
+      if (y < 50) {
+        // add new page if needed
+        page = pdfDoc.addPage([600, 800]);
+        y = height - 40;
+        
+        // Optionally redraw headers on new page
+        let hX = 30;
+        header.forEach((text, i) => {
+          page.drawText(text, { x: hX, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
+          hX += colWidths[i];
+        });
+        y -= lineHeight;
+      }
+    });
 
-  const pdfBytes = await pdfDoc.save();
-  const pdfBlob = new Uint8Array(pdfBytes);
+    const pdfBytes = await pdfDoc.save();
+    const pdfBlob = new Uint8Array(pdfBytes);
 
-  return new NextResponse(pdfBlob, {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="all-students.pdf"',
-    },
-  });
+    return new NextResponse(pdfBlob, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'attachment; filename="all-students.pdf"',
+      },
+    });
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message }, { status: 500 });
+  }
 }
