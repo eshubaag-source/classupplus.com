@@ -30,7 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { width, height } = page.getSize();
     const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    const title = `${student.name} - Student Record`;
+    const title = `${student.name} - Student Record`.replace(/[^\x00-\x7F]/g, '');
     page.drawText(title, {
       x: 30,
       y: height - 50,
@@ -49,7 +49,7 @@ Parent Contact: ${student.parentContact || 'N/A'}
 School Fees: Rs. ${student.schoolFees || 0}
 Last Fees Amount: Rs. ${student.lastFeesAmount || 0}
 Note: ${student.note || 'N/A'}
-`;
+`.replace(/[^\x00-\x7F]/g, '');
     page.drawText(content, {
       x: 30,
       y: height - 100,
