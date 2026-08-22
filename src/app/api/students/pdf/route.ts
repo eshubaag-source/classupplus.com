@@ -117,7 +117,8 @@ export async function GET(req: Request) {
         s.note
       ];
       row.forEach((cell, i) => {
-        page.drawText(String(cell ?? ''), { x, y, size: 9, font: fontRegular, color: rgb(0, 0, 0) });
+        const safeText = String(cell ?? '').replace(/[^\x00-\x7F]/g, '');
+        page.drawText(safeText, { x, y, size: 9, font: fontRegular, color: rgb(0, 0, 0) });
         x += colWidths[i];
       });
       y -= lineHeight;
