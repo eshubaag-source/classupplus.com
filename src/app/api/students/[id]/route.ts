@@ -14,7 +14,7 @@ export async function PUT(
     await dbConnect();
     const { id } = await params;
     const body = await req.json();
-    
+
     const payload = await getTokenPayload();
     if (!payload) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
