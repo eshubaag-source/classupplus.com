@@ -13,6 +13,8 @@ interface StudentRecord {
   section: string;
   parentContact: string;
   note: string;
+  schoolFees: number;
+  lastFeesAmount: number;
 }
 
 // Real function to fetch all students from DB
@@ -36,7 +38,7 @@ async function getAllStudents() {
 
   // Select only required fields
   const students = await Student.find(query)
-    .select('name fatherName rollNumber grade section parentContact note')
+    .select('name fatherName rollNumber grade section parentContact note schoolFees lastFeesAmount')
     .lean()
     .exec();
   // Normalize to the shape expected by PDF generator
@@ -49,6 +51,8 @@ async function getAllStudents() {
     section: s.section,
     parentContact: s.parentContact || '',
     note: s.note || '',
+    schoolFees: s.schoolFees || 0,
+    lastFeesAmount: s.lastFeesAmount || 0,
   }));
   return { students: records, schoolName };
 }
@@ -57,7 +61,7 @@ export async function GET() {
   const { students, schoolName } = await getAllStudents();
 
   const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([600, 800]);
+  let page = pdfDoc.addPage([600, 800]);
   const { height } = page.getSize();
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -84,27 +88,45 @@ export async function GET() {
   const lineHeight = 14;
   let y = startY;
 
-  const header = ['Name', 'Father', 'Roll', 'Class', 'Section', 'Contact', 'Note'];
-  const colWidths =  [100,    100,     50,    60,      60,         100,       90];
+  const header = ['Name', 'Father', 'Roll', 'Class', 'Sec', 'Contact', 'Fee', 'Last Fee', 'Note'];
+  const colWidths =  [80,     80,       35,     40,      30,    80,        45,    50,         100];
   let x = 30;
   header.forEach((text, i) => {
-    page.drawText(text, { x, y, size: 12, font: fontBold, color: rgb(0, 0, 0) });
+    page.drawText(text, { x, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
     x += colWidths[i];
   });
 
   y -= lineHeight;
   students.forEach((s: StudentRecord) => {
     x = 30;
-    const row = [s.name, s.fatherName, s.rollNumber, s.grade, s.section, s.parentContact, s.note];
+    const row = [
+      s.name,
+      s.fatherName,
+      s.rollNumber,
+      s.grade,
+      s.section,
+      s.parentContact,
+      s.schoolFees.toString(),
+      s.lastFeesAmount.toString(),
+      s.note
+    ];
     row.forEach((cell, i) => {
-      page.drawText(String(cell ?? ''), { x, y, size: 11, font: fontRegular, color: rgb(0, 0, 0) });
+      page.drawText(String(cell ?? ''), { x, y, size: 9, font: fontRegular, color: rgb(0, 0, 0) });
       x += colWidths[i];
     });
     y -= lineHeight;
     if (y < 50) {
-      // add new page if needed (simple handling)
-      const newPage = pdfDoc.addPage([600, 800]);
+      // add new page if needed
+      page = pdfDoc.addPage([600, 800]);
       y = height - 40;
+      
+      // Optionally redraw headers on new page
+      let hX = 30;
+      header.forEach((text, i) => {
+        page.drawText(text, { x: hX, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
+        hX += colWidths[i];
+      });
+      y -= lineHeight;
     }
   });
 
