@@ -97,7 +97,7 @@ export async function GET(req: Request) {
     let y = startY;
 
     const header = ['Name', 'Father', 'Roll', 'Class', 'Sec', 'Contact',  'Note'];
-    const colWidths =  [180,     180,       135,     140,  45,    80,  100];
+    const colWidths =  [110,     180,   35,     40,  45,    80,  100];
     let x = 30;
     header.forEach((text, i) => {
       page.drawText(text, { x, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
