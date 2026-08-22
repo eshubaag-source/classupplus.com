@@ -50,7 +50,7 @@ School Fees: Rs. ${student.schoolFees || 0}
 Last Fees Amount: Rs. ${student.lastFeesAmount || 0}
 Note: ${student.note || 'N/A'}
 `;
-    page.drawText(content, {  
+    page.drawText(content, {
       x: 30,
       y: height - 100,
       size: 12,
@@ -73,3 +73,5 @@ Note: ${student.note || 'N/A'}
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
+
+
