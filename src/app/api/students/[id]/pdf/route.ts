@@ -33,7 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const title = `${student.name} - Student Record`;
     page.drawText(title, {
       x: 30,
-      y: height - 50, 
+      y: height - 50,
       size: 20,
       font,
       color: rgb(0, 0, 0.8),
