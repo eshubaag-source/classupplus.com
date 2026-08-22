@@ -46,7 +46,7 @@ async function getAllStudents(req: Request) {
 
   // Select only required fields
   const students = await Student.find(query)
-    .select('name fatherName rollNumber grade section parentContact note schoolFees lastFeesAmount')
+    .select('name fatherName rollNumber grade section parentContact note  ')
     .lean()
     .exec();
   // Normalize to the shape expected by PDF generator
@@ -59,8 +59,7 @@ async function getAllStudents(req: Request) {
     section: s.section,
     parentContact: s.parentContact || '',
     note: s.note || '',
-    schoolFees: s.schoolFees || 0,
-    lastFeesAmount: s.lastFeesAmount || 0,
+   
   }));
   return { students: records, schoolName };
 }
@@ -97,8 +96,8 @@ export async function GET(req: Request) {
     const lineHeight = 14;
     let y = startY;
 
-    const header = ['Name', 'Father', 'Roll', 'Class', 'Sec', 'Contact', 'Fee', 'Last Fee', 'Note'];
-    const colWidths =  [80,     80,       35,     40,      30,    80,        45,    50,         100];
+    const header = ['Name', 'Father', 'Roll', 'Class', 'Sec', 'Contact',  'Note'];
+    const colWidths =  [80,     80,       35,     40,  45,    80,  100];
     let x = 30;
     header.forEach((text, i) => {
       page.drawText(text, { x, y, size: 10, font: fontBold, color: rgb(0, 0, 0) });
@@ -115,8 +114,6 @@ export async function GET(req: Request) {
         s.grade,
         s.section,
         s.parentContact,
-        (s.schoolFees || 0).toString(),
-        (s.lastFeesAmount || 0).toString(),
         s.note
       ];
       row.forEach((cell, i) => {
