@@ -18,7 +18,7 @@ interface StudentRecord {
 }
 
 // Real function to fetch all students from DB
-async function getAllStudents() {
+async function getAllStudents(req: Request) {
   const payload = await getTokenPayload();
   if (!payload) throw new Error('Unauthorized');
 
@@ -30,6 +30,14 @@ async function getAllStudents() {
   const schoolName = (adminDoc as any)?.schoolName || 'School';
 
   let query: any = { adminId };
+  
+  const { searchParams } = new URL(req.url);
+  const cls = searchParams.get('class');
+  const sec = searchParams.get('section');
+  
+  if (cls) query.grade = cls;
+  if (sec) query.section = sec;
+
   if (payload.role === 'teacher') {
     const classFilter = await getTeacherClassFilter(payload);
     if (!classFilter) throw new Error('Teacher profile not found');
@@ -57,9 +65,9 @@ async function getAllStudents() {
   return { students: records, schoolName };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const { students, schoolName } = await getAllStudents();
+    const { students, schoolName } = await getAllStudents(req);
 
     const pdfDoc = await PDFDocument.create();
     let page = pdfDoc.addPage([600, 800]);
