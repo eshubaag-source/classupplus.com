@@ -202,7 +202,11 @@ export default function StudentsPage() {
           )}
         </div>
         <div className="page-header-actions">
-          <a href="/api/students/pdf" target="_blank" style={{ textDecoration: 'none' }}>
+          <a 
+            href={`/api/students/pdf${filterClass || filterSection ? `?class=${encodeURIComponent(filterClass)}&section=${encodeURIComponent(filterSection)}` : ''}`} 
+            target="_blank" 
+            style={{ textDecoration: 'none' }}
+          >
             <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
               Download PDF
             </button>
