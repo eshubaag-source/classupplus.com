@@ -11,6 +11,9 @@ export async function GET(req: Request) {
     await dbConnect();
     const { searchParams } = new URL(req.url);
     const dateStr = searchParams.get('date');
+    const grade = searchParams.get('grade');
+    const section = searchParams.get('section');
+    
     if (!dateStr) {
       return new NextResponse('Date parameter is required', { status: 400 });
     }
@@ -32,6 +35,8 @@ export async function GET(req: Request) {
     const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
 
     let studentQuery: any = { adminId };
+    if (grade) studentQuery.grade = grade;
+    if (section) studentQuery.section = section;
     
     if (payload.role === 'teacher') {
       const classFilter = await getTeacherClassFilter(payload);
@@ -48,6 +53,8 @@ export async function GET(req: Request) {
       date: { $gte: startDate, $lte: endDate }
     }).lean().exec();
 
+    const daysInMonth = endDate.getDate();
+
     // Aggregate attendance
     const attendanceMap = new Map();
     students.forEach((s: any) => {
@@ -55,6 +62,7 @@ export async function GET(req: Request) {
         rollNumber: s.rollNumber,
         name: s.name,
         grade: `${s.grade} - ${s.section}`,
+        daily: {} as Record<number, string>,
         present: 0,
         absent: 0
       });
@@ -64,8 +72,14 @@ export async function GET(req: Request) {
       const sid = record.studentId.toString();
       const stats = attendanceMap.get(sid);
       if (stats) {
-        if (record.status === 'Present') stats.present += 1;
-        if (record.status === 'Absent') stats.absent += 1;
+        const recordDay = new Date(record.date).getDate();
+        if (record.status === 'Present') {
+          stats.present += 1;
+          stats.daily[recordDay] = 'P';
+        } else if (record.status === 'Absent') {
+          stats.absent += 1;
+          stats.daily[recordDay] = 'A';
+        }
       }
     });
 
@@ -73,14 +87,14 @@ export async function GET(req: Request) {
 
     // Generate PDF
     const pdfDoc = await PDFDocument.create();
-    let currentPage = pdfDoc.addPage([600, 800]); 
-    const { height } = currentPage.getSize();
+    let currentPage = pdfDoc.addPage([842, 595]); // Landscape A4
+    const { width, height } = currentPage.getSize();
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
     // School Name Header
     currentPage.drawText(schoolName.toUpperCase(), {
-      x: 50,
+      x: 30,
       y: height - 40,
       size: 20,
       font: fontBold,
@@ -89,47 +103,68 @@ export async function GET(req: Request) {
 
     // Report subtitle
     currentPage.drawText(`Monthly Attendance Report - ${monthName}`, {
-      x: 50,
-      y: height - 65,
+      x: 30,
+      y: height - 60,
       size: 13,
       font: fontRegular,
       color: rgb(0.35, 0.35, 0.45),
     });
 
-    const startY = height - 105;
-    const lineHeight = 20;
+    const startY = height - 90;
+    const lineHeight = 16;
     let y = startY;
 
-    const header = ['Roll No', 'Name', 'Class/Sec', 'Total Present', 'Total Absent'];
-    const colWidths = [80, 180, 100, 90, 90];
-    let x = 50;
+    // Header Columns
+    const startX = 30;
+    let x = startX;
     
-    header.forEach((text, i) => {
-      currentPage.drawText(text, { x, y, size: 12, font: fontBold, color: rgb(0, 0, 0) });
-      x += colWidths[i];
-    });
+    // Widths
+    const nameWidth = 140;
+    const classWidth = 70;
+    const dayWidth = 16;
+    const totalWidth = 35;
 
-    y -= lineHeight + 5;
+    // Draw Headers
+    currentPage.drawText('Name', { x, y, size: 9, font: fontBold });
+    x += nameWidth;
+    currentPage.drawText('Class/Sec', { x, y, size: 9, font: fontBold });
+    x += classWidth;
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      currentPage.drawText(i.toString(), { x, y, size: 9, font: fontBold });
+      x += dayWidth;
+    }
+
+    currentPage.drawText('P', { x, y, size: 9, font: fontBold });
+    x += totalWidth;
+    currentPage.drawText('A', { x, y, size: 9, font: fontBold });
+
+    y -= lineHeight;
     
     const rows = Array.from(attendanceMap.values());
     
     rows.forEach((row: any) => {
-      x = 50;
-      const rowData = [
-        (row.rollNumber || '-').substring(0, 10),
-        (row.name || '-').substring(0, 30),
-        (row.grade || '-').substring(0, 15),
-        row.present.toString(),
-        row.absent.toString()
-      ];
+      x = startX;
+      
+      currentPage.drawText((row.name || '-').substring(0, 25), { x, y, size: 8, font: fontRegular });
+      x += nameWidth;
+      
+      currentPage.drawText((row.grade || '-').substring(0, 15), { x, y, size: 8, font: fontRegular });
+      x += classWidth;
 
-      rowData.forEach((cell, i) => {
-        currentPage.drawText(cell, { x, y, size: 10, font: fontRegular, color: rgb(0, 0, 0) });
-        x += colWidths[i];
-      });
+      for (let i = 1; i <= daysInMonth; i++) {
+        const val = row.daily[i] || '-';
+        currentPage.drawText(val, { x, y, size: 8, font: fontRegular });
+        x += dayWidth;
+      }
+
+      currentPage.drawText(row.present.toString(), { x, y, size: 8, font: fontRegular });
+      x += totalWidth;
+      currentPage.drawText(row.absent.toString(), { x, y, size: 8, font: fontRegular });
+
       y -= lineHeight;
       if (y < 40) {
-        currentPage = pdfDoc.addPage([600, 800]);
+        currentPage = pdfDoc.addPage([842, 595]);
         y = height - 50;
       }
     });
