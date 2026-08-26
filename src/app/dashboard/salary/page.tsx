@@ -11,7 +11,7 @@ export default function SalaryPage() {
   const [schoolName, setSchoolName] = useState('');
   
   // State for recording/editing custom payment details
-  const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<any>(null); 
   const [showPayForm, setShowPayForm] = useState(false);
   const [payForm, setPayForm] = useState({
     amount: '',
