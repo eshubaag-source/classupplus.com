@@ -92,8 +92,14 @@ export async function GET(req: Request) {
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
+    const sanitizePdfText = (text: string) => {
+      if (!text) return '';
+      // Replace non-printable and non-ASCII characters with '?' to avoid WinAnsi encoding errors in pdf-lib
+      return text.replace(/[^\x20-\x7E\xA0-\xFF]/g, '?');
+    };
+
     // School Name Header
-    currentPage.drawText(schoolName.toUpperCase(), {
+    currentPage.drawText(sanitizePdfText(schoolName.toUpperCase()), {
       x: 30,
       y: height - 40,
       size: 20,
@@ -102,7 +108,7 @@ export async function GET(req: Request) {
     });
 
     // Report subtitle
-    currentPage.drawText(`Monthly Attendance Report - ${monthName}`, {
+    currentPage.drawText(`Monthly Attendance Report - ${sanitizePdfText(monthName)}`, {
       x: 30,
       y: height - 60,
       size: 13,
@@ -146,10 +152,12 @@ export async function GET(req: Request) {
     rows.forEach((row: any) => {
       x = startX;
       
-      currentPage.drawText((row.name || '-').substring(0, 25), { x, y, size: 8, font: fontRegular });
+      const safeName = sanitizePdfText(row.name || '-').substring(0, 25);
+      currentPage.drawText(safeName, { x, y, size: 8, font: fontRegular });
       x += nameWidth;
       
-      currentPage.drawText((row.grade || '-').substring(0, 15), { x, y, size: 8, font: fontRegular });
+      const safeGrade = sanitizePdfText(row.grade || '-').substring(0, 15);
+      currentPage.drawText(safeGrade, { x, y, size: 8, font: fontRegular });
       x += classWidth;
 
       for (let i = 1; i <= daysInMonth; i++) {
