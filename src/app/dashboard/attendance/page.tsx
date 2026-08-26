@@ -270,7 +270,7 @@ export default function AttendancePage() {
             />
           </div>
           {date && (
-            <a href={`/api/attendance/pdf?date=${date}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+            <a href={`/api/attendance/pdf?date=${date}${filterClass ? `&grade=${encodeURIComponent(filterClass)}` : ''}${filterSection ? `&section=${encodeURIComponent(filterSection)}` : ''}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
               <button
                 className="btn-primary"
                 style={{
