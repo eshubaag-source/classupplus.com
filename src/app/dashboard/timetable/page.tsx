@@ -33,7 +33,7 @@ export default function TimetablePage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
-  
+
   // Timetable state
   const [periods, setPeriods] = useState<TimetablePeriod[]>([]);
   const [originalPeriods, setOriginalPeriods] = useState<TimetablePeriod[]>([]);
@@ -41,18 +41,6 @@ export default function TimetablePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Form state for adding/editing a period
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newPeriod, setNewPeriod] = useState({
-    day: 'Monday',
-    periodNumber: '1',
-    startTime: '09:00',
-    endTime: '09:45',
-    subject: '',
-    grade: '',
-    section: '',
-    roomNumber: ''
-  });
 
   // Load user profile & role
   useEffect(() => {
@@ -114,21 +102,14 @@ export default function TimetablePage() {
   // Handle teacher dropdown change
   const handleTeacherChange = (teacherId: string) => {
     setSelectedTeacherId(teacherId);
-    const teacher = teachers.find(t => t._id === teacherId) || null;
-    setSelectedTeacher(teacher);
-    setShowAddForm(false);
     if (teacherId) {
+      const teacher = teachers.find(t => t._id === teacherId) || null;
+      setSelectedTeacher(teacher);
+
+      // Fetch timetable for the selected teacher from the backend
       fetchTimetable(teacherId);
-      // Pre-fill form values using the teacher's defaults
-      if (teacher) {
-        setNewPeriod(prev => ({
-          ...prev,
-          grade: teacher.grade || '',
-          section: teacher.section || '',
-          subject: teacher.subject || ''
-        }));
-      }
     } else {
+      setSelectedTeacher(null);
       setPeriods([]);
       setOriginalPeriods([]);
     }
@@ -141,42 +122,25 @@ export default function TimetablePage() {
     setPeriods(updated);
   };
 
-  // Handle local period add
-  const handleAddPeriodSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPeriod.subject || !newPeriod.grade || !newPeriod.section || !newPeriod.startTime || !newPeriod.endTime) {
-      alert('Please fill out all required fields.');
-      return;
-    }
-
-    // Basic time validation
-    if (newPeriod.startTime >= newPeriod.endTime) {
-      alert('Start time must be before end time.');
-      return;
-    }
-
-    const updated = [...periods, { ...newPeriod }];
-    // Sort periods locally
-    const daysOrder: Record<string, number> = {
-      'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
-    };
-    updated.sort((a, b) => {
-      const dayA = daysOrder[a.day] || 99;
-      const dayB = daysOrder[b.day] || 99;
-      if (dayA !== dayB) return dayA - dayB;
-      return a.startTime.localeCompare(b.startTime);
-    });
-
+  // Handle local period edit (inline in grid)
+  const handleUpdatePeriod = (index: number, field: keyof TimetablePeriod, value: string) => {
+    const updated = [...periods];
+    (updated[index] as any)[field] = value;
     setPeriods(updated);
-    setShowAddForm(false);
-    // Reset form fields except structural ones (grade, section, day) to help add multiple
-    setNewPeriod(prev => ({
-      ...prev,
-      periodNumber: String(Number(prev.periodNumber) + 1 || 1),
-      startTime: '',
-      endTime: '',
-      roomNumber: ''
-    }));
+  };
+
+  // Add a blank row to the grid
+  const handleAddBlankRow = () => {
+    setPeriods([...periods, {
+      day: 'Monday',
+      periodNumber: '1',
+      startTime: '07:00',
+      endTime: '07:45',
+      subject: selectedTeacher?.subject || '',
+      grade: selectedTeacher?.grade || '',
+      section: selectedTeacher?.section || '',
+      roomNumber: '1'
+    }]);
   };
 
   // Save the entire timetable draft to backend (Admin only)
@@ -231,14 +195,14 @@ export default function TimetablePage() {
 
   return (
     <div style={{ paddingBottom: '3rem' }}>
-      
+
       {/* Page Header */}
       <div className="page-header" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 className="page-title">{role === 'admin' ? 'Teacher Timetable Manager' : 'My Weekly Timetable'}</h1>
           <p style={{ color: 'var(--text-muted)' }}>
-            {role === 'admin' 
-              ? 'Schedule and manage weekly teaching periods for all instructors.' 
+            {role === 'admin'
+              ? 'Schedule and manage weekly teaching periods for all instructors.'
               : 'View your scheduled periods, classes, and room assignments for the week.'
             }
           </p>
@@ -272,33 +236,6 @@ export default function TimetablePage() {
               ))}
             </select>
 
-            {selectedTeacher && (
-              <button
-                className="btn-primary"
-                onClick={() => {
-                  setNewPeriod(prev => ({
-                    ...prev,
-                    grade: selectedTeacher.grade || '',
-                    section: selectedTeacher.section || '',
-                    subject: selectedTeacher.subject || '',
-                    day: 'Monday',
-                    periodNumber: '1',
-                    startTime: '09:00',
-                    endTime: '09:45',
-                    roomNumber: ''
-                  }));
-                  setShowAddForm(true);
-                }}
-                style={{
-                  padding: '10px 18px',
-                  borderRadius: '10px',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                }}
-              >
-                + Add Period
-              </button>
-            )}
 
             {hasUnsavedChanges && (
               <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
@@ -395,124 +332,7 @@ export default function TimetablePage() {
         </div>
       )}
 
-      {/* Add Period Modal/Form */}
-      {showAddForm && (
-        <div className="glass card" style={{
-          padding: '24px',
-          marginBottom: '2rem',
-          animation: 'slideDown 0.3s ease',
-          border: '1px solid var(--primary)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3 style={{ color: 'var(--primary)', fontSize: '1.15rem' }}>Add Timetable Period</h3>
-            <button
-              onClick={() => setShowAddForm(false)}
-              style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-muted)' }}
-            >
-              ✕
-            </button>
-          </div>
-          
-          <form onSubmit={handleAddPeriodSubmit} style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '1.2rem'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Day of Week *</label>
-              <select
-                value={newPeriod.day}
-                onChange={e => setNewPeriod({ ...newPeriod, day: e.target.value })}
-                required
-              >
-                {DAYS_OF_WEEK.map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Period Number/Name *</label>
-              <input
-                type="text"
-                placeholder="e.g. 1st or Period 1"
-                value={newPeriod.periodNumber}
-                onChange={e => setNewPeriod({ ...newPeriod, periodNumber: e.target.value })}
-                required
-              />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Start Time *</label>
-              <input
-                type="time"
-                value={newPeriod.startTime}
-                onChange={e => setNewPeriod({ ...newPeriod, startTime: e.target.value })}
-                required
-              />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>End Time *</label>
-              <input
-                type="time"
-                value={newPeriod.endTime}
-                onChange={e => setNewPeriod({ ...newPeriod, endTime: e.target.value })}
-                required
-              />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Subject *</label>
-              <input
-                type="text"
-                placeholder="e.g. Mathematics"
-                value={newPeriod.subject}
-                onChange={e => setNewPeriod({ ...newPeriod, subject: e.target.value })}
-                required
-              />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Grade / Class *</label>
-              <input
-                type="text"
-                placeholder="e.g. 10th"
-                value={newPeriod.grade}
-                onChange={e => setNewPeriod({ ...newPeriod, grade: e.target.value })}
-                required
-              />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Section *</label>
-              <input
-                type="text"
-                placeholder="e.g. A"
-                value={newPeriod.section}
-                onChange={e => setNewPeriod({ ...newPeriod, section: e.target.value })}
-                required
-              />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Room Number</label>
-              <input
-                type="text"
-                placeholder="e.g. Lab 2 or Room 102"
-                value={newPeriod.roomNumber}
-                onChange={e => setNewPeriod({ ...newPeriod, roomNumber: e.target.value })}
-              />
-            </div>
-
-            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-              <button type="submit" className="btn-primary" style={{ minWidth: '150px' }}>
-                Add Period to Grid
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* Main Timetable Display Area */}
       {loading ? (
@@ -524,6 +344,66 @@ export default function TimetablePage() {
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🗓️</div>
           <h2>No Teacher Selected</h2>
           <p style={{ marginTop: '0.5rem' }}>Please select an instructor from the dropdown list to manage or create their period timetable.</p>
+        </div>
+      ) : role === 'admin' ? (
+        <div className="glass card" style={{ padding: '20px', overflowX: 'auto', background: 'var(--glass-bg)', borderRadius: '16px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--glass-border)', color: 'var(--text-muted)' }}>
+                <th style={{ padding: '12px 8px' }}>Day</th>
+                <th style={{ padding: '12px 8px' }}>Period</th>
+                <th style={{ padding: '12px 8px' }}>Time</th>
+                <th style={{ padding: '12px 8px' }}>Subject</th>
+                <th style={{ padding: '12px 8px' }}>Class</th>
+                <th style={{ padding: '12px 8px' }}>Sec</th>
+                <th style={{ padding: '12px 8px' }}>Room</th>
+                <th style={{ padding: '12px 8px', textAlign: 'center' }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {periods.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>No periods entered yet. Click "+ Add Blank Period" below.</td>
+                </tr>
+              ) : (
+                periods.map((p, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                    <td style={{ padding: '8px' }}>
+                      <select value={p.day} onChange={e => handleUpdatePeriod(i, 'day', e.target.value)} style={{ width: '100px', padding: '6px', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'rgba(255, 255, 255, 0.5)' }}>
+                        {DAYS_OF_WEEK.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: '8px' }}>
+                      <input type="text" value={p.periodNumber} onChange={e => handleUpdatePeriod(i, 'periodNumber', e.target.value)} placeholder="1st" style={{ width: '60px', padding: '6px', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'rgba(255, 255, 255, 0.5)' }} />
+                    </td>
+                    <td style={{ padding: '8px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                      <input type="time" value={p.startTime} onChange={e => handleUpdatePeriod(i, 'startTime', e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'rgba(255, 255, 255, 0.5)' }} />
+                      -
+                      <input type="time" value={p.endTime} onChange={e => handleUpdatePeriod(i, 'endTime', e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'rgba(255, 255, 255, 0.5)' }} />
+                    </td>
+                    <td style={{ padding: '8px' }}>
+                      <input type="text" value={p.subject} onChange={e => handleUpdatePeriod(i, 'subject', e.target.value)} placeholder="Subject" style={{ width: '120px', padding: '6px', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'rgba(255, 255, 255, 0.5)' }} />
+                    </td>
+                    <td style={{ padding: '8px' }}>
+                      <input type="text" value={p.grade} onChange={e => handleUpdatePeriod(i, 'grade', e.target.value)} placeholder="Class" style={{ width: '60px', padding: '6px', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'rgba(255, 255, 255, 0.5)' }} />
+                    </td>
+                    <td style={{ padding: '8px' }}>
+                      <input type="text" value={p.section} onChange={e => handleUpdatePeriod(i, 'section', e.target.value)} placeholder="Sec" style={{ width: '60px', padding: '6px', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'rgba(255, 255, 255, 0.5)' }} />
+                    </td>
+                    <td style={{ padding: '8px' }}>
+                      <input type="text" value={p.roomNumber || ''} onChange={e => handleUpdatePeriod(i, 'roomNumber', e.target.value)} placeholder="Room" style={{ width: '70px', padding: '6px', borderRadius: '4px', border: '1px solid var(--glass-border)', background: 'rgba(255, 255, 255, 0.5)' }} />
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <button onClick={() => handleDeletePeriod(i)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.2rem' }} title="Delete Row">✕</button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          <div style={{ marginTop: '1rem' }}>
+            <button className="btn-secondary" onClick={handleAddBlankRow} style={{ padding: '8px 16px', fontSize: '0.9rem', borderRadius: '8px', fontWeight: 600, border: '1px solid var(--primary)', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', cursor: 'pointer' }}>+ Add Blank Period</button>
+          </div>
         </div>
       ) : (
         <div style={{
@@ -545,8 +425,8 @@ export default function TimetablePage() {
                 boxShadow: 'var(--shadow)',
                 transition: 'transform 0.2s ease',
               }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 {/* Day Header */}
                 <div style={{
@@ -600,21 +480,21 @@ export default function TimetablePage() {
                       // Find direct index in main periods list to delete correctly
                       const globalIndex = periods.indexOf(period);
                       return (
-                        <div key={index} 
+                        <div key={index}
                           onClick={() => {
                             router.push(`/dashboard/classpaper?class=${encodeURIComponent(period.grade)}&section=${encodeURIComponent(period.section)}&subject=${encodeURIComponent(period.subject)}`);
                           }}
                           style={{
-                          padding: '12px 14px',
-                          borderRadius: '12px',
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          border: '1px solid var(--glass-border)',
-                          position: 'relative',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '6px',
-                          cursor: 'pointer'
-                        }}>
+                            padding: '12px 14px',
+                            borderRadius: '12px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid var(--glass-border)',
+                            position: 'relative',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '6px',
+                            cursor: 'pointer'
+                          }}>
                           {/* Top Row: Period Num & Delete button if Admin */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{
@@ -629,7 +509,7 @@ export default function TimetablePage() {
                             }}>
                               {period.periodNumber} Period
                             </span>
-                            
+
                             {role === 'admin' && (
                               <button
                                 onClick={() => handleDeletePeriod(globalIndex)}
