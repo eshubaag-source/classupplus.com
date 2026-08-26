@@ -8,7 +8,7 @@ const TeacherSalarySchema = new mongoose.Schema({
   month: { type: String, required: true }, // formatted as YYYY-MM, e.g., "2026-07"
   paidDate: { type: Date },
   paymentMode: { type: String, enum: ['Cash', 'Bank Transfer', 'Cheque', 'UPI', 'Other'], default: 'Cash' },
-  note: { type: String, default: '' },
+  note: { type: String, default: '' }, 
   createdAt: { type: Date, default: Date.now },
 });
 
