@@ -12,6 +12,7 @@ const FeesSchema = new mongoose.Schema({
   utr: { type: String },
   lastyear: { type: String },
   lasyearamount: { type: String },
+  discount: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
 });
 
