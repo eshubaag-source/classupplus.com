@@ -78,6 +78,7 @@ export async function GET(request: Request) {
           <td>${e(fee.city)}</td>
           <td>${e(fee.utr)}</td>
           <td>${e(fee.month)}</td>
+          <td>${(fee as any).discount ? `Rs. ${(fee as any).discount}` : '—'}</td>
           <td><strong>Rs. ${e(fee.amount)}</strong></td>
           <td>${fee.lastyear ? `Rs. ${e(fee.lastyear)}` : '—'}</td>
           <td>${lastYearPaidDisplay}</td>
@@ -146,10 +147,10 @@ export async function GET(request: Request) {
         <tr>
           <th>Receipt No</th><th>Student</th><th>Father Name</th><th>Class/Sec</th>
           <th>Bus No</th><th>City</th><th>UTR</th><th>Month</th>
-          <th>Paid Amt</th><th>Last Year</th><th>Last Year Paid</th><th>Status</th><th>Date</th>
+          <th>Discount</th><th>Paid Amt</th><th>Last Year</th><th>Last Year Paid</th><th>Status</th><th>Date</th>
         </tr>
       </thead>
-      <tbody>${rows || '<tr><td colspan="13" style="text-align:center;padding:32px;color:#6b7280">No records found.</td></tr>'}</tbody>
+      <tbody>${rows || '<tr><td colspan="14" style="text-align:center;padding:32px;color:#6b7280">No records found.</td></tr>'}</tbody>
     </table>
   </div>
   <button class="print-btn" onclick="printPdf()">🖨️ Print / Save as PDF</button>
@@ -222,7 +223,7 @@ export async function GET(request: Request) {
         <td>${e(schoolFeeRecord.month)}</td>
         <td>${classAmount > 0 ? `Rs. ${classAmount}` : '—'}</td>
         <td><strong>Rs. ${e(schoolFeeRecord.amount)}</strong></td>
-        <td class="red">Rs. ${Math.max(0, classAmount - schoolFeeRecord.amount)}</td>
+        <td class="red">Rs. ${Math.max(0, classAmount - schoolFeeRecord.amount - (schoolFeeRecord.discount ? Number(schoolFeeRecord.discount) : 0))}</td>
       </tr>` : '';
 
       const vehicleRow = vehicleFeeRecord ? `<tr>
@@ -230,7 +231,7 @@ export async function GET(request: Request) {
         <td>${e(vehicleFeeRecord.month)}</td>
         <td>${transportTotal > 0 ? `Rs. ${transportTotal}` : '—'}</td>
         <td><strong>Rs. ${e(vehicleFeeRecord.amount)}</strong></td>
-        <td class="red">Rs. ${Math.max(0, transportTotal - vehicleFeeRecord.amount)}</td>
+        <td class="red">Rs. ${Math.max(0, transportTotal - vehicleFeeRecord.amount - (vehicleFeeRecord.discount ? Number(vehicleFeeRecord.discount) : 0))}</td>
       </tr>` : '';
 
       return `<div class="receipt">
