@@ -81,7 +81,8 @@ export async function GET(
     if (classAmount === 0 && (fee as any).classFee) {
       classAmount = Number((fee as any).classFee) || 0;
     }
-    const balance = Math.max(0, classAmount - fee.amount);
+    const discountAmt = (fee as any).discount ? Number((fee as any).discount) : 0;
+    const balance = Math.max(0, classAmount - fee.amount - discountAmt);
 
     const dateStr = fee.paidDate
       ? new Date(fee.paidDate).toLocaleDateString('en-IN', { dateStyle: 'medium' })
@@ -323,6 +324,7 @@ export async function GET(
             <th>Description</th>
             <th>Month</th>
             <th>Class Fee</th>
+            ${(fee as any).discount ? `<th>Discount</th>` : ''}
             <th>Paid Amt</th>
             <th>Balance</th>
           </tr>
@@ -332,6 +334,7 @@ export async function GET(
             <td>School Fees</td>
             <td>${(fee as any).month || '—'}</td>
             <td>${classAmount > 0 ? `Rs. ${classAmount}` : '—'}</td>
+            ${(fee as any).discount ? `<td>Rs. ${(fee as any).discount}</td>` : ''}
             <td class="amt">Rs. ${fee.amount}</td>
             <td class="red">Rs. ${balance}</td>
           </tr>
@@ -339,6 +342,7 @@ export async function GET(
             <td>Last Year Fees</td>
             <td>—</td>
             <td>Rs. ${lastYearNum}</td>
+            ${(fee as any).discount ? `<td>—</td>` : ''}
             <td class="amt">Rs. ${lastYearPaidNum}</td>
             <td class="${lastYearBalance > 0 ? 'red' : 'green'}">Rs. ${lastYearBalance}</td>
           </tr>` : ''}
