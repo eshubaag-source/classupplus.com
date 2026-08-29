@@ -16,6 +16,7 @@ export interface IVehicleFee extends Document {
   lastyear?: number; // last year outstanding fee amount
   lasyearamount?: number;
   utr?: string; 
+  discount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +42,7 @@ const VehicleFeeSchema: Schema = new Schema(
     lastyear: { type: Number },
     lasyearamount: { type: Number },
     utr: { type: String },
+    discount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
