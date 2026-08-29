@@ -110,6 +110,7 @@ export async function GET(request: Request) {
           <td>${e(feeType)}</td>
           <td>${e(fee.utr)}</td>
           <td>${e(fee.month)}</td>
+          <td>${(fee as any).discount ? `Rs. ${(fee as any).discount}` : '—'}</td>
           <td><strong>Rs. ${e(fee.amount)}</strong></td>
           <td>${fee.lastyear ? `Rs. ${e(fee.lastyear)}` : '—'}</td>
           <td>${lastYearPaidDisplay}</td>
@@ -177,11 +178,11 @@ export async function GET(request: Request) {
       <thead>
         <tr>
           <th>Receipt No</th><th>Student</th><th>Father Name</th><th>Class/Sec</th>
-          <th>Type</th><th>UTR</th><th>Month</th><th>Paid Amt</th>
+          <th>Type</th><th>UTR</th><th>Month</th><th>Discount</th><th>Paid Amt</th>
           <th>Last Fees</th><th>Last Year Amount</th><th>Status</th><th>Date</th>
         </tr>
       </thead>
-      <tbody>${rows || '<tr><td colspan="12" style="text-align:center;padding:32px;color:#6b7280">No records found.</td></tr>'}</tbody>
+      <tbody>${rows || '<tr><td colspan="13" style="text-align:center;padding:32px;color:#6b7280">No records found.</td></tr>'}</tbody>
     </table>
   </div>
   <button class="print-btn" onclick="printPdf()">🖨️ Print / Save as PDF</button>
@@ -211,7 +212,8 @@ export async function GET(request: Request) {
       const classAmount = findClassFeeAmount(student.grade, student.subject);
       const isVehicle = !!(fee as any).totalFees;
       const expectedAmount = isVehicle ? ((fee as any).totalFees || 0) : classAmount;
-      const balance = Math.max(0, expectedAmount - fee.amount);
+      const discountAmt = (fee as any).discount ? Number((fee as any).discount) : 0;
+      const balance = Math.max(0, expectedAmount - fee.amount - discountAmt);
       const dateStr = fee.paidDate
         ? new Date(fee.paidDate).toLocaleDateString('en-IN', { dateStyle: 'medium' })
         : fee.createdAt ? new Date(fee.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' }) : '—';
