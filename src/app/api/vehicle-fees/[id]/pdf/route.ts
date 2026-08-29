@@ -40,7 +40,8 @@ export async function GET(
     const schoolName = (admin?.schoolName || 'Classupplus').toUpperCase();
 
     const totalFees = fee.totalFees || 0;
-    const balance = Math.max(0, totalFees - fee.amount);
+    const discountAmt = (fee as any).discount ? Number((fee as any).discount) : 0;
+    const balance = Math.max(0, totalFees - fee.amount - discountAmt);
       const lastYearVal = (fee as any).lastyear || (fee as any).lastyeae;
     const hasLastYear = lastYearVal && lastYearVal !== '—' && String(lastYearVal).trim() !== '' && String(lastYearVal).trim() !== '0';
     const lastYearNum = Number(lastYearVal) || 0;
@@ -295,6 +296,7 @@ export async function GET(
             <th>Description</th>
             <th>Month</th>
             <th>Route Fee</th>
+            ${(fee as any).discount ? `<th>Discount</th>` : ''}
             <th>Paid Amt</th>
             <th>Balance</th>
           </tr>
@@ -304,6 +306,7 @@ export async function GET(
             <td>Vehicle Transport</td>
             <td>${e((fee as any).month)}</td>
             <td>${totalFees > 0 ? `Rs. ${totalFees}` : '—'}</td>
+            ${(fee as any).discount ? `<td>Rs. ${(fee as any).discount}</td>` : ''}
             <td class="amt">Rs. ${e(fee.amount)}</td>
             <td class="${balance > 0 ? 'red' : 'green'}">Rs. ${balance}</td>
           </tr>
@@ -311,6 +314,7 @@ export async function GET(
             <td>Last Year Fees</td>
             <td>—</td>
             <td>Rs. ${lastYearNum}</td>
+            ${(fee as any).discount ? `<td>—</td>` : ''}
             <td class="amt">Rs. ${lastYearPaidNum}</td>
             <td class="${lastYearBalance > 0 ? 'red' : 'green'}">Rs. ${lastYearBalance}</td>
           </tr>` : ''}
