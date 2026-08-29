@@ -1,4 +1,4 @@
-'use client';
+ 'use client';
 
 import { last } from 'pdf-lib';
 import { useState, useEffect } from 'react';
@@ -20,6 +20,7 @@ export default function FeesPage() {
     month: '',
     lastyear: '',
     lasyearamount: '',
+    discount: '',
     status: 'Pending',
     description: '',
     paidDate: new Date().toISOString().split('T')[0]
@@ -156,6 +157,7 @@ export default function FeesPage() {
       utr: '',
       lastyear: '',
       lasyearamount: '',
+      discount: '',
       month: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
       status: 'Paid',
       description: '',
@@ -173,6 +175,7 @@ export default function FeesPage() {
       utr: fee.utr,
       lastyear: fee.lastyear,
       lasyearamount: (fee.lasyearamount != null && fee.lasyearamount !== '') ? fee.lasyearamount.toString() : (fee.lastyearamount || ''),
+      discount: fee.discount !== undefined ? fee.discount.toString() : '',
       status: fee.status,
       description: fee.description || '',
       paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
@@ -212,7 +215,7 @@ export default function FeesPage() {
     try {
       const res = await fetch(url, {
         method,
-        body: JSON.stringify({ ...newFee, amount: parsedAmount }),
+        body: JSON.stringify({ ...newFee, amount: parsedAmount, discount: Number(newFee.discount || 0) }),
         headers: { 'Content-Type': 'application/json' },
       });
       if (res.ok) {
@@ -224,6 +227,7 @@ export default function FeesPage() {
           utr: '',
           lastyear: '',
           lasyearamount: '',
+          discount: '',
           description: '',
           paidDate: new Date().toISOString().split('T')[0]
         });
@@ -604,6 +608,18 @@ export default function FeesPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                Discount (₹) <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '0.8rem' }}>(optional)</span>
+              </label>
+              <input
+                type="number"
+                placeholder="Enter discount"
+                value={newFee.discount}
+                onChange={e => setNewFee({ ...newFee, discount: e.target.value })}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label>Month</label>
               <input type="text" value={newFee.month} onChange={e => setNewFee({ ...newFee, month: e.target.value })} required />
             </div>
@@ -725,6 +741,7 @@ export default function FeesPage() {
               <th style={{ padding: '16px' }}>Type</th>
               <th style={{ padding: '16px' }}>For Month</th>
               <th style={{ padding: '16px' }}>Class Fee</th>
+              <th style={{ padding: '16px' }}>Discount</th>
               <th style={{ padding: '16px' }}>Paid Amount</th>
               <th style={{ padding: '16px' }}>Balance</th>
               <th style={{ padding: '16px' }}>Utr</th>
@@ -821,6 +838,9 @@ export default function FeesPage() {
                       );
                     })()}
                   </td>
+                  <td style={{ padding: '16px', fontWeight: 600, color: '#d97706' }}>
+                    {fee.discount ? `₹${fee.discount}` : '—'}
+                  </td>
                   <td style={{ padding: '16px', fontWeight: 700 }}>₹{fee.amount}</td>
                   <td style={{ padding: '16px', fontWeight: 600 }}>
                     {(() => {
@@ -844,7 +864,8 @@ export default function FeesPage() {
                       }
 
                       if (totalFee === null) return '—';
-                      const balance = totalFee - Number(fee.amount);
+                      const discountAmt = fee.discount ? Number(fee.discount) : 0;
+                      const balance = totalFee - Number(fee.amount) - discountAmt;
                       return balance > 0
                         ? <span style={{ color: '#ef4444' }}>₹{balance}</span>
                         : <span style={{ color: '#10b981' }}>₹0</span>;
@@ -910,4 +931,4 @@ export default function FeesPage() {
       </div>
     </div>
   )
-}
+} 
