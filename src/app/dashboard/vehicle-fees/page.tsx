@@ -72,6 +72,7 @@ export default function VehicleFeesPage() {
     lasyearamount: '',
     busNumber: '',
     totalFees: '',
+    discount: '',
     description: '',
     paidDate: new Date().toISOString().split('T')[0]
   });
@@ -178,6 +179,7 @@ export default function VehicleFeesPage() {
       lasyearamount: newFee.lasyearamount !== '' ? Number(newFee.lasyearamount) : undefined,
       busNumber: newFee.busNumber,
       totalFees: newFee.totalFees !== '' ? Number(newFee.totalFees) : undefined,
+      discount: newFee.discount !== '' ? Number(newFee.discount) : 0,
       description: newFee.description,
       status: newFee.status,
       category: 'vehicle',
@@ -234,7 +236,7 @@ export default function VehicleFeesPage() {
         setFees((prev) => [...prev, createdFee]);
       }
       // Reset form
-      setNewFee({ studentId: '', fatherName: '', amount: '', utr: '', lastyear: '', lasyearamount: '', month: '', status: 'Pending', city: '', busNumber: '', totalFees: '', description: '', paidDate: new Date().toISOString().split('T')[0] });
+      setNewFee({ studentId: '', fatherName: '', amount: '', utr: '', lastyear: '', lasyearamount: '', month: '', status: 'Pending', city: '', busNumber: '', totalFees: '', discount: '', description: '', paidDate: new Date().toISOString().split('T')[0] });
       setShowAddForm(false);
     } catch (err: any) {
       alert('Network error: ' + err.message);
@@ -499,6 +501,15 @@ export default function VehicleFeesPage() {
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label>Discount (₹) <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '0.8rem' }}>(optional)</span></label>
+              <input
+                type="number"
+                placeholder="Enter discount"
+                value={newFee.discount}
+                onChange={(e) => setNewFee({ ...newFee, discount: e.target.value })}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label>Total Route Fees</label>
               <input
                 type="number"
@@ -586,6 +597,7 @@ export default function VehicleFeesPage() {
               <th style={{ padding: '16px' }}>Last Year Fees</th>
               <th style={{ padding: '16px' }}>Last Year Fees Paid</th>
               <th style={{ padding: '16px' }}>Total Fees</th>
+              <th style={{ padding: '16px' }}>Discount</th>
               <th style={{ padding: '16px' }}>Amount Paid</th>
               <th style={{ padding: '16px' }}>Balance</th>
               <th style={{ padding: '16px' }}>Status</th>
@@ -643,10 +655,14 @@ export default function VehicleFeesPage() {
                       : ((fee.lasyearamount != null && fee.lasyearamount !== '') ? fee.lasyearamount : (fee.lastyearamount != null && fee.lastyearamount !== '' ? fee.lastyearamount : '—'))}
                   </td>
                   <td style={{ padding: '16px', fontWeight: 600, color: '#6366f1' }}>{`₹${fee.totalFees ?? 0}`}</td>
+                  <td style={{ padding: '16px', fontWeight: 600, color: '#d97706' }}>
+                    {(fee as any).discount ? `₹${(fee as any).discount}` : '—'}
+                  </td>
                   <td style={{ padding: '16px', fontWeight: 700 }}>₹{fee.amount}</td>
                   <td style={{ padding: '16px', fontWeight: 600, color: '#ef4444' }}>
                     {(() => {
-                      const balance = (fee.totalFees ?? 0) - fee.amount;
+                      const discountAmt = (fee as any).discount ? Number((fee as any).discount) : 0;
+                      const balance = (fee.totalFees ?? 0) - fee.amount - discountAmt;
                       return balance > 0 ? `₹${balance}` : '₹0';
                     })()}
                   </td>
@@ -694,6 +710,7 @@ export default function VehicleFeesPage() {
                             city: fee.city || '',
                             busNumber: fee.busNumber || '',
                             totalFees: fee.totalFees != null ? fee.totalFees.toString() : '',
+                            discount: (fee as any).discount != null ? (fee as any).discount.toString() : '',
                             description: fee.description || '',
                             paidDate: fee.paidDate ? new Date(fee.paidDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
                           });
