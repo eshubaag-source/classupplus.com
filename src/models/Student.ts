@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const StudentSchema = new mongoose.Schema({
   adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true, index: true },
+  teacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', required: false, index: true },
   name: { type: String, required: true },
   fatherName: { type: String, required: true },
   rollNumber: { type: String, required: true },
@@ -9,7 +10,6 @@ const StudentSchema = new mongoose.Schema({
   section: { type: String, required: true },
   parentContact: { type: String },
   note: { type: String, required: false },
-  // schoolFees: { type: Number, default: 0 },
   // lastFeesAmount: { type: Number, default: 0 },
   subjectPaperNumber: { type: String, default: '' },
   subject: { type: String, default: '' },
