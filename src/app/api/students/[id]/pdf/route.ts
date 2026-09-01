@@ -16,7 +16,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (!student) {
       return NextResponse.json({ message: 'Student not found' }, { status: 404 });
     }
-
+ 
     if (payload.role === 'teacher') {
       const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
