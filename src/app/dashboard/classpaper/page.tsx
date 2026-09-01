@@ -67,6 +67,11 @@ function ClassPaperContent() {
     if (profile.schoolName) setSchoolName(profile.schoolName);
     if (profile.role) setUserRole(profile.role);
     
+    if (profile.role === 'teacher' && profile.subject) {
+      setGlobalSubject(profile.subject);
+      setUrlSubject(profile.subject);
+    }
+    
     const list = Array.isArray(data) ? data : [];
     setStudents(list);
   };
