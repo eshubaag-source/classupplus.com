@@ -65,9 +65,9 @@ export async function POST(request: Request) {
     if (!student) return NextResponse.json({ message: 'Student not found' }, { status: 404 });
 
     if (payload.role === 'teacher') {
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
-        return NextResponse.json({ message: 'Unauthorized to add fee for this student' }, { status: 403 });
+        return NextResponse.json({ message: 'Unauthorized for this student' }, { status: 403 });
       }
     }
 
