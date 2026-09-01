@@ -36,7 +36,7 @@ export async function PUT(
       { new: true, runValidators: true }
     );
 
-    return NextResponse.json(updatedFee);
+    return NextResponse.json(updatedFee ? updatedFee.toJSON() : null);
   } catch (error: any) {
     return NextResponse.json({ message: error.message || 'Failed to update fee' }, { status: 500 });
   }
