@@ -17,7 +17,7 @@ function ClassPaperContent() {
   const [selectedClass, setSelectedClass] = useState(searchParams?.get('class') || '');
   const [selectedSection, setSelectedSection] = useState(searchParams?.get('section') || '');
   const [urlSubject, setUrlSubject] = useState(searchParams?.get('subject') || '');
-  
+
   // Global settings for bulk marks entry
   const [globalSubject, setGlobalSubject] = useState('');
   const [globalDate, setGlobalDate] = useState(new Date().toISOString().split('T')[0]);
@@ -67,11 +67,11 @@ function ClassPaperContent() {
     if (profile.schoolName) setSchoolName(profile.schoolName);
     if (profile.role) setUserRole(profile.role);
     
-    if (profile.role === 'teacher' && profile.subject) {
+    if (profile.role === 'teacher' && profile.subject && !searchParams?.get('subject')) {
       setGlobalSubject(profile.subject);
       setUrlSubject(profile.subject);
     }
-    
+
     const list = Array.isArray(data) ? data : [];
     setStudents(list);
   };
@@ -144,7 +144,7 @@ function ClassPaperContent() {
     setSendResult(null);
     try {
       const studentIds = filteredStudents.map(s => s._id);
-      
+
       const messages: Record<string, string> = {};
       filteredStudents.forEach(s => {
         const marks = s.classPaperMarks || [];
@@ -194,7 +194,7 @@ function ClassPaperContent() {
   const handleSaveBulkMarks = async () => {
     if (!globalSubject.trim()) return alert('Please enter a Subject.');
     if (!globalTotalMarks.trim()) return alert('Please enter Total Marks.');
-    
+
     const studentsToUpdate = Object.entries(bulkMarks).filter(([_, mark]) => mark.trim() !== '');
     if (studentsToUpdate.length === 0) return alert('No marks entered to save.');
 
@@ -208,13 +208,13 @@ function ClassPaperContent() {
 
         let currentMarks = [...(student.classPaperMarks || [])];
         if (currentMarks.length === 0 && (student.subject || student.totalNumber || student.subjectPaperNumber)) {
-           // migrate old structure
-           currentMarks = [{
-             subject: student.subject || '',
-             totalNumber: student.totalNumber || '',
-             subjectPaperNumber: student.subjectPaperNumber || '',
-             date: ''
-           }];
+          // migrate old structure
+          currentMarks = [{
+            subject: student.subject || '',
+            totalNumber: student.totalNumber || '',
+            subjectPaperNumber: student.subjectPaperNumber || '',
+            date: ''
+          }];
         }
 
         const newMark = {
@@ -259,7 +259,7 @@ function ClassPaperContent() {
 
   const filteredStudents = students.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          s.rollNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      s.rollNumber.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesClass = selectedClass ? s.grade === selectedClass : true;
     const matchesSection = selectedSection ? s.section === selectedSection : true;
     return matchesSearch && matchesClass && matchesSection;
@@ -389,25 +389,25 @@ function ClassPaperContent() {
             <input type="number" value={globalTotalMarks} onChange={e => setGlobalTotalMarks(e.target.value)} style={inputStyle} placeholder="e.g. 100" />
           </div>
           <div>
-             <button
-                onClick={handleSaveBulkMarks}
-                disabled={isSavingBulk || Object.keys(bulkMarks).length === 0}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: (isSavingBulk || Object.keys(bulkMarks).length === 0) ? 'not-allowed' : 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.95rem',
-                  background: (isSavingBulk || Object.keys(bulkMarks).length === 0) ? '#cbd5e1' : 'linear-gradient(135deg, #10b981, #059669)',
-                  color: '#fff',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {isSavingBulk ? 'Saving...' : '💾 Save All Marks'}
-              </button>
+            <button
+              onClick={handleSaveBulkMarks}
+              disabled={isSavingBulk || Object.keys(bulkMarks).length === 0}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: (isSavingBulk || Object.keys(bulkMarks).length === 0) ? 'not-allowed' : 'pointer',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                background: (isSavingBulk || Object.keys(bulkMarks).length === 0) ? '#cbd5e1' : 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#fff',
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {isSavingBulk ? 'Saving...' : '💾 Save All Marks'}
+            </button>
           </div>
         </div>
       </div>
@@ -717,7 +717,7 @@ function ClassPaperContent() {
               <div style={{
                 padding: '10px', marginBottom: '1rem', borderRadius: '8px',
                 background: sendResult.success > 0 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                color: sendResult.success > 0 ? '#16a34a' : '#ef4444', 
+                color: sendResult.success > 0 ? '#16a34a' : '#ef4444',
                 fontWeight: 500,
               }}>
                 {sendResult.success > 0 ? '✅' : '⚠️'} Sent {sendResult.success} of {sendResult.total} messages. {sendResult.success === 0 && 'Check Notifications page for errors.'}
