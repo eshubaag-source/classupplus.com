@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       }).catch(err => console.error('Vehicle fee save notification error:', err));
     }
 
-    return NextResponse.json(newFee, { status: 201 });
+    return NextResponse.json(newFee.toJSON(), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message || 'Failed to create vehicle fee' }, { status: 500 });
   }
@@ -165,9 +165,10 @@ export async function PUT(request: Request) {
       body.paidDate = null;
     }
 
-    const updated = await VehicleFee.findOneAndUpdate({ _id: id, adminId }, body, { new: true }).populate('studentId');
+    const updated = await VehicleFee.findOneAndUpdate({ _id: id, adminId }, body, { new: true }).populate('studentId').lean();
     if (updated) {
-      const student = await Student.findById(updated.studentId?._id || updated.studentId);
+      const studentIdObj = updated.studentId as any;
+      const student = await Student.findById(studentIdObj?._id || studentIdObj);
       if (student?.parentContact) {
         let messageText = '';
         if (updated.status === 'Paid') {
