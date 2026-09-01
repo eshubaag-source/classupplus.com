@@ -84,9 +84,18 @@ export async function GET(
     const discountAmt = (fee as any).discount ? Number((fee as any).discount) : 0;
     const balance = Math.max(0, classAmount - fee.amount - discountAmt);
 
-    const dateStr = fee.paidDate
-      ? new Date(fee.paidDate).toLocaleDateString('en-IN', { dateStyle: 'medium' })
-      : new Date((fee as any).createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' });
+    let dateStr = '—';
+    try {
+      if (fee.paidDate && !isNaN(new Date(fee.paidDate).getTime())) {
+        dateStr = new Date(fee.paidDate).toLocaleDateString('en-IN', { dateStyle: 'medium' });
+      } else if ((fee as any).createdAt && !isNaN(new Date((fee as any).createdAt).getTime())) {
+        dateStr = new Date((fee as any).createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' });
+      } else {
+        dateStr = new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' });
+      }
+    } catch (e) {
+      dateStr = '—';
+    }
 
     const receiptNo = `#${id.toString().substring(18).toUpperCase()}`;
 
