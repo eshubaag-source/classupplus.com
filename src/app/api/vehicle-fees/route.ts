@@ -8,7 +8,7 @@ import { sendNotification } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() { 
+export async function GET() {
   try {
     const payload = await getTokenPayload();
     if (!payload) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
       } else {
         messageText = `Vehicle Fee Due: Dear Parent, vehicle transport fee of Rs. ${newFee.amount} for ${newFee.month} is pending for your child ${student.name}. Please pay at the earliest.`;
       }
-      sendNotification({
+      await sendNotification({
         adminId,
         studentId: student._id.toString(),
         type: 'Both',
@@ -178,7 +178,7 @@ export async function PUT(request: Request) {
         } else {
           messageText = `Vehicle Fee Reminder: Dear Parent, vehicle transport fee of Rs. ${updated.amount} for ${updated.month} is pending for your child ${student.name}. Please pay at the earliest.`;
         }
-        sendNotification({
+        await sendNotification({
           adminId,
           studentId: student._id.toString(),
           type: 'Both',
@@ -192,3 +192,4 @@ export async function PUT(request: Request) {
     return NextResponse.json({ message: error.message || 'Failed to update vehicle fee' }, { status: 500 });
   }
 }
+
