@@ -18,9 +18,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     if (payload.role === 'teacher') {
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
-        return NextResponse.json({ message: 'Unauthorized to view this student' }, { status: 403 });
+        return NextResponse.json({ message: 'Unauthorized to access this student' }, { status: 403 });
       }
     }
 
