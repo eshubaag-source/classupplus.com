@@ -62,7 +62,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const student = await Student.create({ ...body, adminId });
+    const teacherId = payload.role === 'teacher' ? payload.id : undefined;
+    const student = await Student.create({ ...body, adminId, ...(teacherId && { teacherId }) });
     return NextResponse.json(student, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message || 'Failed to create student' }, { status: 500 });
