@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     endDate.setHours(23, 59, 59, 999);
 
     const studentQuery: any = { adminId };
-    
+
     if (payload.role === 'teacher') {
       const classFilter = await getTeacherClassFilter(payload);
       if (!classFilter) return new NextResponse('Teacher profile not found', { status: 404 });
@@ -81,9 +81,9 @@ export async function POST(req: Request) {
       if (!student) {
         return new NextResponse('Student not found', { status: 404 });
       }
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
-         return new NextResponse('Not authorized to mark attendance for this student', { status: 403 });
+        return new NextResponse('Not authorized to mark attendance for this student', { status: 403 });
       }
     }
 
