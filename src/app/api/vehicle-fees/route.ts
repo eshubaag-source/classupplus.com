@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     if (!student) return NextResponse.json({ message: 'Student not found' }, { status: 404 });
 
     if (payload.role === 'teacher') {
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to add vehicle fee for this student' }, { status: 403 });
       }
@@ -117,7 +117,7 @@ export async function DELETE(request: Request) {
       if (!student) {
         return NextResponse.json({ message: 'Unauthorized to delete this vehicle fee record' }, { status: 403 });
       }
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to delete this vehicle fee record' }, { status: 403 });
       }
@@ -151,7 +151,7 @@ export async function PUT(request: Request) {
       if (!student) {
         return NextResponse.json({ message: 'Unauthorized to update this vehicle fee record' }, { status: 403 });
       }
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to update this vehicle fee record' }, { status: 403 });
       }
