@@ -8,7 +8,7 @@ import { sendNotification } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET() { 
   try {
     const payload = await getTokenPayload();
     if (!payload) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
