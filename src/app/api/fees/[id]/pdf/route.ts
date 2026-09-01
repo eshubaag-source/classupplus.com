@@ -34,7 +34,7 @@ export async function GET(
     }
 
     if (payload.role === 'teacher') {
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to view this fee record' }, { status: 403 });
       }
