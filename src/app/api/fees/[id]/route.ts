@@ -24,7 +24,7 @@ export async function PUT(
       const student = await Student.findOne({ _id: fee.studentId, adminId });
       if (!student) return NextResponse.json({ message: 'Student not found' }, { status: 404 });
 
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to modify fee for this student' }, { status: 403 });
       }
@@ -61,7 +61,7 @@ export async function DELETE(
       const student = await Student.findOne({ _id: fee.studentId, adminId });
       if (!student) return NextResponse.json({ message: 'Student not found' }, { status: 404 });
 
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to delete fee for this student' }, { status: 403 });
       }
