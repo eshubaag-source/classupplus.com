@@ -26,19 +26,9 @@ export async function PUT(
     }
 
     if (payload.role === 'teacher') {
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to update this student' }, { status: 403 });
-      }
-
-      const teacher = await Teacher.findById(payload.id);
-      if (!teacher) return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-
-      if (body.grade && body.grade !== teacher.grade) {
-        return NextResponse.json({ message: 'Cannot move student to a grade you do not teach' }, { status: 403 });
-      }
-      if (body.section && body.section !== teacher.section) {
-        return NextResponse.json({ message: 'Cannot move student to a section you do not teach' }, { status: 403 });
       }
     }
 
@@ -96,7 +86,7 @@ export async function DELETE(
     }
 
     if (payload.role === 'teacher') {
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
         return NextResponse.json({ message: 'Unauthorized to delete this student' }, { status: 403 });
       }
