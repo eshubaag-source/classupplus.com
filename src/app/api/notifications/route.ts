@@ -4,7 +4,7 @@ import { NotificationLog } from '@/models/NotificationLog';
 import Student from '@/models/Student';
 import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 import { sendNotification } from '@/lib/notifications';
-//no
+
 export async function GET(req: Request) {
   try {
     await dbConnect();
@@ -59,9 +59,9 @@ export async function POST(req: Request) {
 
     // If teacher, check if student is in teacher's class
     if (payload.role === 'teacher') {
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.grade, student.section);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
       if (!isAuthorized) {
-        return NextResponse.json({ message: 'Unauthorized to notify this student' }, { status: 403 });
+        return NextResponse.json({ message: 'Unauthorized for this student' }, { status: 403 });
       }
     }
 
