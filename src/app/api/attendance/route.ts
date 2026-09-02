@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db';
 import Attendance from '@/models/Attendance';
 import Student from '@/models/Student';
 import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
-// student attdend
+
 export async function GET(req: Request) {
   try {
     await dbConnect();
