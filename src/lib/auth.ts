@@ -13,10 +13,6 @@ export interface TokenPayload {
   adminId: string;
 }
 
-/**
- * Extracts and verifies the JWT from the cookie.
- * Returns the token payload or null if missing/invalid.
- */
 export async function getTokenPayload(): Promise<TokenPayload | null> {
   try {
     const cookieStore = await cookies();
