@@ -17,11 +17,7 @@
       const query: any = { adminId };
 
       if (payload.role === 'teacher') {
-        const classFilter = await getTeacherClassFilter(payload);
-        if (!classFilter) {
-          return NextResponse.json({ message: 'Teacher profile not found' }, { status: 404 });
-        }
-
+        const classFilter = getTeacherClassFilter(payload);
         // Get students in teacher's class
         const students = await Student.find({ adminId, ...classFilter }).select('_id');
         const studentIds = students.map(s => s._id);
