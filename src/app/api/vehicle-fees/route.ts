@@ -167,7 +167,8 @@ export async function PUT(request: Request) {
       body.paidDate = null;
     }
     // this 
-    const updated = await VehicleFee.findOneAndUpdate({ _id: id, adminId }, body, { new: true }).populate('studentId').lean();
+    delete body._id;
+    const updated = await VehicleFee.findOneAndUpdate({ _id: id, adminId }, { $set: body }, { new: true }).populate('studentId').lean();
     if (updated) {
       const studentIdObj = updated.studentId as any;
       const student = await Student.findById(studentIdObj?._id || studentIdObj);
