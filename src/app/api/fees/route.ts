@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Fees from '@/models/Fees';
@@ -97,7 +99,7 @@ export async function POST(request: Request) {
       } else {
         messageText = `Fee Due: Dear Parent, a fee of Rs. ${newFee.amount} for ${newFee.month} is pending for your child ${student.name}. Please pay at the earliest.`;
       }
-      sendNotification({
+      await sendNotification({
         adminId,
         studentId: student._id.toString(),
         type: 'Both',
@@ -106,7 +108,7 @@ export async function POST(request: Request) {
       }).catch(err => console.error('Fee save notification error:', err));
     }
 
-    return NextResponse.json(newFee, { status: 201 });
+    return NextResponse.json(newFee.toJSON(), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message || 'Failed to create fee' }, { status: 500 });
   }
