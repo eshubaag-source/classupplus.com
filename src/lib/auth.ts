@@ -105,6 +105,7 @@ export async function isTeacherAuthorizedForStudent(payload: TokenPayload, stude
     return true;
   }
 
+  console.error('isTeacherAuthorizedForStudent failed for:', { teacherId: payload.id, studentId: student._id, teacherClasses: teacher.assignedClasses, teacherGrade: teacher.grade, studentGrade: student.grade });
   return false;
 }
 
