@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-
+          
 const StudentSchema = new mongoose.Schema({
   adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true, index: true },
   name: { type: String, required: true }, 
