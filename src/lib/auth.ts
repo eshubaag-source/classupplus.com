@@ -12,7 +12,7 @@ export interface TokenPayload {
   role: 'admin' | 'teacher';
   adminId: string;
 }
-
+ 
 export async function getTokenPayload(): Promise<TokenPayload | null> {
   try {
     const cookieStore = await cookies();
