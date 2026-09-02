@@ -12,7 +12,11 @@ export interface TokenPayload {
   role: 'admin' | 'teacher';
   adminId: string;
 }
- 
+
+/**
+ * Extracts and verifies the JWT from the cookie.
+ * Returns the token payload or null if missing/invalid.
+ */
 export async function getTokenPayload(): Promise<TokenPayload | null> {
   try {
     const cookieStore = await cookies();
@@ -47,22 +51,60 @@ export function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/**
- * Returns a MongoDB query filter object to restrict teachers to their own students.
- * Returns an empty object for admins.
- */
 export async function getTeacherClassFilter(payload: TokenPayload): Promise<any> {
   if (payload.role !== 'teacher') return {};
+  
+  const teacher = await Teacher.findById(payload.id).lean();
+  if (!teacher) return { _id: null }; // Force no results
+
+  const conditions = [];
+  if (teacher.grade && teacher.section) {
+    conditions.push({ grade: teacher.grade, section: teacher.section });
+  }
+  
+  if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
+    for (const cls of teacher.assignedClasses) {
+      if (cls.grade && cls.section) {
+        conditions.push({ grade: cls.grade, section: cls.section });
+      }
+    }
+  }
+
+  if (conditions.length > 0) {
+    return { $or: conditions };
+  }
+  
   return { teacherId: payload.id };
 }
 
 /**
  * Checks if a teacher is authorized to access/modify a specific student's data.
- * Returns true if the user is an admin or if the student's teacherId matches the teacher's ID.
+ * Returns true if the user is an admin or if the student's grade/section matches the teacher's classes.
  */
-export async function isTeacherAuthorizedForStudent(payload: TokenPayload, studentTeacherId: any): Promise<boolean> {
+export async function isTeacherAuthorizedForStudent(payload: TokenPayload, student: any): Promise<boolean> {
   if (payload.role !== 'teacher') return true;
-  if (!studentTeacherId) return false;
-  return studentTeacherId.toString() === payload.id;
+  if (!student) return false;
+
+  const teacher = await Teacher.findById(payload.id).lean();
+  if (!teacher) return false;
+
+  if (teacher.grade && teacher.section && student.grade === teacher.grade && student.section === teacher.section) {
+    return true;
+  }
+
+  if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
+    for (const cls of teacher.assignedClasses) {
+      if (cls.grade === student.grade && cls.section === student.section) {
+        return true;
+      }
+    }
+  }
+
+  // Fallback to teacherId
+  if (student.teacherId && student.teacherId.toString() === payload.id) {
+    return true;
+  }
+
+  return false;
 }
 
