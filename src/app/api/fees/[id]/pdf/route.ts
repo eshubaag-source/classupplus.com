@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Fees from '@/models/Fees';
 import Student from '@/models/Student';
 import Admin from '@/models/Admin';
 import { ClassFee } from '@/models/ClassFee';
-import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
+import { getTokenPayload, isTeacherAuthorizedForStudent } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,7 +84,8 @@ export async function GET(
       classAmount = Number((fee as any).classFee) || 0;
     }
     const discountAmt = (fee as any).discount ? Number((fee as any).discount) : 0;
-    const balance = Math.max(0, classAmount - fee.amount - discountAmt);
+    const feeAmount = Number(fee.amount) || 0;
+    const balance = Math.max(0, classAmount - feeAmount - discountAmt);
 
     let dateStr = '—';
     try {
@@ -93,7 +96,7 @@ export async function GET(
       } else {
         dateStr = new Date().toLocaleDateString('en-IN', { dateStyle: 'medium' });
       }
-    } catch (e) {
+    } catch {
       dateStr = '—';
     }
 
