@@ -77,12 +77,14 @@ export async function POST(req: Request) {
     };
 
     if (payload.role === 'teacher') {
-      const student = await Student.findOne({ _id: studentId, adminId }).lean().exec();
+      const student = await Student.findOne({ _id: studentId }).lean().exec();
       if (!student) {
+        console.error('Attendance POST: Student not found for studentId:', studentId, 'adminId:', adminId);
         return new NextResponse('Student not found', { status: 404 });
       }
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student);
       if (!isAuthorized) {
+        console.error('Attendance POST: Not authorized. payload.id:', payload.id, 'student:', student);
         return new NextResponse('Not authorized to mark attendance for this student', { status: 403 });
       }
     }
