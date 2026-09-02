@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Fees from '@/models/Fees';
-import Student from '@/models/Student';
+import Student from '@/models/Student'; 
 import { Types } from 'mongoose';
 import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 import { sendNotification } from '@/lib/notifications';
