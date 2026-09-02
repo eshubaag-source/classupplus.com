@@ -4,7 +4,7 @@ import { NotificationLog } from '@/models/NotificationLog';
 import Student from '@/models/Student';
 import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 import { sendNotification } from '@/lib/notifications';
-//no
+
 export async function GET(req: Request) {
   try {
     await dbConnect();
