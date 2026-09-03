@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -66,7 +67,7 @@ function ClassPaperContent() {
     const profile = await profileRes.json();
     if (profile.schoolName) setSchoolName(profile.schoolName);
     if (profile.role) setUserRole(profile.role);
-    
+
     if (profile.role === 'teacher' && profile.subject && !searchParams?.get('subject')) {
       setGlobalSubject(profile.subject);
       setUrlSubject(profile.subject);
@@ -202,56 +203,47 @@ function ClassPaperContent() {
     let successCount = 0;
 
     try {
-        let failedMessage = '';
+      await Promise.all(studentsToUpdate.map(async ([studentId, obtainedMark]) => {
+        const student = students.find(s => s._id === studentId);
+        if (!student) return;
 
-        await Promise.all(studentsToUpdate.map(async ([studentId, obtainedMark]) => {
-          const student = students.find(s => s._id === studentId);
-          if (!student) return;
-
-          let currentMarks = [...(student.classPaperMarks || [])];
-          if (currentMarks.length === 0 && (student.subject || student.totalNumber || student.subjectPaperNumber)) {
-            // migrate old structure
-            currentMarks = [{
-              subject: student.subject || '',
-              totalNumber: student.totalNumber || '',
-              subjectPaperNumber: student.subjectPaperNumber || '',
-              date: ''
-            }];
-          }
-
-          const newMark = {
-            subject: globalSubject,
-            date: globalDate,
-            totalNumber: globalTotalMarks,
-            subjectPaperNumber: obtainedMark
-          };
-
-          const existingIndex = currentMarks.findIndex(m => m.subject.toLowerCase() === globalSubject.toLowerCase() && m.date === globalDate);
-          if (existingIndex >= 0) {
-            currentMarks[existingIndex] = newMark;
-          } else {
-            currentMarks.push(newMark);
-          }
-
-          const res = await fetch(`/api/students/${studentId}`, {
-            method: 'PUT',
-            body: JSON.stringify({ classPaperMarks: currentMarks }),
-            headers: { 'Content-Type': 'application/json' },
-          });
-
-          if (res.ok) {
-            successCount++;
-          } else {
-            const errData = await res.json().catch(() => ({}));
-            failedMessage = errData.message || `Failed to save for student ID ${studentId} (Status: ${res.status})`;
-          }
-        }));
-
-        if (failedMessage && successCount === 0) {
-          alert(`Server Error: ${failedMessage}`);
-        } else {
-          alert(`Successfully saved marks for ${successCount} student(s)!${failedMessage ? ' (Some failed)' : ''}`);
+        let currentMarks = [...(student.classPaperMarks || [])];
+        if (currentMarks.length === 0 && (student.subject || student.totalNumber || student.subjectPaperNumber)) {
+          // migrate old structure
+          currentMarks = [{
+            subject: student.subject || '',
+            totalNumber: student.totalNumber || '',
+            subjectPaperNumber: student.subjectPaperNumber || '',
+            date: ''
+          }];
         }
+
+        const newMark = {
+          subject: globalSubject,
+          date: globalDate,
+          totalNumber: globalTotalMarks,
+          subjectPaperNumber: obtainedMark
+        };
+
+        const existingIndex = currentMarks.findIndex(m => m.subject.toLowerCase() === globalSubject.toLowerCase() && m.date === globalDate);
+        if (existingIndex >= 0) {
+          currentMarks[existingIndex] = newMark;
+        } else {
+          currentMarks.push(newMark);
+        }
+
+        const res = await fetch(`/api/students/${studentId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ classPaperMarks: currentMarks }),
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (res.ok) {
+          successCount++;
+        }
+      }));
+
+      alert(`Successfully saved marks for ${successCount} student(s)!`);
       setBulkMarks({});
       fetchStudents(); // Refresh data
     } catch {
