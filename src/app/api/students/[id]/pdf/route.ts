@@ -1,77 +1,106 @@
-import dbConnect from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import dbConnect from '@/lib/db';
 import Student from '@/models/Student';
+import Attendance from '@/models/Attendance';
+import Fees from '@/models/Fees';
+import { Teacher } from '@/models/Teacher';
 import { getTokenPayload, getTeacherClassFilter, isTeacherAuthorizedForStudent } from '@/lib/auth';
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    await dbConnect();
+    const { id } = await params;
+    const body = await req.json();
+
     const payload = await getTokenPayload();
     if (!payload) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-    const { id } = await params;
-    await dbConnect();
+    const adminId = payload.adminId;
 
-    const student = await Student.findOne({ _id: id, adminId: payload.adminId }).lean().exec();
+    const student = await Student.findOne({ _id: id, adminId });
     if (!student) {
       return NextResponse.json({ message: 'Student not found' }, { status: 404 });
     }
- 
+
     if (payload.role === 'teacher') {
-      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student.teacherId);
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student);
       if (!isAuthorized) {
-        return NextResponse.json({ message: 'Unauthorized to access this student' }, { status: 403 });
+        return NextResponse.json({ message: `Unauthorized to update student. Auth check failed.` }, { status: 403 });
       }
     }
 
-    // Create a PDF document
-    const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([400, 600]);
-    const { width, height } = page.getSize();
-    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    // If roll number, grade, or section is being changed, check for class-level duplicates
+    const incomingRoll = body.rollNumber ?? student.rollNumber;
+    const incomingGrade = body.grade ?? student.grade;
+    const incomingSection = body.section ?? student.section;
 
-    const title = `${student.name} - Student Record`.replace(/[^\x00-\x7F]/g, '');
-    page.drawText(title, {
-      x: 30,
-      y: height - 50,
-      size: 20,
-      font,
-      color: rgb(0, 0, 0.8),
+    const rollConflict = await Student.findOne({
+      adminId,
+      grade: incomingGrade,
+      section: incomingSection,
+      rollNumber: incomingRoll,
+      _id: { $ne: id },        // exclude current student
     });
+    if (rollConflict) {
+      return NextResponse.json(
+        { message: `Roll number ${incomingRoll} is already taken in Class ${incomingGrade}-${incomingSection}.` },
+        { status: 409 }
+      );
+    }
 
-    const content = `
-Name: ${student.name}
-Father Name: ${student.fatherName}
-Roll No: ${student.rollNumber}
-Grade: ${student.grade}
-Section: ${student.section}
-Parent Contact: ${student.parentContact || 'N/A'}
-School Fees: Rs. ${student.schoolFees || 0}
-Last Fees Amount: Rs. ${student.lastFeesAmount || 0}
-Note: ${student.note || 'N/A'}
-`.replace(/[^\x00-\x7F]/g, '');
-    page.drawText(content, {
-      x: 30,
-      y: height - 100,
-      size: 12,
-      font: await pdfDoc.embedFont(StandardFonts.Helvetica),
-      color: rgb(0, 0, 0),
-      lineHeight: 14,
-    });
+    const updatedStudent = await Student.findOneAndUpdate(
+      { _id: id, adminId },
+      { $set: body },
+      { new: true, runValidators: true }
+    );
 
-    const pdfBytes = await pdfDoc.save();
-    const pdfBlob = new Uint8Array(pdfBytes);
+    if (!updatedStudent) {
+      return NextResponse.json({ message: 'Student not found' }, { status: 404 });
+    }
 
-    return new NextResponse(pdfBlob, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="student-${id}.pdf"`,
-      },
-    });
+    return NextResponse.json(updatedStudent);
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
 
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await dbConnect();
+    const { id } = await params;
 
+    const payload = await getTokenPayload();
+    if (!payload) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+
+    const adminId = payload.adminId;
+
+    const student = await Student.findOne({ _id: id, adminId });
+    if (!student) {
+      return NextResponse.json({ message: 'Student not found' }, { status: 404 });
+    }
+
+    if (payload.role === 'teacher') {
+      const isAuthorized = await isTeacherAuthorizedForStudent(payload, student);
+      if (!isAuthorized) {
+        return NextResponse.json({ message: 'Unauthorized to delete this student' }, { status: 403 });
+      }
+    }
+
+    // Cascade delete associated attendance and fee records
+    await Promise.all([
+      Attendance.deleteMany({ studentId: id, adminId }),
+      Fees.deleteMany({ studentId: id, adminId }),
+      Student.findOneAndDelete({ _id: id, adminId }),
+    ]);
+
+    return NextResponse.json({ message: 'Student and related records deleted successfully' });
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message }, { status: 500 });
+  }
+}
