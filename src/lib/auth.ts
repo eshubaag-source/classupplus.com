@@ -99,7 +99,7 @@ export async function isTeacherAuthorizedForStudent(payload: TokenPayload, stude
       if (cls.grade === stu.grade && cls.section === stu.section) {
         return true;
       }
-    }
+    } 
   }
 
   // Fallback to teacherId
