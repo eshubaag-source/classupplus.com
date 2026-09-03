@@ -90,10 +90,10 @@ export async function isTeacherAuthorizedForStudent(payload: TokenPayload, stude
   const teacher = await Teacher.findById(payload.id).lean();
   if (!teacher) return false;
 
-  const sGrade = String(stu.grade || '').trim();
-  const sSection = String(stu.section || '').trim();
-  const tGrade = String(teacher.grade || '').trim();
-  const tSection = String(teacher.section || '').trim();
+  const sGrade = String(stu.grade || '').trim().toLowerCase();
+  const sSection = String(stu.section || '').trim().toLowerCase();
+  const tGrade = String(teacher.grade || '').trim().toLowerCase();
+  const tSection = String(teacher.section || '').trim().toLowerCase();
 
   if (tGrade && tSection && sGrade === tGrade && sSection === tSection) {
     return true;
@@ -101,8 +101,8 @@ export async function isTeacherAuthorizedForStudent(payload: TokenPayload, stude
 
   if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
     for (const cls of teacher.assignedClasses) {
-      const cGrade = String(cls.grade || '').trim();
-      const cSection = String(cls.section || '').trim();
+      const cGrade = String(cls.grade || '').trim().toLowerCase();
+      const cSection = String(cls.section || '').trim().toLowerCase();
       if (cGrade === sGrade && cSection === sSection) {
         return true;
       }
