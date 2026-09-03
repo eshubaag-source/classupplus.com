@@ -85,27 +85,29 @@ export async function isTeacherAuthorizedForStudent(payload: TokenPayload, stude
   if (payload.role !== 'teacher') return true;
   if (!student) return false;
 
+  const stu = student.toObject ? student.toObject() : student;
+
   const teacher = await Teacher.findById(payload.id).lean();
   if (!teacher) return false;
 
-  if (teacher.grade && teacher.section && student.grade === teacher.grade && student.section === teacher.section) {
+  if (teacher.grade && teacher.section && stu.grade === teacher.grade && stu.section === teacher.section) {
     return true;
   }
 
   if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
     for (const cls of teacher.assignedClasses) {
-      if (cls.grade === student.grade && cls.section === student.section) {
+      if (cls.grade === stu.grade && cls.section === stu.section) {
         return true;
       }
     }
   }
 
   // Fallback to teacherId
-  if (student.teacherId && student.teacherId.toString() === payload.id) {
+  if (stu.teacherId && stu.teacherId.toString() === payload.id) {
     return true;
   }
 
-  console.error('isTeacherAuthorizedForStudent failed for:', { teacherId: payload.id, studentId: student._id, teacherClasses: teacher.assignedClasses, teacherGrade: teacher.grade, studentGrade: student.grade });
+  console.error('isTeacherAuthorizedForStudent failed for:', { teacherId: payload.id, studentId: stu._id, teacherClasses: teacher.assignedClasses, teacherGrade: teacher.grade, studentGrade: stu.grade });
   return false;
 }
 
