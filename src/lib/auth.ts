@@ -90,20 +90,27 @@ export async function isTeacherAuthorizedForStudent(payload: TokenPayload, stude
   const teacher = await Teacher.findById(payload.id).lean();
   if (!teacher) return false;
 
-  if (teacher.grade && teacher.section && stu.grade === teacher.grade && stu.section === teacher.section) {
+  const sGrade = String(stu.grade || '').trim();
+  const sSection = String(stu.section || '').trim();
+  const tGrade = String(teacher.grade || '').trim();
+  const tSection = String(teacher.section || '').trim();
+
+  if (tGrade && tSection && sGrade === tGrade && sSection === tSection) {
     return true;
   }
 
   if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
     for (const cls of teacher.assignedClasses) {
-      if (cls.grade === stu.grade && cls.section === stu.section) {
+      const cGrade = String(cls.grade || '').trim();
+      const cSection = String(cls.section || '').trim();
+      if (cGrade === sGrade && cSection === sSection) {
         return true;
       }
-    } 
+    }
   }
 
   // Fallback to teacherId
-  if (stu.teacherId && stu.teacherId.toString() === payload.id) {
+  if (stu.teacherId && String(stu.teacherId) === String(payload.id)) {
     return true;
   }
 
