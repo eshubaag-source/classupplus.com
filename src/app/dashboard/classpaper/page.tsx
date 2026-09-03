@@ -202,47 +202,56 @@ function ClassPaperContent() {
     let successCount = 0;
 
     try {
-      await Promise.all(studentsToUpdate.map(async ([studentId, obtainedMark]) => {
-        const student = students.find(s => s._id === studentId);
-        if (!student) return;
+        let failedMessage = '';
 
-        let currentMarks = [...(student.classPaperMarks || [])];
-        if (currentMarks.length === 0 && (student.subject || student.totalNumber || student.subjectPaperNumber)) {
-          // migrate old structure
-          currentMarks = [{
-            subject: student.subject || '',
-            totalNumber: student.totalNumber || '',
-            subjectPaperNumber: student.subjectPaperNumber || '',
-            date: ''
-          }];
-        }
+        await Promise.all(studentsToUpdate.map(async ([studentId, obtainedMark]) => {
+          const student = students.find(s => s._id === studentId);
+          if (!student) return;
 
-        const newMark = {
-          subject: globalSubject,
-          date: globalDate,
-          totalNumber: globalTotalMarks,
-          subjectPaperNumber: obtainedMark
-        };
+          let currentMarks = [...(student.classPaperMarks || [])];
+          if (currentMarks.length === 0 && (student.subject || student.totalNumber || student.subjectPaperNumber)) {
+            // migrate old structure
+            currentMarks = [{
+              subject: student.subject || '',
+              totalNumber: student.totalNumber || '',
+              subjectPaperNumber: student.subjectPaperNumber || '',
+              date: ''
+            }];
+          }
 
-        const existingIndex = currentMarks.findIndex(m => m.subject.toLowerCase() === globalSubject.toLowerCase() && m.date === globalDate);
-        if (existingIndex >= 0) {
-          currentMarks[existingIndex] = newMark;
+          const newMark = {
+            subject: globalSubject,
+            date: globalDate,
+            totalNumber: globalTotalMarks,
+            subjectPaperNumber: obtainedMark
+          };
+
+          const existingIndex = currentMarks.findIndex(m => m.subject.toLowerCase() === globalSubject.toLowerCase() && m.date === globalDate);
+          if (existingIndex >= 0) {
+            currentMarks[existingIndex] = newMark;
+          } else {
+            currentMarks.push(newMark);
+          }
+
+          const res = await fetch(`/api/students/${studentId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ classPaperMarks: currentMarks }),
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          if (res.ok) {
+            successCount++;
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            failedMessage = errData.message || `Failed to save for student ID ${studentId} (Status: ${res.status})`;
+          }
+        }));
+
+        if (failedMessage && successCount === 0) {
+          alert(`Server Error: ${failedMessage}`);
         } else {
-          currentMarks.push(newMark);
+          alert(`Successfully saved marks for ${successCount} student(s)!${failedMessage ? ' (Some failed)' : ''}`);
         }
-
-        const res = await fetch(`/api/students/${studentId}`, {
-          method: 'PUT',
-          body: JSON.stringify({ classPaperMarks: currentMarks }),
-          headers: { 'Content-Type': 'application/json' },
-        });
-
-        if (res.ok) {
-          successCount++;
-        }
-      }));
-
-      alert(`Successfully saved marks for ${successCount} student(s)!`);
       setBulkMarks({});
       fetchStudents(); // Refresh data
     } catch {
